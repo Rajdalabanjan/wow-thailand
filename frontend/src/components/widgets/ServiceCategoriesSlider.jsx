@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { 
   Compass, 
   Car, 
@@ -7,12 +7,12 @@ import {
   ArrowLeft, 
   Star, 
   Sparkles,
-  ShieldCheck,
-  Check
+  Bike,
+  Palmtree
 } from 'lucide-react';
 import './ServiceCategoriesSlider.css';
 
-// ─── 4 AUTHORITATIVE THAILAND SERVICE CATEGORIES ─────────────────────────────
+// ─── 6 AUTHORITATIVE THAILAND SERVICE CATEGORIES ─────────────────────────────
 const SERVICE_CATEGORIES = [
   {
     id: 'hotels',
@@ -83,8 +83,8 @@ const SERVICE_CATEGORIES = [
     rating: '4.96',
     reviewsCount: '1.5k+ bookings',
     categoryIcon: Sparkles,
-    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1000&q=85',
-    fallbackImage: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=1000&q=85',
+    image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1000&q=85',
+    fallbackImage: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1000&q=85',
     highlights: [
       { text: 'Water Sports & Scuba', dotColor: '#FF9F1C' },
       { text: 'Elephant Care Centers', dotColor: '#38BDF8' },
@@ -93,7 +93,54 @@ const SERVICE_CATEGORIES = [
     ],
     actionLabel: 'Book Activities',
     route: '/activities'
+  },
+  {
+    id: 'selfdrive',
+    tabTarget: 'cars',
+    categoryTag: 'Freedom Road Trips',
+    title: 'Self-Drive Bikes & Cars',
+    tagline: 'Rent scooters, convertibles & premium SUVs across Phuket, Samui & Chiang Mai',
+    rating: '4.97',
+    reviewsCount: '2.1k+ road explorers',
+    categoryIcon: Bike,
+    image: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1000&q=85',
+    fallbackImage: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=1000&q=85',
+    highlights: [
+      { text: 'Doorstep Hotel Delivery', dotColor: '#FF9F1C' },
+      { text: 'Zero Hidden Deposit', dotColor: '#38BDF8' },
+      { text: 'Comprehensive Insurance', dotColor: '#34D399' },
+      { text: '24/7 Roadside Assistance', dotColor: '#F472B6' }
+    ],
+    actionLabel: 'Explore Self-Drive',
+    route: '/cars'
+  },
+  {
+    id: 'packages',
+    tabTarget: 'packages',
+    categoryTag: 'Curated Multi-Day Trips',
+    title: 'Crafted VIP Holiday Packages',
+    tagline: 'All-inclusive Thailand vacations with island hopping, luxury stays & VIP transfers',
+    rating: '4.99',
+    reviewsCount: '4.2k+ dream trips',
+    categoryIcon: Palmtree,
+    image: 'https://images.unsplash.com/photo-1506665531195-3566af2b4dfa?auto=format&fit=crop&w=1000&q=85',
+    fallbackImage: 'https://images.unsplash.com/photo-1528181304800-259b08848526?auto=format&fit=crop&w=1000&q=85',
+    highlights: [
+      { text: '100% Customizable', dotColor: '#FF9F1C' },
+      { text: 'Dedicated Trip Concierge', dotColor: '#38BDF8' },
+      { text: 'Honeymoon & Family Spec', dotColor: '#34D399' },
+      { text: 'Best Price Guaranteed', dotColor: '#F472B6' }
+    ],
+    actionLabel: 'Plan Custom Trip',
+    route: '/packages'
   }
+];
+
+// Tripled list for a seamless, continuous, infinite marquee wrap
+const INFINITE_ITEMS = [
+  ...SERVICE_CATEGORIES,
+  ...SERVICE_CATEGORIES,
+  ...SERVICE_CATEGORIES
 ];
 
 export default function ServiceCategoriesSlider({ activeTab, setActiveTab }) {
@@ -101,9 +148,9 @@ export default function ServiceCategoriesSlider({ activeTab, setActiveTab }) {
   const [isDragging, setIsDragging] = useState(false);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
 
-  // Auto-scroll pause timer & interaction flag
-  const isInteractingRef = useRef(false);
-  const pauseTimerRef = useRef(null);
+  // Auto-scroll control flags
+  const isPausedRef = useRef(false);
+  const resumeTimerRef = useRef(null);
 
   // Mouse drag state
   const isDraggingRef = useRef(false);
@@ -111,47 +158,54 @@ export default function ServiceCategoriesSlider({ activeTab, setActiveTab }) {
   const scrollLeftStartRef = useRef(0);
   const hasDraggedRef = useRef(false);
 
-  const categories = SERVICE_CATEGORIES;
-
-  // Track active index based on scroll position or activeTab
+  // Track active slide index based on activeTab
   useEffect(() => {
-    const idx = categories.findIndex(
+    const idx = SERVICE_CATEGORIES.findIndex(
       (c) => c.id === activeTab || c.tabTarget === activeTab || (c.id === 'hotels' && activeTab === 'hotels')
     );
     if (idx !== -1) {
       setActiveSlideIndex(idx);
     }
-  }, [activeTab, categories]);
+  }, [activeTab]);
 
-  const pauseAutoScroll = (duration = 4500) => {
-    isInteractingRef.current = true;
-    if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
-    pauseTimerRef.current = setTimeout(() => {
-      isInteractingRef.current = false;
+  // Pause helper with auto-resume timer
+  const pauseAutoScroll = useCallback((duration = 3500) => {
+    isPausedRef.current = true;
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    resumeTimerRef.current = setTimeout(() => {
+      isPausedRef.current = false;
     }, duration);
-  };
+  }, []);
 
-  // Continuous subtle auto-slide
+  // ─── TRUE CONTINUOUS INFINITE AUTO-SLIDE LOOP ──────────────────────────────
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
 
     let animId;
     let lastTime = performance.now();
-    const speed = 0.38; // Elegant leisurely slide speed
+    const speed = 0.85; // Silky smooth 50-55px/second continuous glide
 
     const step = (now) => {
       const delta = now - lastTime;
       lastTime = now;
+      const factor = Math.min(delta / 16.67, 2.0);
 
-      if (!isInteractingRef.current && !isDraggingRef.current && el && el.scrollWidth > el.clientWidth) {
-        const factor = Math.min(delta / 16.67, 2.0);
+      if (!isPausedRef.current && !isDraggingRef.current && el) {
         el.scrollLeft += speed * factor;
 
-        // When reaching the right end, pause gently and rewind to beginning
-        if (el.scrollLeft >= el.scrollWidth - el.clientWidth - 2) {
-          pauseAutoScroll(2800);
-          el.scrollTo({ left: 0, behavior: 'smooth' });
+        // Measure single loop width dynamically: distance from card 0 to card 6 (one complete set)
+        const totalBaseItems = SERVICE_CATEGORIES.length;
+        if (el.children && el.children.length >= totalBaseItems * 2) {
+          const firstCard = el.children[0];
+          const wrapCard = el.children[totalBaseItems];
+          if (firstCard && wrapCard) {
+            const oneSetWidth = wrapCard.offsetLeft - firstCard.offsetLeft;
+            // Seamless wrap reset: invisible jump back by exactly oneSetWidth
+            if (oneSetWidth > 0 && el.scrollLeft >= oneSetWidth) {
+              el.scrollLeft -= oneSetWidth;
+            }
+          }
         }
       }
 
@@ -162,57 +216,59 @@ export default function ServiceCategoriesSlider({ activeTab, setActiveTab }) {
 
     return () => {
       if (animId) cancelAnimationFrame(animId);
-      if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
     };
   }, []);
 
-  // Update active slide index during scroll
+  // Update active slide index during scroll for pagination dots
   const handleScroll = () => {
     if (!scrollRef.current) return;
     const el = scrollRef.current;
-    const cardWidth = 380 + 26; // width + gap approx
-    const currentIdx = Math.round(el.scrollLeft / cardWidth);
-    setActiveSlideIndex(Math.min(Math.max(0, currentIdx), categories.length - 1));
+    const cardWidth = 370 + 24; // card width + gap
+    const rawIdx = Math.round(el.scrollLeft / cardWidth);
+    const normalizedIdx = ((rawIdx % SERVICE_CATEGORIES.length) + SERVICE_CATEGORIES.length) % SERVICE_CATEGORIES.length;
+    setActiveSlideIndex(normalizedIdx);
   };
 
   // Scroll to specific card by index
   const scrollToCard = (index) => {
-    pauseAutoScroll(4500);
+    pauseAutoScroll(4000);
     setActiveSlideIndex(index);
     if (!scrollRef.current) return;
     const el = scrollRef.current;
-    const card = el.children[index];
-    if (card) {
-      const left = card.offsetLeft - el.offsetLeft - (el.clientWidth - card.clientWidth) / 2;
-      el.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
-    }
+    const cardWidth = 370 + 24;
+    const targetScroll = index * cardWidth;
+    el.scrollTo({ left: targetScroll, behavior: 'smooth' });
   };
 
-  // Arrow button navigation
+  // Arrow button navigation (jump by 1 full card: 394px)
   const handleScrollLeft = () => {
-    pauseAutoScroll(4500);
-    if (scrollRef.current) {
-      const el = scrollRef.current;
-      const scrollAmount = el.clientWidth > 768 ? 406 : 320;
-      if (el.scrollLeft <= 15) {
-        el.scrollTo({ left: el.scrollWidth, behavior: 'smooth' });
-      } else {
-        el.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    pauseAutoScroll(4000);
+    if (!scrollRef.current) return;
+    const el = scrollRef.current;
+    const cardWidth = 370 + 24;
+
+    // If near the left edge, silently jump ahead by one set to allow infinite left scrolling
+    const totalBaseItems = SERVICE_CATEGORIES.length;
+    if (el.children && el.children.length >= totalBaseItems * 2) {
+      const firstCard = el.children[0];
+      const wrapCard = el.children[totalBaseItems];
+      if (firstCard && wrapCard) {
+        const oneSetWidth = wrapCard.offsetLeft - firstCard.offsetLeft;
+        if (oneSetWidth > 0 && el.scrollLeft < cardWidth) {
+          el.scrollLeft += oneSetWidth;
+        }
       }
     }
+    el.scrollBy({ left: -cardWidth, behavior: 'smooth' });
   };
 
   const handleScrollRight = () => {
-    pauseAutoScroll(4500);
-    if (scrollRef.current) {
-      const el = scrollRef.current;
-      const scrollAmount = el.clientWidth > 768 ? 406 : 320;
-      if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 15) {
-        el.scrollTo({ left: 0, behavior: 'smooth' });
-      } else {
-        el.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-      }
-    }
+    pauseAutoScroll(4000);
+    if (!scrollRef.current) return;
+    const el = scrollRef.current;
+    const cardWidth = 370 + 24;
+    el.scrollBy({ left: cardWidth, behavior: 'smooth' });
   };
 
   // Mouse drag to scroll handlers
@@ -230,8 +286,8 @@ export default function ServiceCategoriesSlider({ activeTab, setActiveTab }) {
     if (!isDraggingRef.current || !scrollRef.current) return;
     e.preventDefault();
     const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startXRef.current) * 1.4;
-    if (Math.abs(walk) > 10) {
+    const walk = (x - startXRef.current) * 1.35;
+    if (Math.abs(walk) > 8) {
       hasDraggedRef.current = true;
     }
     scrollRef.current.scrollLeft = scrollLeftStartRef.current - walk;
@@ -241,7 +297,7 @@ export default function ServiceCategoriesSlider({ activeTab, setActiveTab }) {
     if (isDraggingRef.current) {
       isDraggingRef.current = false;
       setIsDragging(false);
-      pauseAutoScroll(3000);
+      pauseAutoScroll(2000);
     }
   };
 
@@ -277,7 +333,7 @@ export default function ServiceCategoriesSlider({ activeTab, setActiveTab }) {
             </div>
             <h2 className="scs-title">Explore Thailand by Service Category</h2>
             <p className="scs-subtitle">
-              Handpicked 5-star beachfront resorts, breathtaking island excursions, and executive private airport transfers.
+              Handpicked 5-star beachfront resorts, breathtaking island excursions, executive private airport transfers & road trips.
             </p>
           </div>
 
@@ -310,18 +366,18 @@ export default function ServiceCategoriesSlider({ activeTab, setActiveTab }) {
             className={`scs-scroll-track ${isDragging ? 'is-dragging' : ''}`}
             ref={scrollRef}
             onScroll={handleScroll}
-            onMouseEnter={() => { isInteractingRef.current = true; }}
+            onMouseEnter={() => { isPausedRef.current = true; }}
             onMouseLeave={() => { 
               handleMouseUpOrLeave();
-              pauseAutoScroll(2000); 
+              pauseAutoScroll(1500); 
             }}
             onTouchStart={() => pauseAutoScroll(5000)}
-            onTouchEnd={() => pauseAutoScroll(3000)}
+            onTouchEnd={() => pauseAutoScroll(2000)}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUpOrLeave}
           >
-            {categories.map((cat, index) => {
+            {INFINITE_ITEMS.map((cat, index) => {
               const CategoryIcon = cat.categoryIcon;
               const isActive = activeTab === cat.id || 
                                activeTab === cat.tabTarget || 
@@ -329,7 +385,7 @@ export default function ServiceCategoriesSlider({ activeTab, setActiveTab }) {
 
               return (
                 <div
-                  key={cat.id}
+                  key={`${cat.id}-${index}`}
                   className={`scs-luxury-card ${isActive ? 'is-active' : ''}`}
                   onClick={() => handleCategoryClick(cat)}
                   role="button"
@@ -430,7 +486,7 @@ export default function ServiceCategoriesSlider({ activeTab, setActiveTab }) {
         {/* Carousel Bottom Control Bar: Pagination Dots & Navigation */}
         <div className="scs-carousel-bottom-bar">
           <div className="scs-pagination-dots">
-            {categories.map((cat, idx) => (
+            {SERVICE_CATEGORIES.map((cat, idx) => (
               <button
                 key={cat.id}
                 type="button"

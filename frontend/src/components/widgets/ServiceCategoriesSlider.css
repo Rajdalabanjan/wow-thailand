@@ -114,16 +114,18 @@
 
 .scs-scroll-track {
   display: flex;
-  gap: 26px;
+  gap: 24px;
   overflow-x: auto;
+  overflow-y: hidden;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
   user-select: none;
   -webkit-user-select: none;
-  padding: 12px 8px 18px 8px;
+  padding: 12px 8px 22px 8px;
   cursor: grab;
+  scroll-behavior: auto;
 }
 
 .scs-scroll-track.is-dragging {
@@ -136,9 +138,9 @@
 
 /* ─── The Ultra-Luxury Cinematic Card ─── */
 .scs-luxury-card {
-  flex: 0 0 380px;
-  min-width: 320px;
-  max-width: 390px;
+  flex: 0 0 370px;
+  min-width: 370px;
+  max-width: 370px;
   height: 500px;
   position: relative;
   border-radius: 28px;
@@ -531,14 +533,10 @@
 
 /* ─── Responsive Adjustments ─── */
 @media (min-width: 992px) {
-  .scs-scroll-track {
-    justify-content: center;
-  }
-
   .scs-luxury-card {
-    flex: 1 1 360px;
-    min-width: 320px;
-    max-width: 390px;
+    flex: 0 0 370px;
+    min-width: 370px;
+    max-width: 370px;
   }
 }
 
