@@ -1,0 +1,2444 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Car, 
+  Hotel, 
+  MapPin, 
+  Compass, 
+  ChevronDown, 
+  Calendar as CalendarIcon, 
+  Users, 
+  SlidersHorizontal, 
+  X, 
+  Check, 
+  Navigation, 
+  Loader2, 
+  Search as SearchIcon, 
+  ChevronLeft,
+  ChevronRight,
+  Plane,
+  AlertCircle,
+  Binoculars,
+  Wand2
+} from 'lucide-react';
+import { getTodayDateStr, getNextDayDateStr, validateBookingDates } from '../utils/dateUtils';
+import UnifiedFilterPopover, { countActiveTabFilters } from './common/UnifiedFilterPopover';
+
+// ─── STATIC DATASETS ──────────────────────────────────────────────────────────
+
+const POPULAR_FROM_CITIES = [
+  { city: 'Bangkok', state: 'Bangkok', country: 'Thailand', code: 'BKK' },
+  { city: 'Phuket', state: 'Phuket', country: 'Thailand', code: 'HKT' },
+  { city: 'Chiang Mai', state: 'Chiang Mai', country: 'Thailand', code: 'CNX' },
+  { city: 'Koh Samui', state: 'Surat Thani', country: 'Thailand', code: 'USM' },
+  { city: 'Krabi', state: 'Krabi', country: 'Thailand', code: 'KBV' },
+  { city: 'Pattaya', state: 'Chonburi', country: 'Thailand', code: 'UTP' },
+  { city: 'Singapore', state: 'Singapore', country: 'Singapore', code: 'SIN' },
+  { city: 'Kuala Lumpur', state: 'Federal Territory', country: 'Malaysia', code: 'KUL' },
+  { city: 'Mumbai', state: 'Maharashtra', country: 'India', code: 'BOM' },
+  { city: 'Delhi', state: 'Delhi NCR', country: 'India', code: 'DEL' },
+  { city: 'Dubai', state: 'Dubai', country: 'UAE', code: 'DXB' },
+  { city: 'Hong Kong', state: 'Hong Kong SAR', country: 'China', code: 'HKG' }
+];
+
+const POPULAR_DESTINATIONS = [
+  { name: 'Bangkok', country: 'Thailand', tag: 'Temples, Skylines & Riverfront', category: 'City', icon: '🏙️' },
+  { name: 'Phuket', country: 'Thailand', tag: 'Patong Beach & Luxury Villas', category: 'Beach', icon: '🏖️' },
+  { name: 'Pattaya', country: 'Thailand', tag: 'Beaches, Coral Island & Shows', category: 'Beach', icon: '🌴' },
+  { name: 'Krabi', country: 'Thailand', tag: 'Ao Nang, Railay & Emerald Islands', category: 'Nature', icon: '🛶' },
+  { name: 'Koh Samui', country: 'Thailand', tag: 'Chaweng Beach & Coral Reefs', category: 'Honeymoon', icon: '🌊' },
+  { name: 'Chiang Mai', country: 'Thailand', tag: 'Old Temples, Doi Suthep & Culture', category: 'Heritage', icon: '⛩️' },
+  { name: 'Hua Hin', country: 'Thailand', tag: 'Royal Coast & Quiet Luxury', category: 'Luxury', icon: '✨' },
+  { name: 'Phi Phi Islands', country: 'Thailand', tag: 'Maya Bay & Emerald Lagoons', category: 'Adventure', icon: '🏝️' }
+];
+
+const AIRPORTS_DATA = [
+  { code: 'BKK', name: 'Suvarnabhumi Airport (BKK)', city: 'Bangkok', country: 'Thailand' },
+  { code: 'DMK', name: 'Don Mueang Intl Airport (DMK)', city: 'Bangkok', country: 'Thailand' },
+  { code: 'HKT', name: 'Phuket International Airport (HKT)', city: 'Phuket', country: 'Thailand' },
+  { code: 'CNX', name: 'Chiang Mai Intl Airport (CNX)', city: 'Chiang Mai', country: 'Thailand' },
+  { code: 'USM', name: 'Samui International Airport (USM)', city: 'Koh Samui', country: 'Thailand' },
+  { code: 'KBV', name: 'Krabi International Airport (KBV)', city: 'Krabi', country: 'Thailand' },
+  { code: 'UTP', name: 'U-Tapao Pattaya Airport (UTP)', city: 'Pattaya', country: 'Thailand' },
+  { code: 'SIN', name: 'Singapore Changi Intl', city: 'Singapore', country: 'Singapore' },
+  { code: 'KUL', name: 'Kuala Lumpur International', city: 'Kuala Lumpur', country: 'Malaysia' },
+  { code: 'BOM', name: 'Chhatrapati Shivaji Intl', city: 'Mumbai', country: 'India' },
+  { code: 'DEL', name: 'Indira Gandhi Intl', city: 'New Delhi', country: 'India' },
+  { code: 'DXB', name: 'Dubai International', city: 'Dubai', country: 'UAE' }
+];
+
+const TRAVEL_CATEGORIES = [
+  { id: 'beach', label: 'Beach & Islands', icon: '🏖️' },
+  { id: 'hills', label: 'Hill Stations', icon: '🏔️' },
+  { id: 'honeymoon', label: 'Honeymoon & Romance', icon: '💍' },
+  { id: 'adventure', label: 'Adventure & Wildlife', icon: '🧗' },
+  { id: 'heritage', label: 'Heritage & Culture', icon: '🏰' },
+  { id: 'luxury', label: 'Luxury Escapes', icon: '✨' }
+];
+
+const SELF_DRIVE_LOCATIONS = [
+  { id: 'bkk-airport', name: 'Suvarnabhumi Airport (BKK)', category: 'Airports', desc: 'Main Terminal Arrival Gate - Free Meet & Greet', note: 'Free airport handover', icon: '✈️' },
+  { id: 'dmk-airport', name: 'Don Mueang Airport (DMK)', category: 'Airports', desc: 'Domestic & International Terminal Handover', note: 'Free delivery', icon: '✈️' },
+  { id: 'hkt-airport', name: 'Phuket International Airport (HKT)', category: 'Airports', desc: 'Phuket Terminal Arrival Gate Handover', note: 'Free delivery', icon: '✈️' },
+  { id: 'kbv-airport', name: 'Krabi International Airport (KBV)', category: 'Airports', desc: 'Krabi Main Terminal Handover', note: 'Free delivery', icon: '✈️' },
+  { id: 'usm-airport', name: 'Samui Airport (USM)', category: 'Airports', desc: 'Koh Samui Boutique Terminal Handover', note: 'Free delivery', icon: '✈️' },
+  { id: 'sukhumvit', name: 'Sukhumvit Downtown', category: 'Bangkok', desc: 'Sukhumvit Soi 1-55 & Asoke Hub', note: 'Free delivery', icon: '🏙️' },
+  { id: 'siam-silom', name: 'Siam & Silom Hub', category: 'Bangkok', desc: 'Siam Paragon & Sathorn CBD Hub', note: 'Free delivery', icon: '🏙️' },
+  { id: 'patong-beach', name: 'Patong Beach Hub', category: 'Phuket', desc: 'Patong Beach Road & Bangla Junction', note: 'Free delivery', icon: '🏖️' },
+  { id: 'kata-karon', name: 'Kata & Karon Beach', category: 'Phuket', desc: 'Kata Noi, Kata Center & Karon Beach', note: 'Free delivery', icon: '🏖️' },
+  { id: 'ao-nang', name: 'Ao Nang Coastal Hub', category: 'Krabi', desc: 'Ao Nang Beach Road & Railay Pier', note: 'Free delivery', icon: '🏖️' },
+  { id: 'chaweng', name: 'Chaweng Beach Hub', category: 'Koh Samui', desc: 'Chaweng Central & Lamai Beachfront', note: 'Free delivery', icon: '🏖️' },
+  { id: 'pattaya-central', name: 'Central Pattaya Road', category: 'Pattaya', desc: 'Beach Road & Walking Street Area', note: 'Free delivery', icon: '🌴' },
+  { id: 'chiang-mai-old-city', name: 'Chiang Mai Old City', category: 'Chiang Mai', desc: 'Tha Phae Gate & Nimman Area', note: 'Free delivery', icon: '⛩️' },
+  { id: 'doorstep', name: 'Hotel / Resort Chauffeur Delivery', category: 'Doorstep', desc: 'Doorstep Delivery at Any Hotel / Villa in Thailand', note: 'Anywhere in Thailand', icon: '🏨' },
+];
+
+// ─── MAIN SEARCH WIDGET COMPONENT ─────────────────────────────────────────────
+
+export default function SearchWidget({
+  activeTab,
+  setActiveTab,
+  pickupLoc,
+  setPickupLoc,
+  dropLoc,
+  setDropLoc,
+  pickupDate,
+  setPickupDate,
+  dropDate,
+  setDropDate,
+  pickupTime,
+  setPickupTime,
+  dropTime,
+  setDropTime,
+  handleSearchSubmit,
+  setSearchTriggered,
+  searchQuery,
+  setSearchQuery,
+  hotelRooms = 1,
+  setHotelRooms,
+  hotelAdults = 2,
+  setHotelAdults,
+  hotelChildren = 0,
+  setHotelChildren,
+  hotelPriceRange,
+  setHotelPriceRange,
+  appliedFilters = {},
+  setAppliedFilters
+}) {
+  // Popover state: 'from' | 'to' | 'date-pickup' | 'date-drop' | 'guests' | 'filters' | 'flight-from' | 'flight-to' | 'passengers' | null
+  const [activeDropdown, setActiveDropdown] = useState(null);
+
+  // Geolocation & Status
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationStatus, setLocationStatus] = useState(null);
+  const [validationError, setValidationError] = useState('');
+
+  // Child ages state
+  const [childAges, setChildAges] = useState([]);
+
+  // Search input strings within popovers
+  const [fromSearchQuery, setFromSearchQuery] = useState('');
+  const [toSearchQuery, setToSearchQuery] = useState('');
+
+  // Self Drive Location Popover States
+  const [sdPickupSearch, setSdPickupSearch] = useState('');
+  const [sdDropSearch, setSdDropSearch] = useState('');
+  const [sdPickupCategory, setSdPickupCategory] = useState('All');
+  const [sdDropCategory, setSdDropCategory] = useState('All');
+
+  const filteredPickupLocations = SELF_DRIVE_LOCATIONS.filter(loc => {
+    const matchesCat = sdPickupCategory === 'All' || loc.category === sdPickupCategory;
+    const q = sdPickupSearch.toLowerCase().trim();
+    if (!q) return matchesCat;
+    const matchesQuery = loc.name.toLowerCase().includes(q) || 
+      loc.desc.toLowerCase().includes(q) || 
+      loc.category.toLowerCase().includes(q);
+    return matchesCat && matchesQuery;
+  });
+
+  const filteredDropLocations = SELF_DRIVE_LOCATIONS.filter(loc => {
+    const matchesCat = sdDropCategory === 'All' || loc.category === sdDropCategory;
+    const q = sdDropSearch.toLowerCase().trim();
+    if (!q) return matchesCat;
+    const matchesQuery = loc.name.toLowerCase().includes(q) || 
+      loc.desc.toLowerCase().includes(q) || 
+      loc.category.toLowerCase().includes(q);
+    return matchesCat && matchesQuery;
+  });
+
+  // Local filter states for all 4 search tabs
+  const [localFilters, setLocalFilters] = useState({
+    // Self Drive
+    vehicleTypes: appliedFilters?.vehicleTypes || [],
+    carSubFilters: appliedFilters?.carSubFilters || [],
+    bikeSubFilters: appliedFilters?.bikeSubFilters || [],
+    vehicleTransmission: appliedFilters?.vehicleTransmission || [],
+    vehicleFuel: appliedFilters?.vehicleFuel || [],
+    vehicleSeating: appliedFilters?.vehicleSeating || [],
+    vehicleBudget: appliedFilters?.vehicleBudget || [],
+    vehicleFeatures: appliedFilters?.vehicleFeatures || [],
+
+    // Hotels
+    hotelStars: appliedFilters?.hotelStars || [],
+    hotelPropertyType: appliedFilters?.hotelPropertyType || [],
+    hotelPriceRanges: appliedFilters?.hotelPriceRanges || [],
+    hotelAreas: appliedFilters?.hotelAreas || [],
+    hotelAmenities: appliedFilters?.hotelAmenities || [],
+
+    // Sightseeing & Activities
+    activityTypes: appliedFilters?.activityTypes || [],
+    activityPriceRanges: appliedFilters?.activityPriceRanges || [],
+    activityDurations: appliedFilters?.activityDurations || [],
+  });
+
+  const widgetRef = useRef(null);
+  const todayStr = getTodayDateStr();
+  const minCheckOutDate = getNextDayDateStr(pickupDate || todayStr);
+
+  // Format Date Displays safely
+  const formatDisplayDate = (dStr) => {
+    try {
+      if (!dStr) return { day: '1', monthYear: "Jan '26", weekday: 'Thursday' };
+      const parts = String(dStr).split('-');
+      const d = parts.length === 3 ? new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10)) : new Date(dStr);
+      if (isNaN(d.getTime())) return { day: '1', monthYear: "Jan '26", weekday: 'Thursday' };
+      const day = d.getDate();
+      const monthYear = d.toLocaleDateString('en-US', { month: 'short' }) + "'" + String(d.getFullYear()).slice(-2);
+      const weekday = d.toLocaleDateString('en-US', { weekday: 'long' });
+      return { day, monthYear, weekday };
+    } catch (e) {
+      return { day: '1', monthYear: "Jan '26", weekday: 'Thursday' };
+    }
+  };
+
+  const pickupDisplay = formatDisplayDate(pickupDate || todayStr);
+  const displayPickupDay = pickupDisplay.day;
+  const displayPickupMonthYear = pickupDisplay.monthYear;
+  const displayPickupWeekday = pickupDisplay.weekday;
+
+  const dropDisplay = formatDisplayDate(dropDate || minCheckOutDate);
+  const displayDropDay = dropDisplay.day;
+  const displayDropMonthYear = dropDisplay.monthYear;
+  const displayDropWeekday = dropDisplay.weekday;
+
+  // Active filter count and clear handler
+  const activeTabFiltersCount = typeof countActiveTabFilters === 'function' ? countActiveTabFilters(activeTab, localFilters) : 0;
+
+  const handleClearAllForTab = () => {
+    setLocalFilters(prev => ({
+      ...prev,
+      vehicleTypes: [],
+      carSubFilters: [],
+      bikeSubFilters: [],
+      vehicleTransmission: [],
+      vehicleFuel: [],
+      vehicleSeating: [],
+      vehicleBudget: [],
+      vehicleFeatures: [],
+      hotelStars: [],
+      hotelPropertyType: [],
+      hotelPriceRanges: [],
+      hotelAreas: [],
+      hotelAmenities: [],
+      activityTypes: [],
+      activityPriceRanges: [],
+      activityDurations: []
+    }));
+  };
+
+  // Flight popover and passenger states
+  const [flightFromSearch, setFlightFromSearch] = useState('');
+  const [flightToSearch, setFlightToSearch] = useState('');
+  const [flightAdults, setFlightAdults] = useState(1);
+  const [flightChildren, setFlightChildren] = useState(0);
+  const [flightInfants, setFlightInfants] = useState(0);
+  const [flightClass, setFlightClass] = useState('economy');
+  const totalPassengers = (flightAdults || 1) + (flightChildren || 0) + (flightInfants || 0);
+
+  // Auto-init dates on mount if missing
+  useEffect(() => {
+    if (!pickupDate) {
+      setPickupDate(todayStr);
+    }
+    if (!dropDate) {
+      setDropDate(getNextDayDateStr(pickupDate || todayStr));
+    }
+  }, []);
+
+  // Sync appliedFilters
+  useEffect(() => {
+    if (appliedFilters) {
+      setLocalFilters(prev => ({
+        ...prev,
+        ...appliedFilters
+      }));
+    }
+  }, [appliedFilters]);
+
+  // Click outside and Escape key handler
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (widgetRef.current && !widgetRef.current.contains(e.target)) {
+        setActiveDropdown(null);
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setActiveDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  // ─── GEOLOCATION DETECTION ──────────────────────────────────────────────────
+  const handleUseCurrentLocation = (targetField = 'pickup') => {
+    if (!navigator.geolocation) {
+      setLocationStatus({
+        type: 'error',
+        msg: 'Geolocation is not supported by your browser.'
+      });
+      return;
+    }
+
+    setIsLocating(true);
+    setLocationStatus(null);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`,
+            { signal: controller.signal }
+          );
+          clearTimeout(timeoutId);
+
+          if (res.ok) {
+            const data = await res.json();
+            const address = data.address || {};
+            const detectedCity = address.city || address.town || address.village || address.state_district || address.county || 'Thailand';
+            
+            if (targetField === 'pickup') {
+              setPickupLoc(detectedCity);
+            } else {
+              setDropLoc(detectedCity);
+            }
+
+            setLocationStatus({
+              type: 'success',
+              msg: `Detected: ${detectedCity}`
+            });
+            setTimeout(() => {
+              setActiveDropdown(null);
+              setLocationStatus(null);
+            }, 1000);
+          } else {
+            throw new Error('Reverse geocoding failed');
+          }
+        } catch {
+          const fallbackCity = 'Thailand';
+          if (targetField === 'pickup') setPickupLoc(fallbackCity);
+          else setDropLoc(fallbackCity);
+          
+          setLocationStatus({
+            type: 'success',
+            msg: 'Location set to Thailand'
+          });
+          setTimeout(() => {
+            setActiveDropdown(null);
+            setLocationStatus(null);
+          }, 1000);
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      (err) => {
+        setIsLocating(false);
+        if (err.code === 1) {
+          setLocationStatus({
+            type: 'denied',
+            msg: 'Location access was denied. Please choose manually.'
+          });
+        } else {
+          setLocationStatus({
+            type: 'error',
+            msg: 'Could not detect location. Please choose manually.'
+          });
+        }
+      },
+      { timeout: 8000, enableHighAccuracy: true }
+    );
+  };
+
+  // ─── CHILDREN AGE HANDLER ───────────────────────────────────────────────────
+  const handleChildrenCountChange = (newCount) => {
+    const validCount = Math.max(0, newCount);
+    if (setHotelChildren) setHotelChildren(validCount);
+    const updatedAges = Array.from({ length: validCount }, (_, i) => childAges[i] !== undefined ? childAges[i] : 5);
+    setChildAges(updatedAges);
+  };
+
+  const handleChildAgeChange = (index, ageVal) => {
+    const updated = [...childAges];
+    updated[index] = parseInt(ageVal, 10);
+    setChildAges(updated);
+  };
+
+  // ─── FORM SUBMIT & VALIDATION ───────────────────────────────────────────────
+  const onWidgetFormSubmit = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setValidationError('');
+
+    if (activeTab === 'hotels' || activeTab === 'packages' || activeTab === 'craftmytrip') {
+      const val = validateBookingDates(pickupDate, dropDate, { allowSameDay: false });
+      if (!val.valid) {
+        setValidationError(val.error);
+        return;
+      }
+    } else if (activeTab === 'cabs' || activeTab === 'cars' || activeTab === 'selfdrive') {
+      const val = validateBookingDates(pickupDate, dropDate, { allowSameDay: true });
+      if (!val.valid) {
+        setValidationError(val.error);
+        return;
+      }
+    }
+
+    if (setAppliedFilters) setAppliedFilters(localFilters);
+    if (setSearchTriggered) setSearchTriggered(true);
+    if (handleSearchSubmit) handleSearchSubmit(activeTab);
+
+    setTimeout(() => {
+      document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
+    }, 50);
+  };
+
+  const handleApplyFilters = () => {
+    if (setAppliedFilters) setAppliedFilters(localFilters);
+    if (setSearchTriggered) setSearchTriggered(true);
+    setActiveDropdown(null);
+    setTimeout(() => {
+      document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
+    }, 50);
+  };
+
+  return (
+    <div className="container booking-widget-wrapper" id="search" ref={widgetRef} style={{ scrollMarginTop: '80px' }}>
+      <div className="booking-widget-card">
+        
+        {/* ─── BOOKING TYPE TABS ────────────────────────────────────────────── */}
+        <div className="widget-tabs" role="tablist">
+          <button 
+            type="button" 
+            role="tab"
+            aria-selected={activeTab === 'hotels'}
+            className={`widget-tab-btn ${activeTab === 'hotels' ? 'active' : ''}`}
+            onClick={() => { 
+              setActiveTab('hotels'); 
+              setActiveDropdown(null); 
+              setValidationError(''); 
+              setTimeout(() => {
+                document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
+              }, 50);
+            }}
+          >
+            <Hotel />
+            <span>Hotels &amp; Resorts</span>
+          </button>
+
+          <button 
+            type="button" 
+            role="tab"
+            aria-selected={activeTab === 'cabs' || activeTab === 'cars' || activeTab === 'selfdrive'}
+            className={`widget-tab-btn ${activeTab === 'cabs' || activeTab === 'cars' || activeTab === 'selfdrive' ? 'active' : ''}`}
+            onClick={() => { 
+              setActiveTab('cabs'); 
+              setActiveDropdown(null); 
+              setValidationError(''); 
+              setTimeout(() => {
+                document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
+              }, 50);
+            }}
+          >
+            <Car />
+            <span>Cab Pickup &amp; Drop</span>
+          </button>
+
+          <button 
+            type="button" 
+            role="tab"
+            aria-selected={activeTab === 'sightseeing'}
+            className={`widget-tab-btn ${activeTab === 'sightseeing' ? 'active' : ''}`}
+            onClick={() => { 
+              setActiveTab('sightseeing'); 
+              setActiveDropdown(null); 
+              setValidationError(''); 
+              setTimeout(() => {
+                document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
+              }, 50);
+            }}
+          >
+            <Binoculars />
+            <span>Sightseeing Tours</span>
+          </button>
+
+          <button 
+            type="button" 
+            role="tab"
+            aria-selected={activeTab === 'activities'}
+            className={`widget-tab-btn ${activeTab === 'activities' ? 'active' : ''}`}
+            onClick={() => { 
+              setActiveTab('activities'); 
+              setActiveDropdown(null); 
+              setValidationError(''); 
+              setTimeout(() => {
+                document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
+              }, 50);
+            }}
+          >
+            <Compass />
+            <span>Activities</span>
+          </button>
+        </div>
+
+        {/* ─── INLINE VALIDATION TOAST ──────────────────────────────────────── */}
+        {validationError && (
+          <div className="tg-validation-toast d-flex align-items-center justify-content-between p-3" style={{ background: '#fef2f2', borderBottom: '1px solid #fecaca' }}>
+            <div className="d-flex align-items-center gap-2">
+              <AlertCircle size={18} className="text-danger flex-shrink-0" />
+              <span className="text-danger fw-semibold small">{validationError}</span>
+            </div>
+            <button type="button" className="btn btn-sm btn-link p-0 text-muted" onClick={() => setValidationError('')}>
+              <X size={16} />
+            </button>
+          </div>
+        )}
+
+        {/* ─── TAB-SPECIFIC SEARCH FORMS ────────────────────────────────────── */}
+        <form onSubmit={onWidgetFormSubmit} className="p-3 position-relative">
+          
+          {/* ──────────────────────────────────────────────────────────────────
+              TAB: HOTELS
+          ────────────────────────────────────────────────────────────────── */}
+          {activeTab === 'hotels' ? (
+            <div className="booking-inputs-grid">
+              
+              {/* Hotel Field 1: Destination / Location */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'hotel-loc' ? null : 'hotel-loc')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>City or Hotel Name</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="input-block-val">{dropLoc || pickupLoc || 'Thailand'}</div>
+                <span className="input-block-sub">Thailand</span>
+
+                {activeDropdown === 'hotel-loc' && (
+                  <div className="tg-popover-card shadow-xl p-3" onClick={e => e.stopPropagation()}>
+                    <div className="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+                      <span className="fw-bold text-dark small"><MapPin size={14} className="text-primary me-1" /> Destination / Area</span>
+                      <button type="button" className="btn btn-sm btn-link p-0 text-muted" onClick={() => setActiveDropdown(null)}><X size={16} /></button>
+                    </div>
+
+                    <div className="position-relative mb-2">
+                      <SearchIcon size={16} className="position-absolute text-muted" style={{ top: '10px', left: '10px' }} />
+                      <input 
+                        type="text" 
+                        className="form-control form-control-sm ps-4" 
+                        placeholder="Search Thailand, Sukhumvit, Patong..." 
+                        value={dropLoc || ''} 
+                        onChange={e => { setPickupLoc(e.target.value); setDropLoc(e.target.value); }} 
+                        autoFocus 
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn btn-light w-100 text-start d-flex align-items-center gap-2 p-2 rounded-2 mb-2"
+                      style={{ background: '#fff7ed', color: '#c2410c' }}
+                      onClick={() => handleUseCurrentLocation('pickup')}
+                      disabled={isLocating}
+                    >
+                      {isLocating ? <Loader2 size={16} className="animate-spin" /> : <Navigation size={16} />}
+                      <span className="fw-bold small">{isLocating ? 'Detecting...' : '📍 Use Current Location'}</span>
+                    </button>
+
+                    {locationStatus && (
+                      <div className={`p-2 rounded small mb-2 ${locationStatus.type === 'error' || locationStatus.type === 'denied' ? 'bg-danger bg-opacity-10 text-danger' : 'bg-success bg-opacity-10 text-success'}`}>
+                        {locationStatus.msg}
+                      </div>
+                    )}
+
+                    <div className="text-muted small fw-bold mb-1">Popular Thailand Areas</div>
+                    <div className="d-flex flex-wrap gap-1">
+                      {['All Thailand', 'Sukhumvit', 'Patong', 'Kata & Karon', 'Bangkok', 'Ao Nang', 'Railay', 'Phuket & Krabi'].map(area => (
+                        <button
+                          key={area}
+                          type="button"
+                          className="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2"
+                          style={{ fontSize: '12px' }}
+                          onClick={() => { setPickupLoc(area); setDropLoc(area); setActiveDropdown(null); }}
+                        >
+                          {area}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Hotel Field 2: Check-in Date */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'hotel-checkin' ? null : 'hotel-checkin')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Check-in Date</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-black text-dark" style={{ fontSize: '26px', lineHeight: '1' }}>{displayPickupDay}</span>
+                  <span className="text-dark fw-bold" style={{ fontSize: '15px' }}>{displayPickupMonthYear}</span>
+                </div>
+                <span className="input-block-sub">{displayPickupWeekday}</span>
+
+                {activeDropdown === 'hotel-checkin' && (
+                  <div className="tg-popover-card shadow-xl" onClick={e => e.stopPropagation()}>
+                    <CalendarPickerView
+                      title="Select Check-in Date"
+                      selectedDate={pickupDate}
+                      minDate={todayStr}
+                      onSelect={(d) => {
+                        setPickupDate(d);
+                        if (!dropDate || dropDate <= d) {
+                          setDropDate(getNextDayDateStr(d));
+                        }
+                        setActiveDropdown('hotel-checkout');
+                      }}
+                      onClose={() => setActiveDropdown(null)}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Hotel Field 3: Check-out Date */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'hotel-checkout' ? null : 'hotel-checkout')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Check-out Date</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-black text-dark" style={{ fontSize: '26px', lineHeight: '1' }}>{displayDropDay}</span>
+                  <span className="text-dark fw-bold" style={{ fontSize: '15px' }}>{displayDropMonthYear}</span>
+                </div>
+                <span className="input-block-sub">{displayDropWeekday}</span>
+
+                {activeDropdown === 'hotel-checkout' && (
+                  <div className="tg-popover-card shadow-xl" onClick={e => e.stopPropagation()}>
+                    <CalendarPickerView
+                      title="Select Check-out Date"
+                      selectedDate={dropDate}
+                      minDate={minCheckOutDate}
+                      onSelect={(d) => {
+                        setDropDate(d);
+                        setActiveDropdown(null);
+                      }}
+                      onClose={() => setActiveDropdown(null)}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Hotel Field 4: Rooms & Guests */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'hotel-guests' ? null : 'hotel-guests')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Rooms & Guests</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-black text-dark" style={{ fontSize: '26px', lineHeight: '1' }}>{hotelAdults || 2}</span>
+                  <span className="text-dark fw-bold" style={{ fontSize: '15px' }}>
+                    Adults {hotelChildren > 0 ? `· ${hotelChildren} Ch` : ''}
+                  </span>
+                </div>
+                <span className="input-block-sub">{hotelRooms || 1} Room{(hotelRooms || 1) > 1 ? 's' : ''}</span>
+
+                {activeDropdown === 'hotel-guests' && (
+                  <div className="tg-popover-card shadow-xl p-3" onClick={e => e.stopPropagation()}>
+                    <RoomsGuestsPopoverContent
+                      rooms={hotelRooms}
+                      setRooms={setHotelRooms}
+                      adults={hotelAdults}
+                      setAdults={setHotelAdults}
+                      childrenCount={hotelChildren}
+                      onChildrenChange={handleChildrenCountChange}
+                      childAges={childAges}
+                      onChildAgeChange={handleChildAgeChange}
+                      onDone={() => setActiveDropdown(null)}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Hotel Field 5: Filters */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'filters' ? null : 'filters')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Filters</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-bold text-dark" style={{ fontSize: '16px', lineHeight: '1.2' }}>
+                    {activeTabFiltersCount > 0 ? (
+                      <span className="text-warning fw-black">{activeTabFiltersCount} Applied</span>
+                    ) : (
+                      'Select Filters'
+                    )}
+                  </span>
+                </div>
+                <span className="input-block-sub mt-1">
+                  {activeTabFiltersCount > 0 ? 'Click to edit' : '(Optional)'}
+                </span>
+
+                {activeDropdown === 'filters' && (
+                  <UnifiedFilterPopover
+                    activeTab={activeTab}
+                    localFilters={localFilters}
+                    setLocalFilters={setLocalFilters}
+                    onApply={handleApplyFilters}
+                    onClearAll={handleClearAllForTab}
+                    onClose={() => setActiveDropdown(null)}
+                  />
+                )}
+              </div>
+
+            </div>
+          ) : activeTab === 'flights' ? (
+            /* ──────────────────────────────────────────────────────────────────
+                TAB: FLIGHTS
+            ────────────────────────────────────────────────────────────────── */
+            <div className="booking-inputs-grid">
+              
+              {/* Flight Field 1: FROM Airport */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'flight-from' ? null : 'flight-from')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>FROM (Airport)</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="input-block-val">{pickupLoc || 'DEL'}</div>
+                <span className="input-block-sub">
+                  {AIRPORTS_DATA.find(a => a.code === pickupLoc)?.city || 'New Delhi'}
+                </span>
+
+                {activeDropdown === 'flight-from' && (
+                  <div className="tg-popover-card shadow-xl p-3" onClick={e => e.stopPropagation()}>
+                    <div className="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+                      <span className="fw-bold text-dark small"><Plane size={14} className="text-primary me-1" /> Departure Airport</span>
+                      <button type="button" className="btn btn-sm btn-link p-0 text-muted" onClick={() => setActiveDropdown(null)}><X size={16} /></button>
+                    </div>
+
+                    <div className="position-relative mb-2">
+                      <SearchIcon size={16} className="position-absolute text-muted" style={{ top: '10px', left: '10px' }} />
+                      <input 
+                        type="text" 
+                        className="form-control form-control-sm ps-4" 
+                        placeholder="Search city or IATA code e.g. DEL, BOM..." 
+                        value={flightFromSearch} 
+                        onChange={e => setFlightFromSearch(e.target.value)} 
+                        autoFocus 
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn btn-light w-100 text-start d-flex align-items-center gap-2 p-2 rounded-2 mb-2"
+                      style={{ background: '#fff7ed', color: '#c2410c' }}
+                      onClick={() => handleUseCurrentLocation('pickup')}
+                      disabled={isLocating}
+                    >
+                      {isLocating ? <Loader2 size={16} className="animate-spin" /> : <Navigation size={16} />}
+                      <span className="fw-bold small">{isLocating ? 'Detecting...' : '📍 Nearest Airport (GPS)'}</span>
+                    </button>
+
+                    <div className="tg-scroll-area">
+                      {AIRPORTS_DATA.filter(a => 
+                        a.code.toLowerCase().includes(flightFromSearch.toLowerCase()) || 
+                        a.city.toLowerCase().includes(flightFromSearch.toLowerCase()) ||
+                        a.name.toLowerCase().includes(flightFromSearch.toLowerCase())
+                      ).map(a => (
+                        <button
+                          key={a.code}
+                          type="button"
+                          className="btn btn-light w-100 text-start p-2 d-flex justify-content-between align-items-center mb-1 border-0"
+                          onClick={() => { setPickupLoc(a.code); setActiveDropdown('flight-to'); }}
+                        >
+                          <div>
+                            <div className="fw-bold text-dark">{a.city} ({a.code})</div>
+                            <div className="text-muted" style={{ fontSize: '11px' }}>{a.name}</div>
+                          </div>
+                          <span className="badge bg-secondary font-monospace">{a.code}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Flight Field 2: TO Airport */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'flight-to' ? null : 'flight-to')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>TO (Airport)</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="input-block-val">{dropLoc || 'GOI'}</div>
+                <span className="input-block-sub">
+                  {AIRPORTS_DATA.find(a => a.code === dropLoc)?.city || 'Thailand'}
+                </span>
+
+                {activeDropdown === 'flight-to' && (
+                  <div className="tg-popover-card shadow-xl p-3" onClick={e => e.stopPropagation()}>
+                    <div className="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+                      <span className="fw-bold text-dark small"><Plane size={14} className="text-primary me-1" /> Destination Airport</span>
+                      <button type="button" className="btn btn-sm btn-link p-0 text-muted" onClick={() => setActiveDropdown(null)}><X size={16} /></button>
+                    </div>
+
+                    <div className="position-relative mb-2">
+                      <SearchIcon size={16} className="position-absolute text-muted" style={{ top: '10px', left: '10px' }} />
+                      <input 
+                        type="text" 
+                        className="form-control form-control-sm ps-4" 
+                        placeholder="Search destination airport e.g. GOI, GOX..." 
+                        value={flightToSearch} 
+                        onChange={e => setFlightToSearch(e.target.value)} 
+                        autoFocus 
+                      />
+                    </div>
+
+                    <div className="tg-scroll-area">
+                      {AIRPORTS_DATA.filter(a => 
+                        a.code.toLowerCase().includes(flightToSearch.toLowerCase()) || 
+                        a.city.toLowerCase().includes(flightToSearch.toLowerCase()) ||
+                        a.name.toLowerCase().includes(flightToSearch.toLowerCase())
+                      ).map(a => (
+                        <button
+                          key={a.code}
+                          type="button"
+                          className="btn btn-light w-100 text-start p-2 d-flex justify-content-between align-items-center mb-1 border-0"
+                          onClick={() => { setDropLoc(a.code); setActiveDropdown(null); }}
+                        >
+                          <div>
+                            <div className="fw-bold text-dark">{a.city} ({a.code})</div>
+                            <div className="text-muted" style={{ fontSize: '11px' }}>{a.name}</div>
+                          </div>
+                          <span className="badge bg-secondary font-monospace">{a.code}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Flight Field 3: Departure Date */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'flight-date' ? null : 'flight-date')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Travel Date</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-black text-dark" style={{ fontSize: '26px', lineHeight: '1' }}>{displayPickupDay}</span>
+                  <span className="text-dark fw-bold" style={{ fontSize: '15px' }}>{displayPickupMonthYear}</span>
+                </div>
+                <span className="input-block-sub">{displayPickupWeekday}</span>
+
+                {activeDropdown === 'flight-date' && (
+                  <div className="tg-popover-card shadow-xl" onClick={e => e.stopPropagation()}>
+                    <CalendarPickerView
+                      title="Select Flight Travel Date"
+                      selectedDate={pickupDate}
+                      minDate={todayStr}
+                      onSelect={(d) => {
+                        setPickupDate(d);
+                        setActiveDropdown(null);
+                      }}
+                      onClose={() => setActiveDropdown(null)}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Flight Field 4: Passengers & Class */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'passengers' ? null : 'passengers')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Passengers & Class</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-black text-dark" style={{ fontSize: '26px', lineHeight: '1' }}>{totalPassengers}</span>
+                  <span className="text-dark fw-bold" style={{ fontSize: '15px' }}>
+                    Passenger{totalPassengers > 1 ? 's' : ''}
+                  </span>
+                </div>
+                <span className="input-block-sub text-capitalize">{flightClass || 'Economy'}</span>
+
+                {activeDropdown === 'passengers' && (
+                  <div className="tg-popover-card shadow-xl p-3" onClick={e => e.stopPropagation()}>
+                    <FlightPassengersPopoverContent
+                      adults={flightAdults}
+                      setAdults={setFlightAdults}
+                      childrenCount={flightChildren}
+                      setChildren={setFlightChildren}
+                      infants={flightInfants}
+                      setInfants={setFlightInfants}
+                      flightClass={flightClass}
+                      setFlightClass={setFlightClass}
+                      onDone={() => setActiveDropdown(null)}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Flight Field 5: Filters */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'filters' ? null : 'filters')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Filters</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-bold text-dark" style={{ fontSize: '16px', lineHeight: '1.2' }}>
+                    {activeTabFiltersCount > 0 ? (
+                      <span className="text-warning fw-black">{activeTabFiltersCount} Applied</span>
+                    ) : (
+                      'Select Filters'
+                    )}
+                  </span>
+                </div>
+                <span className="input-block-sub mt-1">
+                  {activeTabFiltersCount > 0 ? 'Click to edit' : '(Optional)'}
+                </span>
+
+                {activeDropdown === 'filters' && (
+                  <UnifiedFilterPopover
+                    activeTab={activeTab}
+                    localFilters={localFilters}
+                    setLocalFilters={setLocalFilters}
+                    onApply={handleApplyFilters}
+                    onClearAll={handleClearAllForTab}
+                    onClose={() => setActiveDropdown(null)}
+                  />
+                )}
+              </div>
+
+            </div>
+          ) : (activeTab === 'cabs' || activeTab === 'cars' || activeTab === 'selfdrive') ? (
+            /* ──────────────────────────────────────────────────────────────────
+                TAB: SELF DRIVE HOLIDAYS (Reference Image Style)
+            ────────────────────────────────────────────────────────────────── */
+            <div className="booking-inputs-grid">
+              
+              {/* Self-Drive Field 1: Pickup Location */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'sd-pickup' ? null : 'sd-pickup')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span className="d-flex align-items-center gap-1"><MapPin size={13} className="text-warning" /> Pickup Location</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="input-block-val text-truncate" title={pickupLoc || 'Thailand Airport'}>
+                  {pickupLoc || 'Thailand Airport'}
+                </div>
+                <span className="input-block-sub">Thailand · Free Handover</span>
+
+                {activeDropdown === 'sd-pickup' && (
+                  <div className="tg-popover-card shadow-xl p-3" onClick={e => e.stopPropagation()}>
+                    <div className="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+                      <span className="fw-bold text-dark small"><MapPin size={14} className="text-primary me-1" /> Choose Pickup Location</span>
+                      <button type="button" className="btn btn-sm btn-link p-0 text-muted" onClick={() => setActiveDropdown(null)}><X size={16} /></button>
+                    </div>
+
+                    <div className="position-relative mb-2">
+                      <SearchIcon size={16} className="position-absolute text-muted" style={{ top: '10px', left: '10px' }} />
+                      <input 
+                        type="text" 
+                        className="form-control form-control-sm ps-4 pe-4" 
+                        placeholder="Search Airport, Patong, Kata & Karon, Hotel..." 
+                        value={sdPickupSearch} 
+                        onChange={e => setSdPickupSearch(e.target.value)} 
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && sdPickupSearch.trim()) {
+                            setPickupLoc(sdPickupSearch.trim());
+                            setActiveDropdown(null);
+                          }
+                        }}
+                        autoFocus 
+                      />
+                      {sdPickupSearch && (
+                        <button 
+                          type="button" 
+                          className="btn btn-sm btn-link position-absolute p-0 text-muted"
+                          style={{ top: '6px', right: '10px' }}
+                          onClick={() => setSdPickupSearch('')}
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn btn-light w-100 text-start d-flex align-items-center gap-2 p-2 rounded-2 mb-2"
+                      style={{ background: '#fff7ed', color: '#c2410c' }}
+                      onClick={() => handleUseCurrentLocation('pickup')}
+                      disabled={isLocating}
+                    >
+                      {isLocating ? <Loader2 size={16} className="animate-spin" /> : <Navigation size={16} />}
+                      <span className="fw-bold small">{isLocating ? 'Detecting...' : '📍 Use Current Location (GPS)'}</span>
+                    </button>
+
+                    {sdPickupSearch.trim() && (
+                      <button
+                        type="button"
+                        className="btn btn-outline-primary btn-sm w-100 text-start mb-2 py-1 px-2 fw-semibold d-flex align-items-center justify-content-between"
+                        style={{ fontSize: '12px' }}
+                        onClick={() => {
+                          setPickupLoc(sdPickupSearch.trim());
+                          setActiveDropdown(null);
+                        }}
+                      >
+                        <span className="text-truncate">📍 Use &ldquo;{sdPickupSearch.trim()}&rdquo; as Pickup</span>
+                        <span className="badge bg-primary text-white">Select</span>
+                      </button>
+                    )}
+
+                    {/* Category Filter Pills */}
+                    <div className="d-flex align-items-center gap-1 mb-2 overflow-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+                      {['All', 'Airports', 'Stations', 'Bangkok & Pattaya', 'Phuket & Krabi'].map(cat => (
+                        <button
+                          key={cat}
+                          type="button"
+                          className={`btn btn-xs rounded-pill px-2 py-0 fw-semibold ${sdPickupCategory === cat ? 'btn-dark text-white' : 'btn-light border'}`}
+                          style={{ fontSize: '11px', whiteSpace: 'nowrap' }}
+                          onClick={() => setSdPickupCategory(cat)}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="text-muted small fw-bold mb-1">Available Pickup Locations</div>
+                    <div className="tg-scroll-area" style={{ maxHeight: '220px', overflowY: 'auto' }}>
+                      {filteredPickupLocations.length > 0 ? (
+                        filteredPickupLocations.map(loc => (
+                          <button
+                            key={loc.id}
+                            type="button"
+                            className={`btn btn-light w-100 text-start p-2 d-flex justify-content-between align-items-center mb-1 border-0 ${pickupLoc === loc.name ? 'border border-primary bg-primary bg-opacity-10' : ''}`}
+                            onClick={() => {
+                              setPickupLoc(loc.name);
+                              setActiveDropdown(null);
+                            }}
+                          >
+                            <div className="d-flex align-items-center gap-2">
+                              <span style={{ fontSize: '16px' }}>{loc.icon}</span>
+                              <div>
+                                <div className="fw-bold text-dark small">{loc.name}</div>
+                                <div className="text-muted" style={{ fontSize: '11px' }}>{loc.desc}</div>
+                              </div>
+                            </div>
+                            <span className="badge bg-success bg-opacity-10 text-success small">Free Handover</span>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="text-center py-3 bg-light rounded-2">
+                          <p className="text-muted small mb-2">No predefined locations match &ldquo;{sdPickupSearch}&rdquo;</p>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-primary"
+                            style={{ fontSize: '12px' }}
+                            onClick={() => {
+                              setPickupLoc(sdPickupSearch.trim());
+                              setActiveDropdown(null);
+                            }}
+                          >
+                            📍 Set &ldquo;{sdPickupSearch.trim()}&rdquo; as Pickup Location
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Self-Drive Field 2: Drop Location */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'sd-drop' ? null : 'sd-drop')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span className="d-flex align-items-center gap-1"><Navigation size={13} className="text-info" /> Drop Location</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="input-block-val text-truncate" title={dropLoc || (pickupLoc ? `${pickupLoc} (Same)` : 'Bangkok & Pattaya')}>
+                  {dropLoc || (pickupLoc ? `${pickupLoc} (Same)` : 'Bangkok & Pattaya')}
+                </div>
+                <span className="input-block-sub text-success fw-bold">Free delivery &amp; return</span>
+
+                {activeDropdown === 'sd-drop' && (
+                  <div className="tg-popover-card shadow-xl p-3" onClick={e => e.stopPropagation()}>
+                    <div className="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+                      <span className="fw-bold text-dark small"><Navigation size={14} className="text-primary me-1" /> Choose Return / Drop Location</span>
+                      <button type="button" className="btn btn-sm btn-link p-0 text-muted" onClick={() => setActiveDropdown(null)}><X size={16} /></button>
+                    </div>
+
+                    <div className="position-relative mb-2">
+                      <SearchIcon size={16} className="position-absolute text-muted" style={{ top: '10px', left: '10px' }} />
+                      <input 
+                        type="text" 
+                        className="form-control form-control-sm ps-4 pe-4" 
+                        placeholder="Search Return Point, Airport, Hotel..." 
+                        value={sdDropSearch} 
+                        onChange={e => setSdDropSearch(e.target.value)} 
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && sdDropSearch.trim()) {
+                            setDropLoc(sdDropSearch.trim());
+                            setActiveDropdown(null);
+                          }
+                        }}
+                        autoFocus 
+                      />
+                      {sdDropSearch && (
+                        <button 
+                          type="button" 
+                          className="btn btn-sm btn-link position-absolute p-0 text-muted"
+                          style={{ top: '6px', right: '10px' }}
+                          onClick={() => setSdDropSearch('')}
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Quick Option: Return at Same as Pickup Spot */}
+                    <button
+                      type="button"
+                      className="btn btn-light w-100 text-start d-flex align-items-center justify-content-between p-2 rounded-2 mb-2 border"
+                      style={{ background: '#f0fdf4', borderColor: '#bbf7d0' }}
+                      onClick={() => {
+                        setDropLoc(pickupLoc || 'Thailand Airport');
+                        setActiveDropdown(null);
+                      }}
+                    >
+                      <div className="d-flex align-items-center gap-2">
+                        <span>🔄</span>
+                        <div>
+                          <div className="fw-bold small text-success">Same as Pickup Location</div>
+                          <div className="text-muted" style={{ fontSize: '11px' }}>{pickupLoc || 'Thailand Airport'}</div>
+                        </div>
+                      </div>
+                      <span className="badge bg-success text-white small">Most Convenient</span>
+                    </button>
+
+                    {sdDropSearch.trim() && (
+                      <button
+                        type="button"
+                        className="btn btn-outline-primary btn-sm w-100 text-start mb-2 py-1 px-2 fw-semibold d-flex align-items-center justify-content-between"
+                        style={{ fontSize: '12px' }}
+                        onClick={() => {
+                          setDropLoc(sdDropSearch.trim());
+                          setActiveDropdown(null);
+                        }}
+                      >
+                        <span className="text-truncate">📍 Use &ldquo;{sdDropSearch.trim()}&rdquo; as Drop Point</span>
+                        <span className="badge bg-primary text-white">Select</span>
+                      </button>
+                    )}
+
+                    {/* Category Filter Pills */}
+                    <div className="d-flex align-items-center gap-1 mb-2 overflow-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+                      {['All', 'Airports', 'Stations', 'Bangkok & Pattaya', 'Phuket & Krabi'].map(cat => (
+                        <button
+                          key={cat}
+                          type="button"
+                          className={`btn btn-xs rounded-pill px-2 py-0 fw-semibold ${sdDropCategory === cat ? 'btn-dark text-white' : 'btn-light border'}`}
+                          style={{ fontSize: '11px', whiteSpace: 'nowrap' }}
+                          onClick={() => setSdDropCategory(cat)}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="text-muted small fw-bold mb-1">Return / Drop Locations</div>
+                    <div className="tg-scroll-area" style={{ maxHeight: '220px', overflowY: 'auto' }}>
+                      {filteredDropLocations.length > 0 ? (
+                        filteredDropLocations.map(loc => (
+                          <button
+                            key={loc.id}
+                            type="button"
+                            className={`btn btn-light w-100 text-start p-2 d-flex justify-content-between align-items-center mb-1 border-0 ${dropLoc === loc.name ? 'border border-primary bg-primary bg-opacity-10' : ''}`}
+                            onClick={() => {
+                              setDropLoc(loc.name);
+                              setActiveDropdown(null);
+                            }}
+                          >
+                            <div className="d-flex align-items-center gap-2">
+                              <span style={{ fontSize: '16px' }}>{loc.icon}</span>
+                              <div>
+                                <div className="fw-bold text-dark small">{loc.name}</div>
+                                <div className="text-muted" style={{ fontSize: '11px' }}>{loc.desc}</div>
+                              </div>
+                            </div>
+                            <span className="badge bg-success bg-opacity-10 text-success small">Free Handover</span>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="text-center py-3 bg-light rounded-2">
+                          <p className="text-muted small mb-2">No predefined locations match &ldquo;{sdDropSearch}&rdquo;</p>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-primary"
+                            style={{ fontSize: '12px' }}
+                            onClick={() => {
+                              setDropLoc(sdDropSearch.trim());
+                              setActiveDropdown(null);
+                            }}
+                          >
+                            📍 Set &ldquo;{sdDropSearch.trim()}&rdquo; as Drop Location
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Self-Drive Field 3: Pickup Date & Time */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'sd-pickup-date' ? null : 'sd-pickup-date')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span className="d-flex align-items-center gap-1"><CalendarIcon size={13} className="text-primary" /> Pickup Date</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-black text-dark" style={{ fontSize: '26px', lineHeight: '1' }}>{displayPickupDay}</span>
+                  <span className="text-dark fw-bold" style={{ fontSize: '15px' }}>{displayPickupMonthYear}</span>
+                </div>
+                <span className="input-block-sub">{displayPickupWeekday} · <span className="fw-semibold text-primary">{pickupTime || '10:00 AM'}</span></span>
+
+                {activeDropdown === 'sd-pickup-date' && (
+                  <div className="tg-popover-card shadow-xl p-3" onClick={e => e.stopPropagation()}>
+                    <CalendarPickerView
+                      title="Select Pickup Date"
+                      selectedDate={pickupDate}
+                      minDate={todayStr}
+                      onSelect={(d) => {
+                        setPickupDate(d);
+                        if (!dropDate || dropDate < d) {
+                          setDropDate(d);
+                        }
+                      }}
+                      onClose={() => setActiveDropdown(null)}
+                    />
+                    <div className="mt-3 pt-2 border-top">
+                      <div className="text-muted small fw-bold mb-2">Pickup Time</div>
+                      <div className="d-flex flex-wrap gap-1">
+                        {['08:00 AM', '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM', '06:00 PM', '07:00 PM', '08:00 PM'].map(t => (
+                          <button
+                            key={t}
+                            type="button"
+                            className={`btn btn-sm ${pickupTime === t ? 'btn-primary text-white' : 'btn-light'} py-1 px-2`}
+                            style={{ fontSize: '11px' }}
+                            onClick={() => {
+                              if (setPickupTime) setPickupTime(t);
+                              setActiveDropdown('sd-return-date');
+                            }}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Self-Drive Field 4: Return Date & Time */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'sd-return-date' ? null : 'sd-return-date')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span className="d-flex align-items-center gap-1"><CalendarIcon size={13} className="text-primary" /> Return Date</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-black text-dark" style={{ fontSize: '26px', lineHeight: '1' }}>{displayDropDay}</span>
+                  <span className="text-dark fw-bold" style={{ fontSize: '15px' }}>{displayDropMonthYear}</span>
+                </div>
+                <span className="input-block-sub">{displayDropWeekday} · <span className="fw-semibold text-primary">{dropTime || '10:00 AM'}</span></span>
+
+                {activeDropdown === 'sd-return-date' && (
+                  <div className="tg-popover-card shadow-xl p-3" onClick={e => e.stopPropagation()}>
+                    <CalendarPickerView
+                      title="Select Return Date"
+                      selectedDate={dropDate}
+                      minDate={pickupDate || todayStr}
+                      onSelect={(d) => {
+                        setDropDate(d);
+                      }}
+                      onClose={() => setActiveDropdown(null)}
+                    />
+                    <div className="mt-3 pt-2 border-top">
+                      <div className="text-muted small fw-bold mb-2">Return Time</div>
+                      <div className="d-flex flex-wrap gap-1">
+                        {['08:00 AM', '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM', '06:00 PM', '07:00 PM', '08:00 PM'].map(t => (
+                          <button
+                            key={t}
+                            type="button"
+                            className={`btn btn-sm ${dropTime === t ? 'btn-primary text-white' : 'btn-light'} py-1 px-2`}
+                            style={{ fontSize: '11px' }}
+                            onClick={() => {
+                              if (setDropTime) setDropTime(t);
+                              setActiveDropdown(null);
+                            }}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Self-Drive Field 5: Filters */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'filters' ? null : 'filters')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Filters</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-bold text-dark" style={{ fontSize: '16px', lineHeight: '1.2' }}>
+                    {activeTabFiltersCount > 0 ? (
+                      <span className="text-warning fw-black">{activeTabFiltersCount} Applied</span>
+                    ) : (
+                      'Select Filters'
+                    )}
+                  </span>
+                </div>
+                <span className="input-block-sub mt-1">
+                  {activeTabFiltersCount > 0 ? 'Click to edit' : '(Optional)'}
+                </span>
+
+                {activeDropdown === 'filters' && (
+                  <UnifiedFilterPopover
+                    activeTab={activeTab}
+                    localFilters={localFilters}
+                    setLocalFilters={setLocalFilters}
+                    onApply={handleApplyFilters}
+                    onClearAll={handleClearAllForTab}
+                    onClose={() => setActiveDropdown(null)}
+                  />
+                )}
+              </div>
+
+            </div>
+          ) : (activeTab === 'activities' || activeTab === 'sightseeing') ? (
+            /* ──────────────────────────────────────────────────────────────────
+                TAB: SIGHTSEEING & ACTIVITIES
+            ────────────────────────────────────────────────────────────────── */
+            <div className="booking-inputs-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+              
+              {/* Field 1: Experience / Tour or Area */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'act-search' ? null : 'act-search')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Experience or Area</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="input-block-val text-truncate" style={{ maxWidth: '180px' }}>
+                  {searchQuery || dropLoc || 'All Thailand Experiences'}
+                </div>
+                <span className="input-block-sub">Sightseeing, Water Sports & Tours</span>
+
+                {activeDropdown === 'act-search' && (
+                  <div className="tg-popover-card shadow-xl p-3" style={{ width: '360px' }} onClick={e => e.stopPropagation()}>
+                    <div className="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+                      <span className="fw-bold text-dark small"><Compass size={14} className="text-primary me-1" /> Search Tours & Activities</span>
+                      <button type="button" className="btn btn-sm btn-link p-0 text-muted" onClick={() => setActiveDropdown(null)}><X size={16} /></button>
+                    </div>
+
+                    <div className="position-relative mb-2">
+                      <SearchIcon size={16} className="position-absolute text-muted" style={{ top: '10px', left: '10px' }} />
+                      <input 
+                        type="text" 
+                        className="form-control form-control-sm ps-4" 
+                        placeholder="Search Scuba, Heritage, Cruise, Sukhumvit..." 
+                        value={searchQuery || ''} 
+                        onChange={e => {
+                          if (setSearchQuery) setSearchQuery(e.target.value);
+                        }} 
+                        autoFocus 
+                      />
+                      {searchQuery && (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-link position-absolute p-0 text-muted"
+                          style={{ top: '6px', right: '10px' }}
+                          onClick={() => { if (setSearchQuery) setSearchQuery(''); }}
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="mb-2">
+                      <div className="text-muted small fw-bold mb-1">Top Curated Experiences</div>
+                      <div className="d-flex flex-column gap-1">
+                        {[
+                          { name: 'Thailand Heritage & Culture Tour', type: 'Sightseeing', icon: '🏛️' },
+                          { name: 'Bangkok & Pattaya Beach Sightseeing', type: 'Sightseeing', icon: '🏖️' },
+                          { name: 'Scuba Diving Experience', type: 'Activity', icon: '🤿' },
+                          { name: 'Parasailing Adventure', type: 'Activity', icon: '🪂' }
+                        ].map(exp => (
+                          <button
+                            key={exp.name}
+                            type="button"
+                            className="btn btn-light w-100 text-start p-2 d-flex justify-content-between align-items-center mb-1 border-0"
+                            onClick={() => {
+                              if (setSearchQuery) setSearchQuery(exp.name);
+                              setActiveDropdown(null);
+                            }}
+                          >
+                            <div className="d-flex align-items-center gap-2">
+                              <span>{exp.icon}</span>
+                              <span className="fw-bold text-dark small">{exp.name}</span>
+                            </div>
+                            <span className="badge bg-light text-muted small">{exp.type}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="text-muted small fw-bold mb-1">Popular Thailand Areas</div>
+                      <div className="d-flex flex-wrap gap-1">
+                        {['All Thailand', 'Sukhumvit', 'Bangkok', 'Old Thailand', 'Grand Island', 'Patong', 'Phuket & Krabi'].map(area => (
+                          <button
+                            key={area}
+                            type="button"
+                            className="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2 bg-white"
+                            style={{ fontSize: '11px' }}
+                            onClick={() => {
+                              if (setSearchQuery) setSearchQuery(area === 'All Thailand' ? '' : area);
+                              setDropLoc(area);
+                              setActiveDropdown(null);
+                            }}
+                          >
+                            {area}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Field 2: Tour Date */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'act-date' ? null : 'act-date')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Tour Date</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-black text-dark" style={{ fontSize: '26px', lineHeight: '1' }}>{displayPickupDay}</span>
+                  <span className="text-dark fw-bold" style={{ fontSize: '15px' }}>{displayPickupMonthYear}</span>
+                </div>
+                <span className="input-block-sub">{displayPickupWeekday}</span>
+
+                {activeDropdown === 'act-date' && (
+                  <div className="tg-popover-card shadow-xl" onClick={e => e.stopPropagation()}>
+                    <CalendarPickerView
+                      title="Select Tour Date"
+                      selectedDate={pickupDate}
+                      minDate={todayStr}
+                      onSelect={(d) => {
+                        setPickupDate(d);
+                        setActiveDropdown(null);
+                      }}
+                      onClose={() => setActiveDropdown(null)}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Field 3: Travellers / Guests */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'act-guests' ? null : 'act-guests')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Travellers</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-black text-dark" style={{ fontSize: '26px', lineHeight: '1' }}>{hotelAdults || 2}</span>
+                  <span className="text-dark fw-bold" style={{ fontSize: '15px' }}>
+                    Adults {hotelChildren > 0 ? `· ${hotelChildren} Ch` : ''}
+                  </span>
+                </div>
+                <span className="input-block-sub">{(hotelAdults || 2) + (hotelChildren || 0)} Guests</span>
+
+                {activeDropdown === 'act-guests' && (
+                  <div className="tg-popover-card shadow-xl p-3" onClick={e => e.stopPropagation()}>
+                    <RoomsGuestsPopoverContent
+                      rooms={hotelRooms}
+                      setRooms={setHotelRooms}
+                      adults={hotelAdults}
+                      setAdults={setHotelAdults}
+                      childrenCount={hotelChildren}
+                      onChildrenChange={handleChildrenCountChange}
+                      childAges={childAges}
+                      onChildAgeChange={handleChildAgeChange}
+                      onDone={() => setActiveDropdown(null)}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Field 4: Filters */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'filters' ? null : 'filters')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Filters</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-bold text-dark" style={{ fontSize: '16px', lineHeight: '1.2' }}>
+                    {activeTabFiltersCount > 0 ? (
+                      <span className="text-warning fw-black">{activeTabFiltersCount} Applied</span>
+                    ) : (
+                      'Select Filters'
+                    )}
+                  </span>
+                </div>
+                <span className="input-block-sub mt-1">
+                  {activeTabFiltersCount > 0 ? 'Click to edit' : '(Optional)'}
+                </span>
+
+                {activeDropdown === 'filters' && (
+                  <UnifiedFilterPopover
+                    activeTab={activeTab}
+                    localFilters={localFilters}
+                    setLocalFilters={setLocalFilters}
+                    onApply={handleApplyFilters}
+                    onClearAll={handleClearAllForTab}
+                    onClose={() => setActiveDropdown(null)}
+                  />
+                )}
+              </div>
+
+            </div>
+          ) : activeTab === 'craftmytrip' ? (
+            /* ──────────────────────────────────────────────────────────────────
+                TAB: CRAFT MY TRIP
+            ────────────────────────────────────────────────────────────────── */
+            <div className="booking-inputs-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+              
+              {/* Field 1: Trip Base / Destination */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'craft-dest' ? null : 'craft-dest')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Trip Destination</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="input-block-val">Thailand</div>
+                <span className="input-block-sub">North &amp; Phuket & Krabi</span>
+
+                {activeDropdown === 'craft-dest' && (
+                  <div className="tg-popover-card shadow-xl p-3" style={{ width: '320px' }} onClick={e => e.stopPropagation()}>
+                    <div className="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+                      <span className="fw-bold text-dark small"><Wand2 size={14} className="text-warning me-1" /> Custom Thailand Getaway</span>
+                      <button type="button" className="btn btn-sm btn-link p-0 text-muted" onClick={() => setActiveDropdown(null)}><X size={16} /></button>
+                    </div>
+                    <p className="text-muted small mb-2">Design Your Own Package customizes your complete itinerary covering rental rides, boutique hotels, scenic sightseeing, and flights.</p>
+                    <div className="d-flex flex-column gap-1">
+                      <div className="p-2 rounded bg-light small fw-bold text-dark d-flex align-items-center gap-2">
+                        <span>🏖️</span> Bangkok & Pattaya: Sukhumvit, Patong, Ao Nang
+                      </div>
+                      <div className="p-2 rounded bg-light small fw-bold text-dark d-flex align-items-center gap-2">
+                        <span>🌴</span> Phuket & Krabi: Hua Hin, Phi Phi, Luxury Resorts
+                      </div>
+                      <div className="p-2 rounded bg-light small fw-bold text-dark d-flex align-items-center gap-2">
+                        <span>🏛️</span> Central Thailand: Bangkok, Fontainhas, Old Thailand
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Field 2: Trip Start Date */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'craft-pickup' ? null : 'craft-pickup')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Trip Start Date</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-black text-dark" style={{ fontSize: '26px', lineHeight: '1' }}>{displayPickupDay}</span>
+                  <span className="text-dark fw-bold" style={{ fontSize: '15px' }}>{displayPickupMonthYear}</span>
+                </div>
+                <span className="input-block-sub">{displayPickupWeekday}</span>
+
+                {activeDropdown === 'craft-pickup' && (
+                  <div className="tg-popover-card shadow-xl" onClick={e => e.stopPropagation()}>
+                    <CalendarPickerView
+                      title="Select Trip Start Date"
+                      selectedDate={pickupDate}
+                      minDate={todayStr}
+                      onSelect={(d) => {
+                        setPickupDate(d);
+                        if (!dropDate || dropDate <= d) {
+                          setDropDate(getNextDayDateStr(d));
+                        }
+                        setActiveDropdown('craft-drop');
+                      }}
+                      onClose={() => setActiveDropdown(null)}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Field 3: Trip End Date */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'craft-drop' ? null : 'craft-drop')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Trip End Date</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-black text-dark" style={{ fontSize: '26px', lineHeight: '1' }}>{displayDropDay}</span>
+                  <span className="text-dark fw-bold" style={{ fontSize: '15px' }}>{displayDropMonthYear}</span>
+                </div>
+                <span className="input-block-sub">{displayDropWeekday}</span>
+
+                {activeDropdown === 'craft-drop' && (
+                  <div className="tg-popover-card shadow-xl" onClick={e => e.stopPropagation()}>
+                    <CalendarPickerView
+                      title="Select Trip End Date"
+                      selectedDate={dropDate}
+                      minDate={minCheckOutDate}
+                      onSelect={(d) => {
+                        setDropDate(d);
+                        setActiveDropdown(null);
+                      }}
+                      onClose={() => setActiveDropdown(null)}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Field 4: Travellers */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'craft-guests' ? null : 'craft-guests')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Travellers</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-black text-dark" style={{ fontSize: '26px', lineHeight: '1' }}>{hotelAdults || 2}</span>
+                  <span className="text-dark fw-bold" style={{ fontSize: '15px' }}>
+                    Adults {hotelChildren > 0 ? `· ${hotelChildren} Ch` : ''}
+                  </span>
+                </div>
+                <span className="input-block-sub">Ride &amp; Hotel Capacity</span>
+
+                {activeDropdown === 'craft-guests' && (
+                  <div className="tg-popover-card shadow-xl p-3" onClick={e => e.stopPropagation()}>
+                    <RoomsGuestsPopoverContent
+                      rooms={hotelRooms}
+                      setRooms={setHotelRooms}
+                      adults={hotelAdults}
+                      setAdults={setHotelAdults}
+                      childrenCount={hotelChildren}
+                      onChildrenChange={handleChildrenCountChange}
+                      childAges={childAges}
+                      onChildAgeChange={handleChildAgeChange}
+                      onDone={() => setActiveDropdown(null)}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Field 5: Trip Preferences */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'filters' ? null : 'filters')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Preferences</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-bold text-dark" style={{ fontSize: '16px', lineHeight: '1.2' }}>
+                    {activeTabFiltersCount > 0 ? (
+                      <span className="text-warning fw-black">{activeTabFiltersCount} Applied</span>
+                    ) : (
+                      'Trip Filters'
+                    )}
+                  </span>
+                </div>
+                <span className="input-block-sub mt-1">
+                  {activeTabFiltersCount > 0 ? 'Click to edit' : '(Optional)'}
+                </span>
+
+                {activeDropdown === 'filters' && (
+                  <UnifiedFilterPopover
+                    activeTab={activeTab}
+                    localFilters={localFilters}
+                    setLocalFilters={setLocalFilters}
+                    onApply={handleApplyFilters}
+                    onClearAll={handleClearAllForTab}
+                    onClose={() => setActiveDropdown(null)}
+                  />
+                )}
+              </div>
+
+            </div>
+          ) : (
+            /* ──────────────────────────────────────────────────────────────────
+                TAB: TRIP PACKAGES
+            ────────────────────────────────────────────────────────────────── */
+            <div className="booking-inputs-grid booking-inputs-grid-6">
+              
+              {/* Field 1: From City */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'from' ? null : 'from')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>From City</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="input-block-val">{pickupLoc || 'Select Departure City'}</div>
+                <span className="input-block-sub">India</span>
+
+                {activeDropdown === 'from' && (
+                  <div className="tg-popover-card shadow-xl p-3" onClick={e => e.stopPropagation()}>
+                    <div className="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+                      <span className="fw-bold text-dark small"><MapPin size={14} className="text-primary me-1" /> Departure City</span>
+                      <button type="button" className="btn btn-sm btn-link p-0 text-muted" onClick={() => setActiveDropdown(null)}><X size={16} /></button>
+                    </div>
+
+                    <div className="position-relative mb-2">
+                      <SearchIcon size={16} className="position-absolute text-muted" style={{ top: '10px', left: '10px' }} />
+                      <input 
+                        type="text" 
+                        className="form-control form-control-sm ps-4" 
+                        placeholder="Search departure city e.g. Bengaluru, Hubli..." 
+                        value={fromSearchQuery} 
+                        onChange={e => setFromSearchQuery(e.target.value)} 
+                        autoFocus 
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn btn-light w-100 text-start d-flex align-items-center gap-2 p-2 rounded-2 mb-2"
+                      style={{ background: '#fff7ed', color: '#c2410c' }}
+                      onClick={() => handleUseCurrentLocation('pickup')}
+                      disabled={isLocating}
+                    >
+                      {isLocating ? <Loader2 size={16} className="animate-spin" /> : <Navigation size={16} />}
+                      <span className="fw-bold small">{isLocating ? 'Detecting...' : '📍 Use Current Location (GPS)'}</span>
+                    </button>
+
+                    {locationStatus && (
+                      <div className={`p-2 rounded small mb-2 ${locationStatus.type === 'error' || locationStatus.type === 'denied' ? 'bg-danger bg-opacity-10 text-danger' : 'bg-success bg-opacity-10 text-success'}`}>
+                        {locationStatus.msg}
+                      </div>
+                    )}
+
+                    {fromSearchQuery.trim() && (
+                      <button
+                        type="button"
+                        className="btn btn-outline-primary btn-sm w-100 text-start mb-2 py-1 px-2 fw-semibold d-flex align-items-center justify-content-between"
+                        style={{ fontSize: '12px' }}
+                        onClick={() => {
+                          setPickupLoc(fromSearchQuery.trim());
+                          setActiveDropdown('to');
+                        }}
+                      >
+                        <span className="text-truncate">📍 Use &ldquo;{fromSearchQuery.trim()}&rdquo; as Departure City</span>
+                        <span className="badge bg-primary text-white">Select</span>
+                      </button>
+                    )}
+
+                    <div className="text-muted small fw-bold mb-1">Popular Departure Cities</div>
+                    <div className="tg-scroll-area">
+                      {POPULAR_FROM_CITIES.filter(c => 
+                        c.city.toLowerCase().includes(fromSearchQuery.toLowerCase()) || 
+                        c.state.toLowerCase().includes(fromSearchQuery.toLowerCase())
+                      ).map(c => (
+                        <button
+                          key={c.city}
+                          type="button"
+                          className="btn btn-light w-100 text-start p-2 d-flex justify-content-between align-items-center mb-1 border-0"
+                          onClick={() => { setPickupLoc(c.city); setActiveDropdown('to'); }}
+                        >
+                          <div>
+                            <div className="fw-bold text-dark">{c.city}</div>
+                            <div className="text-muted" style={{ fontSize: '11px' }}>{c.state}, {c.country}</div>
+                          </div>
+                          <span className="badge bg-secondary font-monospace">{c.code}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Field 2: To Destination */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'to' ? null : 'to')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>To Destination</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="input-block-val">{dropLoc || 'Thailand'}</div>
+                <span className="input-block-sub">India</span>
+
+                {activeDropdown === 'to' && (
+                  <div className="tg-popover-card shadow-xl p-3" onClick={e => e.stopPropagation()}>
+                    <div className="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+                      <span className="fw-bold text-dark small"><Compass size={14} className="text-warning me-1" /> Destination / Theme</span>
+                      <button type="button" className="btn btn-sm btn-link p-0 text-muted" onClick={() => setActiveDropdown(null)}><X size={16} /></button>
+                    </div>
+
+                    <div className="position-relative mb-2">
+                      <SearchIcon size={16} className="position-absolute text-muted" style={{ top: '10px', left: '10px' }} />
+                      <input 
+                        type="text" 
+                        className="form-control form-control-sm ps-4" 
+                        placeholder="Search Thailand, Dubai, Manali, Beach..." 
+                        value={toSearchQuery} 
+                        onChange={e => setToSearchQuery(e.target.value)} 
+                        autoFocus 
+                      />
+                    </div>
+
+                    {!toSearchQuery && (
+                      <div className="mb-2">
+                        <div className="text-muted small fw-bold mb-1">Travel Themes</div>
+                        <div className="d-flex flex-wrap gap-1">
+                          {TRAVEL_CATEGORIES.map(cat => (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              className="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2 bg-white"
+                              style={{ fontSize: '11px' }}
+                              onClick={() => { setDropLoc(cat.label.split('&')[0].trim()); setActiveDropdown(null); }}
+                            >
+                              <span>{cat.icon}</span> {cat.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="text-muted small fw-bold mb-1">Top Destinations</div>
+                    <div className="tg-scroll-area">
+                      {POPULAR_DESTINATIONS.filter(d => 
+                        d.name.toLowerCase().includes(toSearchQuery.toLowerCase()) || 
+                        d.country.toLowerCase().includes(toSearchQuery.toLowerCase()) ||
+                        d.category.toLowerCase().includes(toSearchQuery.toLowerCase()) ||
+                        d.tag.toLowerCase().includes(toSearchQuery.toLowerCase())
+                      ).map(d => (
+                        <button
+                          key={d.name}
+                          type="button"
+                          className="btn btn-light w-100 text-start p-2 d-flex justify-content-between align-items-center mb-1 border-0"
+                          onClick={() => { setDropLoc(d.name); setActiveDropdown(null); }}
+                        >
+                          <div className="d-flex align-items-center gap-2">
+                            <span style={{ fontSize: '18px' }}>{d.icon}</span>
+                            <div>
+                              <div className="fw-bold text-dark">{d.name}</div>
+                              <div className="text-muted" style={{ fontSize: '11px' }}>{d.country} · {d.tag}</div>
+                            </div>
+                          </div>
+                          <span className="badge bg-light text-muted small">{d.category}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Field 3: Arrival Date */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'pkg-arrival' ? null : 'pkg-arrival')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Arrival Date</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-black text-dark" style={{ fontSize: '26px', lineHeight: '1' }}>{displayPickupDay}</span>
+                  <span className="text-dark fw-bold" style={{ fontSize: '15px' }}>{displayPickupMonthYear}</span>
+                </div>
+                <span className="input-block-sub">{displayPickupWeekday}</span>
+
+                {activeDropdown === 'pkg-arrival' && (
+                  <div className="tg-popover-card shadow-xl" onClick={e => e.stopPropagation()}>
+                    <CalendarPickerView
+                      title="Select Arrival Date"
+                      selectedDate={pickupDate}
+                      minDate={todayStr}
+                      onSelect={(d) => {
+                        setPickupDate(d);
+                        if (!dropDate || dropDate <= d) {
+                          setDropDate(getNextDayDateStr(d));
+                        }
+                        setActiveDropdown('pkg-departure');
+                      }}
+                      onClose={() => setActiveDropdown(null)}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Field 4: Departure Date */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'pkg-departure' ? null : 'pkg-departure')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Departure Date</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-black text-dark" style={{ fontSize: '26px', lineHeight: '1' }}>{displayDropDay}</span>
+                  <span className="text-dark fw-bold" style={{ fontSize: '15px' }}>{displayDropMonthYear}</span>
+                </div>
+                <span className="input-block-sub">{displayDropWeekday}</span>
+
+                {activeDropdown === 'pkg-departure' && (
+                  <div className="tg-popover-card shadow-xl" onClick={e => e.stopPropagation()}>
+                    <CalendarPickerView
+                      title="Select Departure Date"
+                      selectedDate={dropDate}
+                      minDate={getNextDayDateStr(pickupDate || todayStr)}
+                      onSelect={(d) => {
+                        setDropDate(d);
+                        setActiveDropdown(null);
+                      }}
+                      onClose={() => setActiveDropdown(null)}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Field 5: Rooms & Guests */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'pkg-guests' ? null : 'pkg-guests')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Rooms & Guests</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-black text-dark" style={{ fontSize: '26px', lineHeight: '1' }}>{hotelAdults || 2}</span>
+                  <span className="text-dark fw-bold" style={{ fontSize: '15px' }}>
+                    Adults {hotelChildren > 0 ? `· ${hotelChildren} Ch` : ''}
+                  </span>
+                </div>
+                <span className="input-block-sub">{hotelRooms || 1} Room{(hotelRooms || 1) > 1 ? 's' : ''}</span>
+
+                {activeDropdown === 'pkg-guests' && (
+                  <div className="tg-popover-card shadow-xl p-3" onClick={e => e.stopPropagation()}>
+                    <RoomsGuestsPopoverContent
+                      rooms={hotelRooms}
+                      setRooms={setHotelRooms}
+                      adults={hotelAdults}
+                      setAdults={setHotelAdults}
+                      childrenCount={hotelChildren}
+                      onChildrenChange={handleChildrenCountChange}
+                      childAges={childAges}
+                      onChildAgeChange={handleChildAgeChange}
+                      onDone={() => setActiveDropdown(null)}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Field 5: Multi-Category Filters */}
+              <div 
+                className="input-block position-relative" 
+                onClick={() => setActiveDropdown(activeDropdown === 'filters' ? null : 'filters')}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span>Filters</span>
+                  <ChevronDown size={14} />
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-bold text-dark" style={{ fontSize: '16px', lineHeight: '1.2' }}>
+                    {activeTabFiltersCount > 0 ? (
+                      <span className="text-warning fw-black">{activeTabFiltersCount} Applied</span>
+                    ) : (
+                      'Select Filters'
+                    )}
+                  </span>
+                </div>
+                <span className="input-block-sub mt-1">
+                  {activeTabFiltersCount > 0 ? 'Click to edit' : '(Optional)'}
+                </span>
+
+                {activeDropdown === 'filters' && (
+                  <UnifiedFilterPopover
+                    activeTab={activeTab}
+                    localFilters={localFilters}
+                    setLocalFilters={setLocalFilters}
+                    onApply={handleApplyFilters}
+                    onClearAll={handleClearAllForTab}
+                    onClose={() => setActiveDropdown(null)}
+                  />
+                )}
+              </div>
+
+            </div>
+          )}
+
+          {/* ─── FLOATING ORANGE SEARCH BUTTON ─────────────────────────────── */}
+          <div className="search-btn-container">
+            <button type="submit" className="btn-widget-search">
+              {activeTab === 'hotels' ? 'SEARCH HOTELS' :
+               activeTab === 'activities' ? 'SEARCH SIGHTSEEING & ACTIVITIES' :
+               'SEARCH CABS & TRANSFERS'}
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── EMBEDDED CALENDAR POPUP VIEW ─────────────────────────────────────────────
+
+function getInitialYearMonth(selectedDate, minDate) {
+  if (selectedDate) {
+    const [sY, sM] = selectedDate.split('-').map(Number);
+    if (sY && sM) return { year: sY, month: sM - 1 };
+  }
+  if (minDate) {
+    const [mY, mM] = minDate.split('-').map(Number);
+    if (mY && mM) return { year: mY, month: mM - 1 };
+  }
+  const now = new Date();
+  return { year: now.getFullYear(), month: now.getMonth() };
+}
+
+function CalendarPickerView({ title, selectedDate, minDate, onSelect, onClose }) {
+  const initial = getInitialYearMonth(selectedDate, minDate);
+  const [viewYear, setViewYear] = useState(initial.year);
+  const [viewMonth, setViewMonth] = useState(initial.month);
+
+  // Synchronize when selectedDate or minDate updates externally
+  useEffect(() => {
+    const updated = getInitialYearMonth(selectedDate, minDate);
+    setViewYear(updated.year);
+    setViewMonth(updated.month);
+  }, [selectedDate, minDate]);
+
+  const weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  // Dynamic future years list (minimum year to minimum year + 5)
+  const currentSystemYear = new Date().getFullYear();
+  const minYear = minDate ? parseInt(minDate.split('-')[0], 10) : currentSystemYear;
+  const minMonthIndex = (minDate && parseInt(minDate.split('-')[0], 10) === viewYear) 
+    ? parseInt(minDate.split('-')[1], 10) - 1 
+    : 0;
+
+  const availableYears = [];
+  for (let y = minYear; y <= minYear + 5; y++) {
+    availableYears.push(y);
+  }
+
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+
+  const isCurrentMonthOrPast = () => {
+    if (!minDate) return false;
+    const [minY, minM] = minDate.split('-').map(Number);
+    return viewYear < minY || (viewYear === minY && viewMonth <= minM - 1);
+  };
+
+  const handlePrev = () => {
+    if (isCurrentMonthOrPast()) return;
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear(viewYear - 1);
+    } else {
+      setViewMonth(viewMonth - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear(viewYear + 1);
+    } else {
+      setViewMonth(viewMonth + 1);
+    }
+  };
+
+  const handleYearChange = (newYear) => {
+    const y = parseInt(newYear, 10);
+    setViewYear(y);
+    if (minDate) {
+      const [minY, minM] = minDate.split('-').map(Number);
+      if (y === minY && viewMonth < minM - 1) {
+        setViewMonth(minM - 1);
+      }
+    }
+  };
+
+  const handleMonthChange = (newMonth) => {
+    setViewMonth(parseInt(newMonth, 10));
+  };
+
+  return (
+    <div className="p-3" style={{ minWidth: '320px', maxWidth: '360px' }}>
+      <div className="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+        <span className="fw-bold text-dark small d-flex align-items-center gap-1">
+          <CalendarIcon size={14} className="text-warning" />
+          {title || "Select Date"}
+        </span>
+        <button type="button" className="btn btn-sm btn-link p-0 text-muted" onClick={onClose}>
+          <X size={16} />
+        </button>
+      </div>
+
+      {/* Year & Month Selection Controls */}
+      <div className="d-flex align-items-center justify-content-between gap-1 mb-2">
+        <button 
+          type="button" 
+          className="btn btn-sm btn-light border rounded-circle p-1 d-flex align-items-center justify-content-center"
+          style={{ width: '28px', height: '28px' }}
+          onClick={handlePrev}
+          disabled={isCurrentMonthOrPast()}
+          title="Previous Month"
+        >
+          <ChevronLeft size={16} />
+        </button>
+
+        <div className="d-flex align-items-center gap-1 flex-grow-1 justify-content-center">
+          {/* Month Selector */}
+          <select
+            className="form-select form-select-sm fw-bold border-0 bg-light py-1 ps-2 pe-3"
+            style={{ fontSize: '13px', cursor: 'pointer', maxWidth: '130px' }}
+            value={viewMonth}
+            onChange={(e) => handleMonthChange(e.target.value)}
+          >
+            {monthNames.map((mName, idx) => {
+              const isDisabled = viewYear === minYear && idx < minMonthIndex;
+              return (
+                <option key={mName} value={idx} disabled={isDisabled}>
+                  {mName}
+                </option>
+              );
+            })}
+          </select>
+
+          {/* Year Selector */}
+          <select
+            className="form-select form-select-sm fw-bold border-0 bg-light py-1 ps-2 pe-3"
+            style={{ fontSize: '13px', cursor: 'pointer', maxWidth: '95px' }}
+            value={viewYear}
+            onChange={(e) => handleYearChange(e.target.value)}
+          >
+            {availableYears.map(yr => (
+              <option key={yr} value={yr}>
+                {yr}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button 
+          type="button" 
+          className="btn btn-sm btn-light border rounded-circle p-1 d-flex align-items-center justify-content-center"
+          style={{ width: '28px', height: '28px' }}
+          onClick={handleNext}
+          title="Next Month"
+        >
+          <ChevronRight size={16} />
+        </button>
+      </div>
+
+      {/* Quick Year Jump Chips */}
+      <div className="d-flex align-items-center gap-1 mb-2 overflow-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+        <span className="text-muted fw-bold" style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Year:</span>
+        {availableYears.slice(0, 4).map(yr => (
+          <button
+            key={yr}
+            type="button"
+            className={`btn btn-xs rounded-pill px-2 py-0 fw-bold ${viewYear === yr ? 'btn-primary text-white' : 'btn-light border'}`}
+            style={{ fontSize: '11px', lineHeight: '1.6' }}
+            onClick={() => handleYearChange(yr)}
+          >
+            {yr}
+          </button>
+        ))}
+      </div>
+
+      <div className="mb-1" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#94a3b8' }}>
+        {weekdays.map(wd => <span key={wd}>{wd}</span>)}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '3px', textAlign: 'center' }}>
+        {Array.from({ length: firstDay }).map((_, i) => <span key={`empty-${i}`} />)}
+        {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
+          const mm = String(viewMonth + 1).padStart(2, '0');
+          const dd = String(day).padStart(2, '0');
+          const dateStr = `${viewYear}-${mm}-${dd}`;
+          const isSelected = dateStr === selectedDate;
+          const isPast = minDate && dateStr < minDate;
+
+          return (
+            <button
+              key={day}
+              type="button"
+              disabled={isPast}
+              className={`tg-calendar-day ${isSelected ? 'selected' : ''} ${isPast ? 'disabled' : ''}`}
+              onClick={() => onSelect(dateStr)}
+            >
+              {day}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── ROOMS & GUESTS POPOVER CONTENT ───────────────────────────────────────────
+
+function RoomsGuestsPopoverContent({ rooms, setRooms, adults, setAdults, childrenCount, onChildrenChange, childAges, onChildAgeChange, onDone }) {
+  return (
+    <div style={{ minWidth: '280px' }}>
+      <div className="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+        <span className="fw-bold text-dark small"><Users size={14} className="text-primary me-1" /> Rooms & Guests</span>
+        <button type="button" className="btn btn-sm btn-link p-0 text-muted" onClick={onDone}><X size={16} /></button>
+      </div>
+
+      {/* Rooms */}
+      <div className="d-flex align-items-center justify-content-between py-2 border-bottom">
+        <div>
+          <div className="fw-bold text-dark small">Rooms</div>
+          <div className="text-muted" style={{ fontSize: '11px' }}>Minimum 1 room</div>
+        </div>
+        <div className="d-flex align-items-center gap-2">
+          <button type="button" className="tg-counter-btn" disabled={rooms <= 1} onClick={() => setRooms(Math.max(1, (rooms || 1) - 1))}>−</button>
+          <span className="fw-bold text-dark font-monospace" style={{ minWidth: '20px', textAlign: 'center' }}>{rooms || 1}</span>
+          <button type="button" className="tg-counter-btn" disabled={rooms >= 10} onClick={() => setRooms((rooms || 1) + 1)}>+</button>
+        </div>
+      </div>
+
+      {/* Adults */}
+      <div className="d-flex align-items-center justify-content-between py-2 border-bottom">
+        <div>
+          <div className="fw-bold text-dark small">Adults</div>
+          <div className="text-muted" style={{ fontSize: '11px' }}>Age 12+ years</div>
+        </div>
+        <div className="d-flex align-items-center gap-2">
+          <button type="button" className="tg-counter-btn" disabled={adults <= 1} onClick={() => setAdults(Math.max(1, (adults || 2) - 1))}>−</button>
+          <span className="fw-bold text-dark font-monospace" style={{ minWidth: '20px', textAlign: 'center' }}>{adults || 2}</span>
+          <button type="button" className="tg-counter-btn" disabled={adults >= 30} onClick={() => setAdults((adults || 2) + 1)}>+</button>
+        </div>
+      </div>
+
+      {/* Children */}
+      <div className="d-flex align-items-center justify-content-between py-2">
+        <div>
+          <div className="fw-bold text-dark small">Children</div>
+          <div className="text-muted" style={{ fontSize: '11px' }}>Age 0 - 11 years</div>
+        </div>
+        <div className="d-flex align-items-center gap-2">
+          <button type="button" className="tg-counter-btn" disabled={childrenCount <= 0} onClick={() => onChildrenChange((childrenCount || 0) - 1)}>−</button>
+          <span className="fw-bold text-dark font-monospace" style={{ minWidth: '20px', textAlign: 'center' }}>{childrenCount || 0}</span>
+          <button type="button" className="tg-counter-btn" disabled={childrenCount >= 10} onClick={() => onChildrenChange((childrenCount || 0) + 1)}>+</button>
+        </div>
+      </div>
+
+      {/* Child age selectors */}
+      {childrenCount > 0 && (
+        <div className="mt-2 pt-2 border-top">
+          <div className="fw-bold text-dark small mb-1" style={{ fontSize: '11px' }}>Child Ages:</div>
+          <div className="d-flex flex-wrap gap-1">
+            {Array.from({ length: childrenCount }).map((_, idx) => (
+              <div key={idx} className="d-flex align-items-center gap-1 bg-light p-1 rounded border">
+                <span className="text-muted small" style={{ fontSize: '11px' }}>Child {idx + 1}:</span>
+                <select
+                  className="form-select form-select-sm border-0 bg-white py-0 px-1"
+                  style={{ width: '65px', fontSize: '11px' }}
+                  value={childAges[idx] !== undefined ? childAges[idx] : 5}
+                  onChange={(e) => onChildAgeChange(idx, e.target.value)}
+                >
+                  {Array.from({ length: 12 }, (_, a) => (
+                    <option key={a} value={a}>{a} yrs</option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <button
+        type="button"
+        className="btn btn-primary btn-sm w-100 py-2 mt-3 fw-bold"
+        style={{ background: '#FF6333', borderColor: '#FF6333', borderRadius: '8px' }}
+        onClick={onDone}
+      >
+        Done
+      </button>
+    </div>
+  );
+}
+
+// ─── FLIGHT PASSENGERS POPOVER CONTENT ────────────────────────────────────────
+
+function FlightPassengersPopoverContent({ adults, setAdults, childrenCount, setChildren, infants, setInfants, flightClass, setFlightClass, onDone }) {
+  return (
+    <div style={{ minWidth: '280px' }}>
+      <div className="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom">
+        <span className="fw-bold text-dark small"><Plane size={14} className="text-primary me-1" /> Passengers & Class</span>
+        <button type="button" className="btn btn-sm btn-link p-0 text-muted" onClick={onDone}><X size={16} /></button>
+      </div>
+
+      {/* Adults */}
+      <div className="d-flex align-items-center justify-content-between py-2 border-bottom">
+        <div>
+          <div className="fw-bold text-dark small">Adults</div>
+          <div className="text-muted" style={{ fontSize: '11px' }}>12+ years</div>
+        </div>
+        <div className="d-flex align-items-center gap-2">
+          <button type="button" className="tg-counter-btn" disabled={adults <= 1} onClick={() => setAdults(Math.max(1, (adults || 1) - 1))}>−</button>
+          <span className="fw-bold text-dark font-monospace" style={{ minWidth: '20px', textAlign: 'center' }}>{adults || 1}</span>
+          <button type="button" className="tg-counter-btn" disabled={adults >= 9} onClick={() => setAdults((adults || 1) + 1)}>+</button>
+        </div>
+      </div>
+
+      {/* Children */}
+      <div className="d-flex align-items-center justify-content-between py-2 border-bottom">
+        <div>
+          <div className="fw-bold text-dark small">Children</div>
+          <div className="text-muted" style={{ fontSize: '11px' }}>2 - 11 years</div>
+        </div>
+        <div className="d-flex align-items-center gap-2">
+          <button type="button" className="tg-counter-btn" disabled={childrenCount <= 0} onClick={() => setChildren(Math.max(0, (childrenCount || 0) - 1))}>−</button>
+          <span className="fw-bold text-dark font-monospace" style={{ minWidth: '20px', textAlign: 'center' }}>{childrenCount || 0}</span>
+          <button type="button" className="tg-counter-btn" disabled={childrenCount >= 9} onClick={() => setChildren((childrenCount || 0) + 1)}>+</button>
+        </div>
+      </div>
+
+      {/* Infants */}
+      <div className="d-flex align-items-center justify-content-between py-2 border-bottom">
+        <div>
+          <div className="fw-bold text-dark small">Infants</div>
+          <div className="text-muted" style={{ fontSize: '11px' }}>Under 2 years</div>
+        </div>
+        <div className="d-flex align-items-center gap-2">
+          <button type="button" className="tg-counter-btn" disabled={infants <= 0} onClick={() => setInfants(Math.max(0, (infants || 0) - 1))}>−</button>
+          <span className="fw-bold text-dark font-monospace" style={{ minWidth: '20px', textAlign: 'center' }}>{infants || 0}</span>
+          <button type="button" className="tg-counter-btn" disabled={infants >= 9} onClick={() => setInfants((infants || 0) + 1)}>+</button>
+        </div>
+      </div>
+
+      {/* Cabin Class */}
+      <div className="py-2">
+        <div className="fw-bold text-dark small mb-1">Cabin Class</div>
+        <select 
+          className="form-select form-select-sm"
+          value={flightClass || 'economy'}
+          onChange={e => setFlightClass(e.target.value)}
+        >
+          <option value="economy">Economy</option>
+          <option value="premium_economy">Premium Economy</option>
+          <option value="business">Business</option>
+          <option value="first">First</option>
+        </select>
+      </div>
+
+      <button
+        type="button"
+        className="btn btn-primary btn-sm w-100 py-2 mt-2 fw-bold"
+        style={{ background: '#FF6333', borderColor: '#FF6333', borderRadius: '8px' }}
+        onClick={onDone}
+      >
+        Done
+      </button>
+    </div>
+  );
+}

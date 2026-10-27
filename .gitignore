@@ -1,0 +1,46 @@
+# ========================================================================
+# WOW THAILAND: Root Git Ignore Rules
+# ========================================================================
+
+# Environment Variables & Secrets (CRITICAL)
+.env
+.env.*
+!.env.example
+*.env
+**/.env
+**/.env.*
+!**/.env.example
+
+# Dependencies
+node_modules/
+**/node_modules/
+package-lock.json
+
+# Build Outputs
+dist/
+**/dist/
+build/
+**/build/
+.vite/
+.vite-temp/
+
+# SQLite & Local Databases
+*.sqlite
+*.sqlite-*
+*.db
+*.sql.gz
+
+# Logs & Runtime
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj

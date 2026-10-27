@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WOW THAILAND — Hero Video & Motion Previewer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: #070B19;
+      color: #fff;
+      overflow-x: hidden;
+    }
+
+    /* Fixed Top Control Bar to Switch Previews */
+    .selector-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 9999;
+      background: rgba(11, 25, 44, 0.94);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 25px rgba(0,0,0,0.5);
+    }
+    .brand-tag {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 900;
+      font-size: 17px;
+      letter-spacing: 0.5px;
+      color: #FF9F1C;
+    }
+    .badge-pill {
+      background: linear-gradient(135deg, #FF9F1C, #FF4500);
+      color: white;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-weight: 800;
+    }
+    .switcher-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    .switch-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #E2E8F0;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .switch-btn:hover {
+      background: rgba(255, 159, 28, 0.2);
+      border-color: #FF9F1C;
+      color: #fff;
+      transform: translateY(-1px);
+    }
+    .switch-btn.active {
+      background: linear-gradient(135deg, #FF9F1C, #FF7B00);
+      border-color: #FF9F1C;
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(255, 159, 28, 0.4);
+    }
+
+    /* Hero Section Mirroring Wow Goa */
+    .hero-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      padding-top: 60px;
+    }
+
+    /* Video & Animated Visual Container */
+    .bg-media {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 1;
+      transition: opacity 0.5s ease-in-out;
+    }
+
+    .animated-bg {
+      animation: slowCinematicDrift 16s ease-in-out infinite alternate;
+      transform-origin: center center;
+    }
+
+    @keyframes slowCinematicDrift {
+      0% {
+        transform: scale(1.0) translate(0, 0);
+      }
+      50% {
+        transform: scale(1.06) translate(-10px, -5px);
+      }
+      100% {
+        transform: scale(1.03) translate(8px, 4px);
+      }
+    }
+
+    /* Dark Overlay for Ultra-Crisp Contrast */
+    .hero-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        180deg,
+        rgba(11, 25, 44, 0.45) 0%,
+        rgba(11, 25, 44, 0.15) 45%,
+        rgba(11, 25, 44, 0.75) 100%
+      );
+      z-index: 2;
+    }
+
+    /* Navigation Bar Matching Wow Goa */
+    .navbar {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 60px;
+    }
+    .logo-wrap {
+      display: flex;
+      flex-direction: column;
+    }
+    .logo-title {
+      font-size: 26px;
+      font-weight: 950;
+      letter-spacing: -0.5px;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .logo-title span {
+      color: #FF9F1C;
+    }
+    .logo-sub {
+      font-size: 10px;
+      letter-spacing: 3px;
+      font-weight: 800;
+      color: #38BDF8;
+      text-transform: uppercase;
+      margin-top: -2px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 14.5px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.9);
+    }
+    .nav-links a {
+      color: inherit;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover {
+      color: #FF9F1C;
+    }
+    .nav-item-badge {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 6px 14px;
+      border-radius: 999px;
+      color: #FF9F1C;
+      font-weight: 800;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-enquire {
+      background: #FFB703;
+      color: #070B19;
+      padding: 10px 22px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 13.5px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(255, 183, 3, 0.4);
+      transition: all 0.2s;
+    }
+    .btn-enquire:hover {
+      background: #FFA200;
+      transform: translateY(-2px);
+    }
+    .btn-signin {
+      background: #FF5722;
+      color: white;
+      padding: 10px 24px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 13.5px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(255, 87, 34, 0.4);
+      transition: all 0.2s;
+    }
+    .btn-signin:hover {
+      background: #E64A19;
+      transform: translateY(-2px);
+    }
+
+    /* Hero Text Content (Left-Aligned, exactly like Wow Goa) */
+    .hero-content {
+      position: relative;
+      z-index: 10;
+      padding: 30px 60px 0 60px;
+      max-width: 720px;
+    }
+    .hero-subtext {
+      color: #FF9F1C;
+      letter-spacing: 4px;
+      font-weight: 900;
+      font-size: 13px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      display: inline-block;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+    }
+    .hero-title {
+      font-size: 68px;
+      font-weight: 950;
+      color: #ffffff;
+      line-height: 1.05;
+      letter-spacing: -1.5px;
+      margin-bottom: 16px;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+    }
+    .hero-lead {
+      font-size: 16.5px;
+      line-height: 1.6;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.95);
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+      margin-bottom: 24px;
+    }
+
+    /* Dark Blue Bottom Search Bar Card (Matches Wow Goa) */
+    .search-card {
+      position: absolute;
+      bottom: 25px;
+      left: 60px;
+      right: 60px;
+      z-index: 10;
+      background: #0B192C;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 16px 28px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .search-tabs {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+    .tab-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #94A3B8;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 8px 12px;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .tab-item:hover {
+      color: #FFFFFF;
+    }
+    .tab-item.active {
+      color: #FF9F1C;
+      border-bottom: 3px solid #FF9F1C;
+      border-radius: 0;
+    }
+    .search-action-btn {
+      background: linear-gradient(135deg, #FF9F1C, #FF5722);
+      color: white;
+      font-weight: 900;
+      font-size: 14px;
+      padding: 12px 28px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(255, 110, 30, 0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Preview Switcher Bar -->
+  <div class="selector-bar">
+    <div class="brand-tag">
+      <span>🌴 WOW THAILAND</span>
+      <span class="badge-pill">HERO PREVIEW SELECTOR</span>
+    </div>
+
+    <div class="switcher-buttons">
+      <button class="switch-btn active" onclick="switchConcept('concept1')">
+        🏝️ Option 1: Maya Bay & Longtail (Recommended)
+      </button>
+      <button class="switch-btn" onclick="switchConcept('concept2')">
+        🌅 Option 2: 5-Star Resort Pool
+      </button>
+      <button class="switch-btn" onclick="switchConcept('concept3')">
+        🚤 Option 3: Krabi Sunset Beach
+      </button>
+      <button class="switch-btn" onclick="switchConcept('goa')">
+        🌊 Compare with Wow Goa (beach.mp4)
+      </button>
+    </div>
+  </div>
+
+  <!-- Hero Section -->
+  <div class="hero-container">
+
+    <!-- Active Visual Element -->
+    <img id="imageBg" class="bg-media animated-bg" src="concept1.jpg" alt="Thailand Hero" />
+    <video id="videoBg" class="bg-media" style="display: none;" autoplay loop muted playsinline>
+      <source src="beach.mp4" type="video/mp4" />
+    </video>
+
+    <!-- Contrast Gradient -->
+    <div class="hero-overlay"></div>
+
+    <!-- Header Navigation -->
+    <header class="navbar">
+      <div class="logo-wrap">
+        <div class="logo-title">
+          WOW <span>THAILAND</span>
+        </div>
+        <div class="logo-sub">LUXURY HOLIDAYS & TRANSFERS</div>
+      </div>
+
+      <nav class="nav-links">
+        <a href="#packages">Trip Packages</a>
+        <a href="#custom">Design Your Own Package ✈</a>
+        <a href="#transfers" class="nav-item-badge">Pick & Drop Cabs</a>
+        <a href="#hotels">Hotels</a>
+        <a href="#sightseeing">Sightseeing & Tours</a>
+        <a href="#activities">Activities</a>
+        <a href="#bookings">My Bookings</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="btn-enquire">Enquire Your Package</button>
+        <button class="btn-signin">Sign In</button>
+      </div>
+    </header>
+
+    <!-- Hero Typography (Aligned identically to Wow Goa) -->
+    <div class="hero-content">
+      <span class="hero-subtext">LUXURY HOLIDAYS & TRANSFERS</span>
+      <h1 class="hero-title" id="heroTitle">WOW THAILAND</h1>
+      <p class="hero-lead" id="heroDesc">
+        Discover Thailand on your own terms. Book 5-star beachfront luxury resorts, VIP airport pick & drop cabs, and private speedboat island excursions across Phuket, Bangkok, Pattaya & Krabi. Instant confirmation.
+      </p>
+    </div>
+
+    <!-- Floating Dark Blue Search Widget Card -->
+    <div class="search-card">
+      <div class="search-tabs">
+        <div class="tab-item active" onclick="activateTab(this)">🚖 Airport Pick & Drop</div>
+        <div class="tab-item" onclick="activateTab(this)">🏨 Luxury Hotels & Villas</div>
+        <div class="tab-item" onclick="activateTab(this)">🚤 Island Sightseeing</div>
+        <div class="tab-item" onclick="activateTab(this)">🎟️ Attractions & Passes</div>
+        <div class="tab-item" onclick="activateTab(this)">🌴 All-Inclusive Combos</div>
+      </div>
+      <button class="search-action-btn">Search Availability ➔</button>
+    </div>
+
+  </div>
+
+  <script>
+    function switchConcept(type) {
+      document.querySelectorAll('.switch-btn').forEach(b => b.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      const img = document.getElementById('imageBg');
+      const vid = document.getElementById('videoBg');
+      const title = document.getElementById('heroTitle');
+      const desc = document.getElementById('heroDesc');
+
+      if (type === 'concept1') {
+        vid.style.display = 'none';
+        vid.pause();
+        img.style.display = 'block';
+        img.src = 'concept1.jpg';
+        title.innerHTML = 'WOW THAILAND';
+        desc.innerText = 'Discover Thailand on your own terms. Book 5-star beachfront luxury resorts, VIP airport pick & drop cabs, and private speedboat island excursions across Phuket, Bangkok, Pattaya & Krabi.';
+      } else if (type === 'concept2') {
+        vid.style.display = 'none';
+        vid.pause();
+        img.style.display = 'block';
+        img.src = 'concept2.jpg';
+        title.innerHTML = 'WOW THAILAND';
+        desc.innerText = 'Indulge in premier 5-star luxury resorts, private pool villas, and white-glove airport transfers in Phuket and Koh Samui. Best rates guaranteed.';
+      } else if (type === 'concept3') {
+        vid.style.display = 'none';
+        vid.pause();
+        img.style.display = 'block';
+        img.src = 'concept3.jpg';
+        title.innerHTML = 'WOW THAILAND';
+        desc.innerText = 'Experience the golden sunsets of Krabi Railay beach, limestone cliffs, and tranquil Andaman seas with customized private transfers and luxury stays.';
+      } else if (type === 'goa') {
+        img.style.display = 'none';
+        vid.style.display = 'block';
+        vid.play();
+        title.innerHTML = 'WOW GOA <span style="font-size:24px; color:#FF9F1C;">(Comparison)</span>';
+        desc.innerText = 'This is the original Wow Goa background video (beach.mp4) playing in real-time loop for side-by-side comparison.';
+      }
+    }
+
+    function activateTab(el) {
+      document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+    }
+  </script>
+
+</body>
+</html>

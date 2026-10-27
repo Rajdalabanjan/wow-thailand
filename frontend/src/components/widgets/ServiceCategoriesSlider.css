@@ -1,0 +1,582 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   ULTRA-LUXURY CINEMATIC SERVICE CATEGORIES SLIDER
+   - Full-bleed photography with multi-layer cinematic gradient scrims
+   - Ultra-refined frosted glassmorphism badges & micro-pills
+   - Responsive horizontal sliding carousel with smooth auto-slide & nav arrows
+   - Dynamic hover illumination & radiant active state
+───────────────────────────────────────────────────────────────────────────── */
+
+.service-categories-slider-section {
+  position: relative;
+  padding: 42px 0 28px 0;
+  z-index: 10;
+  background: transparent;
+}
+
+/* ─── Header Container with Luxury Eyebrow & Nav Controls ─── */
+.scs-header-container {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 22px;
+}
+
+.scs-header-left {
+  max-width: 760px;
+}
+
+.scs-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 99, 51, 0.08);
+  border: 1px solid rgba(255, 99, 51, 0.22);
+  color: #FF6333;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  padding: 5px 14px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+
+.scs-sparkle-icon {
+  color: #FF6333;
+  animation: scs-pulse-glow 2.5s infinite ease-in-out;
+}
+
+@keyframes scs-pulse-glow {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.scs-title {
+  font-size: 2.35rem;
+  font-weight: 900;
+  color: #0F172A;
+  margin-bottom: 8px;
+  letter-spacing: -0.6px;
+  font-family: 'Outfit', sans-serif;
+  line-height: 1.2;
+}
+
+.scs-subtitle {
+  font-size: 1.02rem;
+  color: #64748B;
+  line-height: 1.55;
+  margin-bottom: 0;
+  font-weight: 400;
+}
+
+/* ─── Glassmorphic Top Nav Buttons ─── */
+.scs-header-nav-btns {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.scs-nav-btn {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  color: #0F172A;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scs-nav-btn:hover {
+  background: linear-gradient(135deg, #FF6333 0%, #FF8A00 100%);
+  color: #FFFFFF;
+  border-color: #FF6333;
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 22px rgba(255, 99, 51, 0.35);
+}
+
+.scs-nav-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* ─── Scroll Track & Wrapper ─── */
+.scs-scroll-track-wrapper {
+  position: relative;
+  margin: 0 -12px;
+  padding: 10px 12px 18px 12px;
+  overflow: hidden;
+}
+
+.scs-scroll-track {
+  display: flex;
+  gap: 26px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  user-select: none;
+  -webkit-user-select: none;
+  padding: 12px 8px 18px 8px;
+  cursor: grab;
+}
+
+.scs-scroll-track.is-dragging {
+  cursor: grabbing;
+}
+
+.scs-scroll-track::-webkit-scrollbar {
+  display: none;
+}
+
+/* ─── The Ultra-Luxury Cinematic Card ─── */
+.scs-luxury-card {
+  flex: 0 0 380px;
+  min-width: 320px;
+  max-width: 390px;
+  height: 500px;
+  position: relative;
+  border-radius: 28px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: #0B1120;
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 16px 40px -10px rgba(15, 23, 42, 0.22), 0 2px 8px rgba(15, 23, 42, 0.08);
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1), 
+              border-color 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Smooth Card Hover Lift & Illumination */
+.scs-luxury-card:hover {
+  transform: translateY(-8px) scale(1.015);
+  box-shadow: 0 28px 60px -12px rgba(15, 23, 42, 0.35), 0 12px 28px -6px rgba(255, 99, 51, 0.3);
+  border-color: rgba(255, 99, 51, 0.65);
+}
+
+/* ─── Active Selected Card (Signature Luxury Sunset Halo) ─── */
+.scs-luxury-card.is-active {
+  border: 2px solid #FF6333 !important;
+  box-shadow: 0 26px 65px -10px rgba(255, 99, 51, 0.48), 
+              0 0 0 1px #FF6333, 
+              0 0 30px rgba(255, 99, 51, 0.32) !important;
+  transform: translateY(-5px);
+}
+
+/* ─── Full-Bleed Cinematic Photography Layer ─── */
+.scs-card-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+  transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), filter 0.5s ease;
+}
+
+.scs-luxury-card:hover .scs-card-bg-img {
+  transform: scale(1.08);
+}
+
+/* ─── Multi-Layered Cinematic Gradient Scrims ─── */
+.scs-card-scrim-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 160px;
+  background: linear-gradient(180deg, rgba(8, 14, 28, 0.85) 0%, rgba(8, 14, 28, 0.35) 55%, transparent 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.scs-card-scrim-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 350px;
+  background: linear-gradient(
+    0deg, 
+    rgba(6, 10, 20, 0.98) 0%, 
+    rgba(6, 10, 20, 0.88) 45%, 
+    rgba(6, 10, 20, 0.45) 75%, 
+    transparent 100%
+  );
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Ambient Warm Glow on Hover / Active */
+.scs-card-ambient-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 100%, rgba(255, 99, 51, 0.22) 0%, transparent 65%);
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.scs-luxury-card:hover .scs-card-ambient-glow,
+.scs-luxury-card.is-active .scs-card-ambient-glow {
+  opacity: 1;
+}
+
+/* ─── Top Glassmorphism Badges Bar ─── */
+.scs-card-top-bar {
+  position: relative;
+  z-index: 3;
+  padding: 20px 20px 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.scs-tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  color: #FFFFFF;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.scs-tag-icon {
+  color: #FF9F1C;
+}
+
+.scs-rating-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(11, 17, 32, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #FFD166;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.scs-rating-star {
+  color: #FFD166;
+  fill: #FFD166;
+}
+
+.scs-rating-val {
+  color: #FFFFFF;
+  font-weight: 800;
+}
+
+/* ─── Active Indicator Pill ─── */
+.scs-active-badge-indicator {
+  position: absolute;
+  top: 66px;
+  left: 20px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 99, 51, 0.9);
+  color: #FFFFFF;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 11px;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(255, 99, 51, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  animation: scs-fade-in 0.3s ease;
+}
+
+.scs-active-pulsing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  animation: scs-pulse-dot 1.4s infinite ease-in-out;
+}
+
+@keyframes scs-pulse-dot {
+  0%, 100% { opacity: 0.5; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+@keyframes scs-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Bottom Cinematic Card Content ─── */
+.scs-card-bottom-content {
+  position: relative;
+  z-index: 3;
+  padding: 0 22px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.scs-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.scs-luxury-title {
+  color: #FFFFFF;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.48rem;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  line-height: 1.25;
+  margin: 0;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+}
+
+.scs-luxury-tagline {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.84rem;
+  line-height: 1.45;
+  margin: 0;
+  font-weight: 400;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* ─── Frosted Glass Feature Micro-Pills ─── */
+.scs-luxury-pills-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+  margin-bottom: 4px;
+}
+
+.scs-luxury-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 4px 11px;
+  border-radius: 999px;
+  letter-spacing: 0.1px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.scs-luxury-card:hover .scs-luxury-pill {
+  background: rgba(255, 255, 255, 0.17);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.scs-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ─── Luxury Gradient Pill Action Button ─── */
+.scs-action-btn-wrap {
+  margin-top: 4px;
+}
+
+.scs-luxury-action-btn {
+  width: 100%;
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-decoration: none !important;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(255, 255, 255, 0.32);
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scs-btn-label {
+  color: #FFFFFF;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.scs-btn-arrow-badge {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), 
+              background 0.28s ease, 
+              color 0.28s ease;
+}
+
+/* Card Hover or Active Card Button Illumination */
+.scs-luxury-card:hover .scs-luxury-action-btn,
+.scs-luxury-action-btn.is-active-btn {
+  background: linear-gradient(135deg, #FF6333 0%, #FF8A00 100%) !important;
+  border-color: #FF6333 !important;
+  box-shadow: 0 8px 24px rgba(255, 99, 51, 0.45) !important;
+  transform: translateY(-2px);
+}
+
+.scs-luxury-card:hover .scs-btn-arrow-badge,
+.scs-luxury-action-btn.is-active-btn .scs-btn-arrow-badge {
+  transform: translateX(4px);
+  background: #FFFFFF;
+  color: #FF6333;
+}
+
+/* ─── Carousel Bottom Bar: Pagination Dots & Mobile Controls ─── */
+.scs-carousel-bottom-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 14px;
+}
+
+.scs-pagination-dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scs-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #CBD5E1;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scs-dot:hover {
+  background: #94A3B8;
+}
+
+.scs-dot.is-active {
+  width: 28px;
+  background: linear-gradient(90deg, #FF6333 0%, #FF9F1C 100%);
+  box-shadow: 0 2px 8px rgba(255, 99, 51, 0.4);
+}
+
+.scs-bottom-nav-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scs-nav-btn-mobile {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  color: #0F172A;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.scs-nav-btn-mobile:active {
+  background: #FF6333;
+  color: #FFFFFF;
+  border-color: #FF6333;
+}
+
+/* ─── Responsive Adjustments ─── */
+@media (min-width: 992px) {
+  .scs-scroll-track {
+    justify-content: center;
+  }
+
+  .scs-luxury-card {
+    flex: 1 1 360px;
+    min-width: 320px;
+    max-width: 390px;
+  }
+}
+
+@media (max-width: 768px) {
+  .service-categories-slider-section {
+    padding: 28px 0 16px 0;
+  }
+
+  .scs-title {
+    font-size: 1.7rem;
+  }
+
+  .scs-subtitle {
+    font-size: 0.92rem;
+  }
+
+  .scs-luxury-card {
+    flex: 0 0 300px;
+    min-width: 300px;
+    max-width: 300px;
+    height: 470px;
+    border-radius: 22px;
+  }
+
+  .scs-card-bottom-content {
+    padding: 0 18px 18px 18px;
+  }
+
+  .scs-luxury-title {
+    font-size: 1.32rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .scs-luxury-card {
+    flex: 0 0 270px;
+    min-width: 270px;
+    max-width: 270px;
+    height: 450px;
+  }
+}
