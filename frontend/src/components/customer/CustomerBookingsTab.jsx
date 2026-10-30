@@ -418,7 +418,7 @@ export default function CustomerBookingsTab({
     if (isBikesCategory(b)) return 'Bikes';
     if (isTripPackageCategory(b)) return 'Trip Package';
     if (isCarsCategory(b)) return 'Cars';
-    if (isSelfDriveHolidayCategory(b)) return 'Self Drive Holiday';
+    if (isSelfDriveHolidayCategory(b)) return 'Cab Transfer';
     return b.package_type || b.type || 'Booking';
   };
 
@@ -432,7 +432,7 @@ export default function CustomerBookingsTab({
     if (isBikesCategory(b)) return '🏍️ Bikes';
     if (isTripPackageCategory(b)) return '🌴 Trip Package';
     if (isCarsCategory(b)) return '🚗 Cars';
-    if (isSelfDriveHolidayCategory(b)) return '⭐ Self Drive Holiday';
+    if (isSelfDriveHolidayCategory(b)) return '🚖 Cab Transfer';
     return `📄 ${b.package_type || b.type || 'Booking'}`;
   };
 
@@ -834,13 +834,13 @@ export default function CustomerBookingsTab({
                           Craft Your Own Trip →
                         </a>
                       </>
-                    ) : categoryFilter === 'selfdrive' ? (
+                    ) : categoryFilter === 'cars' ? (
                       <>
                         <Compass size={40} className="mb-2 text-warning opacity-75" />
-                        <h5 className="fw-bold text-dark mb-1">No Self Drive Holidays Found</h5>
-                        <p className="text-muted text-xs mb-3">Book premium Self Drive vehicles and packages with unlimited KMs and resort stays.</p>
+                        <h5 className="fw-bold text-dark mb-1">No Cab Bookings Found</h5>
+                        <p className="text-muted text-xs mb-3">Book airport transfers and chauffeur-driven cabs with 100% verified drivers.</p>
                         <a href="/#self-drive-categories" className="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-4 py-2 shadow-sm">
-                          Book a Self Drive Holiday →
+                          Book Cab Transfer →
                         </a>
                       </>
                     ) : (

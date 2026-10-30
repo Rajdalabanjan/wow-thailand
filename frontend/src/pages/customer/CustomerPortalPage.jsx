@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 
 import CustomerOverviewTab from '../../components/customer/CustomerOverviewTab';
-import CustomerSelfDriveTab from '../../components/customer/CustomerSelfDriveTab';
+// Customer Tabs
 import CustomerDriverTripsTab from '../../components/customer/CustomerDriverTripsTab';
 import CustomerBookingsTab from '../../components/customer/CustomerBookingsTab';
 import CustomerWalletTab from '../../components/customer/CustomerWalletTab';
@@ -271,7 +271,7 @@ export default function CustomerPortalPage({
   }, [customerUser, refreshCustomerData]);
 
   useEffect(() => {
-    if (customerUser && (activeTab === 'driver-trips' || activeTab === 'bookings' || activeTab === 'selfdrive' || activeTab === 'overview' || activeTab === 'notifications')) {
+    if (customerUser && (activeTab === 'driver-trips' || activeTab === 'bookings' || activeTab === 'cabs' || activeTab === 'hotels' || activeTab === 'overview' || activeTab === 'notifications')) {
       refreshCustomerData();
     }
   }, [activeTab, customerUser, refreshCustomerData]);
@@ -908,7 +908,7 @@ export default function CustomerPortalPage({
         tier_discount_applied: details.tier_discount_applied || 0,
         customer_tier_at_booking: details.customer_tier_at_booking || 'New Member',
         customizations: details.customizations ? (typeof details.customizations === 'string' ? details.customizations : JSON.stringify(details.customizations)) : '',
-        payment_method: (typeof paymentMethod === 'string' && paymentMethod) ? paymentMethod : 'Cash / Online',
+        payment_method: details?.payment_method || details?.paymentMethod || 'Cash / Online',
         driver_required: details.driver_required ? 1 : 0,
         driver_service_type: details.driver_service_type || (details.driver_required ? 'FULL' : null),
         driver_charge: typeof details.driver_charge === 'number' ? details.driver_charge : 0,
@@ -1819,11 +1819,11 @@ export default function CustomerPortalPage({
                   />
                 )}
 
-                {(activeTab === 'selfdrive' || activeTab === 'cabs') && (
+                {activeTab === 'cabs' && (
                   <CustomerBookingsTab
                     currentUser={customerUser}
-                    bookings={myBookings}
-                    onOpenBookingDetails={handleOpenDetailModal}
+                    bookings={customerBookings}
+                    onOpenBookingDetails={handleOpenBookingDetails}
                     initialCategory="cars"
                   />
                 )}
@@ -1831,8 +1831,8 @@ export default function CustomerPortalPage({
                 {activeTab === 'hotels' && (
                   <CustomerBookingsTab
                     currentUser={customerUser}
-                    bookings={myBookings}
-                    onOpenBookingDetails={handleOpenDetailModal}
+                    bookings={customerBookings}
+                    onOpenBookingDetails={handleOpenBookingDetails}
                     initialCategory="hotel"
                   />
                 )}

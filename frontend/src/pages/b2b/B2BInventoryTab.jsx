@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Hotel, Car, Compass, Plane, Wand2, Search, Filter, Gift, Tag, Check, Star, 
+  Hotel, Car, Compass, Search, Filter, Gift, Tag, Check, Star, 
   Users, Calendar, Sparkles, MapPin, ArrowRight, ShieldCheck, Clock, 
-  Eye, CheckCircle2, AlertCircle, X, Shield, PlaneTakeoff, PlaneLanding,
+  Eye, CheckCircle2, AlertCircle, X, Shield,
   CreditCard, Fuel, Gauge, Award, FileText, Wallet,
   ChevronDown, ChevronUp, Utensils
 } from 'lucide-react';
@@ -12,7 +12,7 @@ import { resolveItemImages, getFlightDefaultImage, isFlightItem, isUnrelatedInve
 import HotelDetailsPage from '../customer/HotelDetailsPage';
 import ActivityDetailsPage from '../customer/ActivityDetailsPage';
 import PackageDetailsPage from '../customer/PackageDetailsPage';
-import FlightDetailsPage from '../customer/FlightDetailsPage';
+import CarDetailsPage from '../customer/CarDetailsPage';
 import B2BModalPortal from '../../components/b2b/B2BModalPortal';
 
 // Helper to parse day-wise itinerary in any format (JSON string, array, or object)
@@ -141,10 +141,13 @@ export default function B2BInventoryTab({
           resData = await api.fetchHotels();
         } else if (activeService === 'cabs' || activeService === 'cars') {
           resData = await api.fetchCars();
-        } else if (activeService === 'sightseeing') {
-          resData = await api.fetchPackages();
-        } else if (activeService === 'activities') {
-          resData = await api.fetchActivities();
+        } else {
+          // Sightseeing & Activities (Platform Admin Curated)
+          const [acts, pkgs] = await Promise.all([
+            api.fetchActivities().catch(() => []),
+            api.fetchPackages().catch(() => [])
+          ]);
+          resData = [...(Array.isArray(acts) ? acts : []), ...(Array.isArray(pkgs) ? pkgs : [])];
         }
         if (isMounted) {
           setItems(Array.isArray(resData) ? resData : []);
@@ -157,7 +160,11 @@ export default function B2BInventoryTab({
     };
 
     loadInventory();
-    return () => { isMounted = false; };
+    window.addEventListener('hotelsUpdated', loadInventory);
+    return () => { 
+      isMounted = false; 
+      window.removeEventListener('hotelsUpdated', loadInventory);
+    };
   }, [activeService]);
 
   // Calculate pricing for an inventory item
@@ -167,12 +174,9 @@ export default function B2BInventoryTab({
       rawPrice = parseFloat(item.price_per_night || item.price || 3000);
     } else if (activeService === 'cabs' || activeService === 'cars') {
       rawPrice = parseFloat(item.price_per_day || item.price || 800);
-    } else if (activeService === 'sightseeing') {
-      rawPrice = parseFloat(item.price_adult_thb || item.price || 1400);
-    } else if (activeService === 'activities') {
-      rawPrice = parseFloat(item.price || 1500);
     } else {
-      rawPrice = parseFloat(item.price || 2500);
+      // Sightseeing & Activities
+      rawPrice = parseFloat(item.price_adult_thb || item.price || 1500);
     }
 
     const sellingPrice = Math.round(rawPrice);
@@ -266,7 +270,6 @@ export default function B2BInventoryTab({
         nights: isHotel ? nights : undefined,
         room_type: bookingItem.preselected_room?.name || undefined,
         rate_plan: bookingItem.preselected_rate_plan?.name || undefined,
-        airline: activeService === 'flights' ? (bookingItem.airline || 'Airline') : undefined
       }
     };
 
@@ -321,7 +324,7 @@ export default function B2BInventoryTab({
             </span>
           </div>
 
-          {/* 4 THAILAND SERVICE TABS */}
+          {/* 3 OFFICIAL THAILAND SERVICE TABS */}
           <div className="d-flex gap-1.5 flex-wrap">
             <button
               onClick={() => setActiveService('hotels')}
@@ -335,29 +338,20 @@ export default function B2BInventoryTab({
             <button
               onClick={() => setActiveService('cabs')}
               className={`btn btn-sm rounded-pill px-3 py-1.5 text-xs fw-semibold d-flex align-items-center gap-1.5 transition-all ${
-                activeService === 'cabs' || activeService === 'selfdrive' ? 'btn-dark text-white shadow-sm' : 'btn-outline-secondary'
+                activeService === 'cabs' ? 'btn-dark text-white shadow-sm' : 'btn-outline-secondary'
               }`}
             >
               <Car size={14} />
-              <span>Cab Transfers</span>
-            </button>
-            <button
-              onClick={() => setActiveService('sightseeing')}
-              className={`btn btn-sm rounded-pill px-3 py-1.5 text-xs fw-semibold d-flex align-items-center gap-1.5 transition-all ${
-                activeService === 'sightseeing' ? 'btn-dark text-white shadow-sm' : 'btn-outline-secondary'
-              }`}
-            >
-              <Compass size={14} />
-              <span>Sightseeing Tours</span>
+              <span>Cabs &amp; Airport Transfers</span>
             </button>
             <button
               onClick={() => setActiveService('activities')}
               className={`btn btn-sm rounded-pill px-3 py-1.5 text-xs fw-semibold d-flex align-items-center gap-1.5 transition-all ${
-                activeService === 'activities' ? 'btn-dark text-white shadow-sm' : 'btn-outline-secondary'
+                activeService === 'activities' || activeService === 'sightseeing' ? 'btn-dark text-white shadow-sm' : 'btn-outline-secondary'
               }`}
             >
               <Sparkles size={14} />
-              <span>Activities</span>
+              <span>Sightseeing &amp; Activities</span>
             </button>
           </div>
         </div>
@@ -606,7 +600,7 @@ export default function B2BInventoryTab({
                 nights={calculateHotelNights()}
                 actionLabel="Book for Guest"
                 backLabel="Back to B2B Hotels"
-                breadcrumbPrefix="B2B Portal / Hotels"
+                breadcrumbPrefix="B2B Portal / Hotels & Resorts"
                 onBack={() => setDetailItem(null)}
                 onBook={(hotel, selectedRoom, selectedRatePlan) => {
                   const enrichedHotel = {
@@ -619,11 +613,44 @@ export default function B2BInventoryTab({
                   handleOpenBooking(enrichedHotel);
                 }}
               />
-            ) : activeService === 'activities' ? (
+            ) : activeService === 'cabs' ? (
+              <CarDetailsPage
+                car={detailItem}
+                pickupDate={guestDetails.date}
+                actionLabel="Book for Guest"
+                backLabel="Back to B2B Cabs"
+                breadcrumbPrefix="B2B Portal / Cabs & Airport Transfers"
+                onBack={() => setDetailItem(null)}
+                onBook={(carData) => {
+                  const enrichedCab = {
+                    ...detailItem,
+                    ...(carData || {})
+                  };
+                  setDetailItem(null);
+                  handleOpenBooking(enrichedCab);
+                }}
+              />
+            ) : (detailItem.day_plans || detailItem.itinerary || detailItem.duration_days) ? (
+              <PackageDetailsPage
+                pkg={detailItem}
+                actionLabel="Book for Guest"
+                backLabel="Back to B2B Sightseeing & Activities"
+                breadcrumbPrefix="B2B Portal / Sightseeing & Activities"
+                onBack={() => setDetailItem(null)}
+                onBook={(pkgData) => {
+                  const enrichedPkg = {
+                    ...detailItem,
+                    ...(pkgData || {})
+                  };
+                  setDetailItem(null);
+                  handleOpenBooking(enrichedPkg);
+                }}
+              />
+            ) : (
               <ActivityDetailsPage
                 activity={detailItem}
                 actionLabel="Book for Guest"
-                backLabel="Back to B2B Activities"
+                backLabel="Back to B2B Sightseeing & Activities"
                 breadcrumbPrefix="B2B Portal / Sightseeing & Activities"
                 onBack={() => setDetailItem(null)}
                 onBook={(activityData) => {
@@ -635,40 +662,6 @@ export default function B2BInventoryTab({
                   };
                   setDetailItem(null);
                   handleOpenBooking(enrichedActivity);
-                }}
-              />
-            ) : activeService === 'flights' ? (
-              <FlightDetailsPage
-                flight={detailItem}
-                actionLabel="Book for Guest"
-                backLabel="Back to B2B Flights"
-                breadcrumbPrefix="B2B Portal / Flights & Airport Transfers"
-                onBack={() => setDetailItem(null)}
-                onBook={(flightData) => {
-                  const enrichedFlight = {
-                    ...detailItem,
-                    ...(flightData || {}),
-                    type: 'flight',
-                    service_type: 'flight'
-                  };
-                  setDetailItem(null);
-                  handleOpenBooking(enrichedFlight);
-                }}
-              />
-            ) : (
-              <PackageDetailsPage
-                pkg={detailItem}
-                actionLabel="Book for Guest"
-                backLabel="Back to B2B Packages"
-                breadcrumbPrefix="B2B Portal / Tour Packages"
-                onBack={() => setDetailItem(null)}
-                onBook={(pkgData) => {
-                  const enrichedPkg = {
-                    ...detailItem,
-                    ...(pkgData || {})
-                  };
-                  setDetailItem(null);
-                  handleOpenBooking(enrichedPkg);
                 }}
               />
             )}
@@ -749,7 +742,7 @@ export default function B2BInventoryTab({
                   <div className="mb-3" key={`carousel-${activeService}-${bookingItem?.id || bookingItem?.flight_number}`}>
                     <ImageCarousel
                       images={resolveItemImages(bookingItem, activeService)}
-                      fallbackImage={activeService === 'flights' ? getFlightDefaultImage(bookingItem?.airline || bookingItem?.name) : undefined}
+                      
                       alt={bookingItem.name || bookingItem.airline || 'Booking Service'}
                       height="220px"
                       rounded="12px"
@@ -945,7 +938,7 @@ export default function B2BInventoryTab({
                         </div>
                         <div className="col-12 col-sm-6">
                           <label className="form-label text-xxs fw-bold text-muted mb-1">
-                            {activeService === 'flights' ? 'Passengers Count' : 'Guests / Travelers Count'}
+                            Guests / Travelers Count
                           </label>
                           <input
                             type="number"

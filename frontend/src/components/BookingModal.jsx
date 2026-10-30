@@ -376,55 +376,53 @@ export default function BookingModal({
   };
 
   useEffect(() => {
-    import('../services/api').then(api => {
-      const rawVendorId = selectedBookingItem?.vendor_id || selectedBookingItem?.vendorId;
-      const isCarOrBikeItem = selectedBookingItem && (
-        String(selectedBookingItem?.id).startsWith('car-') ||
-        String(selectedBookingItem?.id).startsWith('bike-') ||
-        selectedBookingItem.type === 'car' ||
-        selectedBookingItem.type === 'bike' ||
-        selectedBookingItem.category === 'bike' ||
-        /bike|scooter|activa|bullet|reborn|classic\s*350|himalayan|royal\s*enfield|jupiter|faschino|access\s*125|thar|swift|creta|ertiga|fortuner/i.test(
-          selectedBookingItem?.name || selectedBookingItem?.vehicle_name || selectedBookingItem?.title || ''
-        )
-      );
-      const effectiveVendorId = (rawVendorId && rawVendorId !== 'admin')
-        ? rawVendorId
-        : (isCarOrBikeItem ? 'u-4' : null);
+    const rawVendorId = selectedBookingItem?.vendor_id || selectedBookingItem?.vendorId;
+    const isCarOrBikeItem = selectedBookingItem && (
+      String(selectedBookingItem?.id).startsWith('car-') ||
+      String(selectedBookingItem?.id).startsWith('bike-') ||
+      selectedBookingItem.type === 'car' ||
+      selectedBookingItem.type === 'bike' ||
+      selectedBookingItem.category === 'bike' ||
+      /bike|scooter|activa|bullet|reborn|classic\s*350|himalayan|royal\s*enfield|jupiter|faschino|access\s*125|thar|swift|creta|ertiga|fortuner/i.test(
+        selectedBookingItem?.name || selectedBookingItem?.vehicle_name || selectedBookingItem?.title || ''
+      )
+    );
+    const effectiveVendorId = (rawVendorId && rawVendorId !== 'admin')
+      ? rawVendorId
+      : (isCarOrBikeItem ? 'u-4' : null);
 
-      if (effectiveVendorId) {
-        api.getVendorPaymentMethods(effectiveVendorId).then(methods => {
-          const activeMethods = (methods || []).filter(m => m.status === 'Active');
-          setPaymentSettings(activeMethods);
-          if (activeMethods.length > 0) {
-            setSelectedPaymentMethod(activeMethods[0].id ? activeMethods[0].id.toString() : 'default');
-          }
-        }).catch(err => {
-          console.error('Error fetching vendor payment methods:', err);
-          setPaymentSettings([]);
-        });
-      } else {
-        // Customer booking MUST NOT fall back to admin payment methods
-        setPaymentSettings([]);
-      }
-
-      // Fetch room types if hotel
-      const isHotelItem = selectedBookingItem && (selectedBookingItem.id.toString().startsWith('hotel-') || selectedBookingItem.property_type || selectedBookingItem.stars);
-      if (isHotelItem && effectiveVendorId) {
-         api.pmsListRoomTypes(effectiveVendorId).then(res => {
-           const hotelRooms = (res.room_types || []).filter(rt => rt.hotel_id == selectedBookingItem.id && rt.status === 'Active');
-           setRoomTypes(hotelRooms);
-         }).catch(console.error);
-      }
-
-      // Fetch Vendor Cancellation Policy
-      const sType = isHotelItem ? 'hotel' : 'vehicle';
-      api.fetchVendorCancellationPolicy(effectiveVendorId || 'u-4', sType).then(res => {
-        if (res && res.policy) {
-          setVendorCancellationPolicy(res.policy);
+    if (effectiveVendorId) {
+      api.getVendorPaymentMethods(effectiveVendorId).then(methods => {
+        const activeMethods = (methods || []).filter(m => m.status === 'Active');
+        setPaymentSettings(activeMethods);
+        if (activeMethods.length > 0) {
+          setSelectedPaymentMethod(activeMethods[0].id ? activeMethods[0].id.toString() : 'default');
         }
-      }).catch(console.error);
-    });
+      }).catch(err => {
+        console.error('Error fetching vendor payment methods:', err);
+        setPaymentSettings([]);
+      });
+    } else {
+      // Customer booking MUST NOT fall back to admin payment methods
+      setPaymentSettings([]);
+    }
+
+    // Fetch room types if hotel
+    const isHotelItem = selectedBookingItem && (selectedBookingItem.id.toString().startsWith('hotel-') || selectedBookingItem.property_type || selectedBookingItem.stars);
+    if (isHotelItem && effectiveVendorId) {
+       api.pmsListRoomTypes(effectiveVendorId).then(res => {
+         const hotelRooms = (res.room_types || []).filter(rt => rt.hotel_id == selectedBookingItem.id && rt.status === 'Active');
+         setRoomTypes(hotelRooms);
+       }).catch(console.error);
+    }
+
+    // Fetch Vendor Cancellation Policy
+    const sType = isHotelItem ? 'hotel' : 'vehicle';
+    api.fetchVendorCancellationPolicy(effectiveVendorId || 'u-4', sType).then(res => {
+      if (res && res.policy) {
+        setVendorCancellationPolicy(res.policy);
+      }
+    }).catch(console.error);
   }, [selectedBookingItem]);
 
   const isHotel = String(selectedBookingItem?.id || '').startsWith('hotel-') || 

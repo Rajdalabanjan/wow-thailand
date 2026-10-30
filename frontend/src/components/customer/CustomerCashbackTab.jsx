@@ -19,7 +19,7 @@ export default function CustomerCashbackTab({
             My Cashback & Rewards
           </h4>
           <p className="text-muted text-xs mb-0">
-            Earn automatic cashback on every Self Drive Holiday and vehicle rental in Thailand.
+            Earn automatic cashback on every trip and booking in Thailand.
           </p>
         </div>
       </div>
@@ -118,7 +118,7 @@ export default function CustomerCashbackTab({
                     #{cb.id || `CB-${1000 + idx}`}
                   </td>
                   <td className="fw-bold text-dark">
-                    {cb.booking_title || cb.package_name || 'Self Drive Booking'}
+                    {cb.booking_title || cb.package_name || 'Thailand Booking'}
                   </td>
                   <td>
                     <span className="badge bg-purple bg-opacity-10 text-purple text-xxs fw-bold px-2 py-0.5 rounded" style={{ color: '#7C3AED', background: 'rgba(124,58,237,0.1)' }}>
@@ -143,7 +143,7 @@ export default function CustomerCashbackTab({
                 <tr>
                   <td colSpan="6" className="text-center py-5 text-muted">
                     <Gift size={36} className="mb-2 text-muted opacity-50" />
-                    <div>No cashback rewards recorded yet. Complete a Self Drive Holiday to earn cashback!</div>
+                    <div>No cashback rewards recorded yet. Complete a trip to earn cashback!</div>
                   </td>
                 </tr>
               )}

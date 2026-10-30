@@ -39,7 +39,7 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, triggerOp
               const isActive = activeTab === link.id || 
                 (link.id === 'cabs' && (activeTab === 'cabs' || activeTab === 'cars' || activeTab === 'transfers' || activeTab === 'car-details')) ||
                 (link.id === 'hotels' && (activeTab === 'hotels' || activeTab === 'hotel-details')) ||
-                (link.id === 'sightseeing' && (activeTab === 'sightseeing')) ||
+                (link.id === 'sightseeing' && (activeTab === 'sightseeing' || activeTab === 'activities' || activeTab === 'activity-details')) ||
                 (link.id === 'activities' && (activeTab === 'activities' || activeTab === 'activity-details')) ||
                 activeTab === link.href.replace('/', '');
               return (

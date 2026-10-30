@@ -9,6 +9,7 @@ export function errorHandler(err, req, res, next) {
   const response = {
     success: false,
     error: err.message || 'An internal server error occurred.',
+    code: err.code,
     conflict: isConflict
   };
 

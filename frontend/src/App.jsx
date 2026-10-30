@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect, useCallback, Suspense, lazy } from 'react';
 import './App.css';
 import { useSiteConfig } from './context/SiteConfigContext';
 import { useCustomerCurrency } from './context/CustomerCurrencyContext';
@@ -25,38 +25,47 @@ import SelfDriveCategoryShowcase from './components/widgets/SelfDriveCategorySho
 import CustomerReviewsSection from './components/reviews/CustomerReviewsSection';
 import ServiceCategoriesSlider from './components/widgets/ServiceCategoriesSlider';
 
-// Import Pages
-import {
-  ActivityDetailsPage,
-  FlightBookingFlow,
-  FlightDetailsPage,
-  AdminPortalPage,
-  VendorPortalPage,
-  FlightVendorPortalPage,
-  HotelVendorPortalPage,
-  SuperAdminPortalPage,
-  HotelsPage,
-  CarsPage,
-  CarDetailsPage,
-  BikeDetailsPage,
-  BikesPage,
-  FlightsPage,
-  HotelDetailsPage,
-  VehicleDetailsPage,
-  PackageDetailsPage,
-  ExplorePage,
-  SelfDrivePage,
-  PackageCustomizationPage,
-  CraftMyTripPage,
-  AIPlannerPage,
-  CustomerDashboard,
-  SubAdminPortalPage,
-  DriverPortalPage,
-  DriverLoginPage,
-  CustomerPortalPage
-} from './pages';
+// Code-split heavy portal workspaces via React.lazy for faster initial page load
+const AdminPortalPage = lazy(() => import('./pages/admin/AdminPortalPage'));
+const SuperAdminPortalPage = lazy(() => import('./pages/superadmin/SuperAdminPortalPage'));
+const SubAdminPortalPage = lazy(() => import('./pages/subadmin/SubAdminPortalPage'));
+const B2BPortalPage = lazy(() => import('./pages/b2b/B2BPortalPage'));
+const HotelVendorPortalPage = lazy(() => import('./pages/vendor/HotelVendorPortalPage'));
+const DriverPortalPage = lazy(() => import('./pages/driver/DriverPortalPage'));
+
+const PortalLoadingFallback = () => (
+  <div className="d-flex flex-column align-items-center justify-content-center min-vh-100" style={{ background: '#f8fafc' }}>
+    <div className="spinner-border text-warning mb-3" style={{ width: '2.5rem', height: '2.5rem' }} role="status">
+      <span className="visually-hidden">Loading Portal...</span>
+    </div>
+    <div className="fw-bold text-dark small text-uppercase tracking-wider">Loading Portal Workspace...</div>
+  </div>
+);
+
+// Import Customer Pages
+import ActivityDetailsPage from './pages/customer/ActivityDetailsPage';
+import FlightBookingFlow from './pages/customer/FlightBookingFlow';
+import FlightDetailsPage from './pages/customer/FlightDetailsPage';
+import HotelsPage from './pages/customer/HotelsPage';
+import CarsPage from './pages/customer/CarsPage';
+import CarDetailsPage from './pages/customer/CarDetailsPage';
+import BikeDetailsPage from './pages/customer/BikeDetailsPage';
+import BikesPage from './pages/customer/BikesPage';
+import FlightsPage from './pages/customer/FlightsPage';
+import HotelDetailsPage from './pages/customer/HotelDetailsPage';
+import VehicleDetailsPage from './pages/customer/VehicleDetailsPage';
+import PackageDetailsPage from './pages/customer/PackageDetailsPage';
+import ExplorePage from './pages/customer/ExplorePage';
+import SelfDrivePage from './pages/customer/SelfDrivePage';
+import PackageCustomizationPage from './pages/customer/PackageCustomizationPage';
+import CraftMyTripPage from './pages/customer/CraftMyTripPage';
+import AIPlannerPage from './pages/customer/AIPlannerPage';
+import CustomerDashboard from './pages/customer/CustomerDashboard';
+import CustomerPortalPage from './pages/customer/CustomerPortalPage';
+import DriverLoginPage from './pages/driver/DriverLoginPage';
+import VendorPortalPage from './pages/vendor/VendorPortalPage';
+import FlightVendorPortalPage from './pages/vendor/FlightVendorPortalPage';
 import CustomTripEnquiryPage from './pages/customer/CustomTripEnquiryPage';
-import B2BPortalPage from './pages/b2b/B2BPortalPage';
 import CustomerActivitiesTab from './components/customer/CustomerActivitiesTab';
 import VendorLoginPage from './pages/vendor/VendorLoginPage';
 import RoleAccessDeniedModal from './components/vendor/RoleAccessDeniedModal';
@@ -111,10 +120,9 @@ export default function App() {
       }
       if (p.startsWith('/craft')) return 'hotels';
       if (p.startsWith('/hotels')) {
-        const savedTab = sessionStorage.getItem('tg_activeTab');
-        if (savedTab === 'hotel-details' && sessionStorage.getItem('tg_selectedDetailItem')) {
-          return 'hotel-details';
-        }
+        const urlParams = new URLSearchParams(window.location.search);
+        const hotelId = urlParams.get('hotel') || urlParams.get('id');
+        if (hotelId) return 'hotel-details';
         return 'hotels';
       }
       if (p.startsWith('/cars')) {
@@ -137,7 +145,8 @@ export default function App() {
       }
       if (p.startsWith('/packages')) { return 'sightseeing'; }
       if (p.startsWith('/self-drive') || p.startsWith('/selfdrive')) { return 'cabs'; }
-      // Fall back to sessionStorage if path is just '/'
+      // If root path ('/' or ''), always return 'hotels' storefront homepage
+      if (p === '/' || p === '') return 'hotels';
       const saved = sessionStorage.getItem('tg_activeTab');
       if (saved && ['hotels', 'cabs', 'sightseeing', 'activities', 'portal', 'customer', 'b2b', 'driver'].includes(saved)) return saved;
     } catch (e) {}
@@ -188,6 +197,8 @@ export default function App() {
   // It should only be restored if the user is explicitly on the full-page package customization view (?step=customize)
   const [selectedBookingItem, setSelectedBookingItem] = useState(() => {
     try {
+      const p = typeof window !== 'undefined' ? window.location.pathname.toLowerCase() : '';
+      if (p === '/' || p === '') return null; // Never restore booking modal on root homepage
       const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
       if (urlParams && urlParams.get('step') === 'customize') {
         const saved = sessionStorage.getItem('tg_selectedBookingItem') || sessionStorage.getItem('tg_selectedDetailItem');
@@ -199,9 +210,11 @@ export default function App() {
   const [selectedPackageModal, setSelectedPackageModal] = useState(null);
   const [selectedDetailItem, setSelectedDetailItem] = useState(() => {
     try {
+      const p = typeof window !== 'undefined' ? window.location.pathname.toLowerCase() : '';
+      if (p === '/' || p === '') return null; // Never restore detail page on root homepage
+
       const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
       if (urlParams) {
-        const p = typeof window !== 'undefined' ? window.location.pathname.toLowerCase() : '';
         const carId = urlParams.get('car') || (p.startsWith('/cars') ? urlParams.get('id') : null);
         if (carId && defaultCars) {
           const match = defaultCars.find(c => String(c.id) === String(carId));
@@ -210,6 +223,11 @@ export default function App() {
         const bikeId = urlParams.get('bike') || (p.startsWith('/bikes') ? urlParams.get('id') : null);
         if (bikeId && defaultBikes) {
           const match = defaultBikes.find(b => String(b.id) === String(bikeId));
+          if (match) return match;
+        }
+        const hotelId = urlParams.get('hotel') || (p.startsWith('/hotels') ? urlParams.get('id') : null);
+        if (hotelId && defaultHotels) {
+          const match = defaultHotels.find(h => String(h.id) === String(hotelId));
           if (match) return match;
         }
       }
@@ -690,12 +708,32 @@ export default function App() {
           }
         }
       }
-      else if (cleanPath === 'hotels' || cleanPath === '') {
-        const savedTab = sessionStorage.getItem('tg_activeTab');
-        if (savedTab === 'hotel-details' && sessionStorage.getItem('tg_selectedDetailItem')) {
+      else if (cleanPath === '') {
+        // Root homepage URL ('/'): Always show the homepage storefront (Hero, SearchWidget, Services)
+        newTab = 'hotels';
+        setSelectedDetailItem(null);
+        setSelectedBookingItem(null);
+        try {
+          sessionStorage.removeItem('tg_selectedDetailItem');
+          sessionStorage.removeItem('tg_selectedBookingItem');
+          sessionStorage.setItem('tg_activeTab', 'hotels');
+        } catch (e) {}
+      }
+      else if (cleanPath === 'hotels') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const hotelId = urlParams.get('hotel') || urlParams.get('id');
+        if (hotelId) {
           newTab = 'hotel-details';
+          try {
+            const raw = sessionStorage.getItem('tg_selectedDetailItem');
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (parsed && String(parsed.id) === String(hotelId)) setSelectedDetailItem(parsed);
+            }
+          } catch (e) {}
         } else {
           newTab = 'hotels';
+          setSelectedDetailItem(null);
         }
       }
       else if (cleanPath === 'cars') {
@@ -1398,22 +1436,26 @@ export default function App() {
   };
 
   const handleAddHotel = async (hotelData) => {
-    await api.addMasterHotel(hotelData);
+    const res = await api.addMasterHotel(hotelData);
     const fresh = await api.fetchHotels();
-    setHotels(fresh);
+    if (Array.isArray(fresh) && fresh.length > 0) setHotels(fresh);
+    window.dispatchEvent(new CustomEvent('hotelsUpdated'));
+    return res;
   };
 
   const handleUpdateHotel = async (hotelData, extraData) => {
     const payload = (extraData && typeof extraData === 'object') ? { ...extraData, id: hotelData } : hotelData;
     await api.updateHotel(payload);
     const fresh = await api.fetchHotels();
-    setHotels(fresh);
+    if (Array.isArray(fresh) && fresh.length > 0) setHotels(fresh);
+    window.dispatchEvent(new CustomEvent('hotelsUpdated'));
   };
 
   const handleDeleteHotel = async (hotelId) => {
     await api.deleteHotel(hotelId);
     const fresh = await api.fetchHotels();
-    setHotels(fresh);
+    if (Array.isArray(fresh)) setHotels(fresh);
+    window.dispatchEvent(new CustomEvent('hotelsUpdated'));
   };
 
   const refreshVehicleInventory = useCallback(async () => {
@@ -1838,12 +1880,14 @@ export default function App() {
   // ─── B2B TRAVEL AGENT / PARTNER PORTAL ROUTING ────────────────────────────
   if (path.startsWith('/b2b') || path === '/register' || path.startsWith('/vendor/register') || activeTab === 'b2b') {
     return (
-      <B2BPortalPage
-        activities={activities}
-        onNavigateHome={() => {
-          handleTabChange('hotels');
-        }}
-      />
+      <Suspense fallback={<PortalLoadingFallback />}>
+        <B2BPortalPage
+          activities={activities}
+          onNavigateHome={() => {
+            handleTabChange('hotels');
+          }}
+        />
+      </Suspense>
     );
   }
 
@@ -1865,13 +1909,15 @@ export default function App() {
       );
     }
     return (
-      <DriverPortalPage
-        currentUser={currentUser}
-        onLogout={handleLogout}
-        onNavigateHome={() => {
-          handleTabChange('hotels');
-        }}
-      />
+      <Suspense fallback={<PortalLoadingFallback />}>
+        <DriverPortalPage
+          currentUser={currentUser}
+          onLogout={handleLogout}
+          onNavigateHome={() => {
+            handleTabChange('hotels');
+          }}
+        />
+      </Suspense>
     );
   }
 
@@ -1970,7 +2016,7 @@ export default function App() {
         );
       }
       return (
-        <>
+        <Suspense fallback={<PortalLoadingFallback />}>
           <SuperAdminPortalPage
             currentUser={currentUser}
             triggerOpenLogin={() => setShowLoginModal(true)}
@@ -1992,13 +2038,13 @@ export default function App() {
             flights={flights}
           />
           <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} onLogin={handleLogin} />
-        </>
+        </Suspense>
       );
     }
     // SubAdmin route guard
     if (path.startsWith('/sub-admin') || path.startsWith('/subadmin') || ((currentUser?.role === 'subadmin' || currentUser?.role === 'sub_admin') && (path === '/portal' || activeTab === 'portal'))) {
       return (
-        <>
+        <Suspense fallback={<PortalLoadingFallback />}>
           <SubAdminPortalPage
             currentUser={currentUser}
             onLogout={handleLogout}
@@ -2009,7 +2055,7 @@ export default function App() {
             usersList={usersList}
           />
           <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} onLogin={handleLogin} />
-        </>
+        </Suspense>
       );
     }
     // Hotel Vendor route guard
@@ -2039,7 +2085,7 @@ export default function App() {
         );
       }
       return (
-        <>
+        <Suspense fallback={<PortalLoadingFallback />}>
           <HotelVendorPortalPage
             currentUser={currentUser}
             triggerOpenLogin={() => setShowLoginModal(true)}
@@ -2051,7 +2097,7 @@ export default function App() {
             bookings={bookings}
           />
           <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} onLogin={handleLogin} />
-        </>
+        </Suspense>
       );
     }
     // Flight Vendor decommissioned for WOW THAILAND
@@ -2142,7 +2188,7 @@ export default function App() {
 
     // Default to Admin Portal (for admin role or login prompt)
     return (
-      <>
+      <Suspense fallback={<PortalLoadingFallback />}>
         <AdminPortalPage
           currentUser={currentUser}
           triggerOpenLogin={() => setShowLoginModal(true)}
@@ -2179,7 +2225,7 @@ export default function App() {
           vehicleUnits={vehicleUnits}
         />
         <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} onLogin={handleLogin} />
-      </>
+      </Suspense>
     );
   }
 
@@ -2873,16 +2919,16 @@ export default function App() {
             <AIPlannerPage onNavigate={(t) => setActiveTab(t)} />
           )}
 
-          {activeTab === 'sightseeing' && (
+          {(activeTab === 'sightseeing' || activeTab === 'activities') && (
             <div>
-              {/* ── Sightseeing Public Storefront ── */}
+              {/* ── Unified Sightseeing & Activities Public Storefront ── */}
               <div className="d-flex align-items-center gap-3 mb-4">
                 <div className="rounded-3 p-2 text-white d-flex align-items-center justify-content-center fs-4" style={{ background: 'linear-gradient(135deg, #0D1B2E 0%, #1E3E62 100%)', width: 44, height: 44 }}>
                   🏝️
                 </div>
                 <div>
-                  <h2 className="fw-black text-dark mb-0 font-heading" style={{ fontSize: '26px' }}>Thailand Sightseeing Tours</h2>
-                  <p className="text-muted text-xs mb-0">Curated island excursions, cultural landmarks &amp; sunset cruises across Bangkok &amp; Phuket</p>
+                  <h2 className="fw-black text-dark mb-0 font-heading" style={{ fontSize: '26px' }}>Thailand Sightseeing &amp; Activities</h2>
+                  <p className="text-muted text-xs mb-0">Curated island excursions, cultural landmarks, water sports &amp; sunset cruises across Thailand</p>
                 </div>
               </div>
               <CustomerActivitiesTab
@@ -2898,37 +2944,6 @@ export default function App() {
                 onViewDetails={(item) => handleOpenDetails(item, item.type || 'sightseeing', 'sightseeing')}
                 initialBookingItem={pendingActivityBooking}
                 onClearInitialBooking={() => setPendingActivityBooking(null)}
-                defaultTypeFilter="sightseeing"
-              />
-            </div>
-          )}
-
-          {activeTab === 'activities' && (
-            <div>
-              {/* ── Activities Public Storefront ── */}
-              <div className="d-flex align-items-center gap-3 mb-4">
-                <div className="rounded-3 p-2 text-white d-flex align-items-center justify-content-center fs-4" style={{ background: 'linear-gradient(135deg, #0D1B2E 0%, #1E3E62 100%)', width: 44, height: 44 }}>
-                  🎯
-                </div>
-                <div>
-                  <h2 className="fw-black text-dark mb-0 font-heading" style={{ fontSize: '26px' }}>Activities &amp; Experiences</h2>
-                  <p className="text-muted text-xs mb-0">Adventure, water sports, culinary classes &amp; wellness experiences in Thailand</p>
-                </div>
-              </div>
-              <CustomerActivitiesTab
-                activities={activities}
-                bookings={bookings}
-                currentUser={currentUser}
-                onOpenBookingDetails={() => {}}
-                onNavigateTab={handleTabChange}
-                appliedFilters={appliedFilters}
-                setAppliedFilters={setAppliedFilters}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                onViewDetails={(item) => handleOpenDetails(item, item.type || 'activity', 'activities')}
-                initialBookingItem={pendingActivityBooking}
-                onClearInitialBooking={() => setPendingActivityBooking(null)}
-                defaultTypeFilter="activity"
               />
             </div>
           )}

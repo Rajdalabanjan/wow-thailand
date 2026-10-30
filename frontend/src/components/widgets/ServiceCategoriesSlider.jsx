@@ -1,24 +1,21 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Compass, 
-  Car, 
+  Car,
   Building2, 
   ArrowRight, 
-  ArrowLeft, 
   Star, 
-  Sparkles,
-  Bike,
-  Palmtree
+  Sparkles
 } from 'lucide-react';
 import './ServiceCategoriesSlider.css';
 
-// ─── 6 AUTHORITATIVE THAILAND SERVICE CATEGORIES ─────────────────────────────
+// ─── 3 AUTHORITATIVE THAILAND SERVICE CATEGORIES (MATCHING SITE NAVIGATION) ───
 const SERVICE_CATEGORIES = [
   {
     id: 'hotels',
     tabTarget: 'hotels',
     categoryTag: 'Luxury Stays',
-    title: 'Hotels & Luxury Resorts',
+    title: 'Hotels & Resorts',
     tagline: 'Oceanfront pool villas, 5-star beachfront resorts & boutique suites',
     rating: '4.98',
     reviewsCount: '2.4k+ verified stays',
@@ -38,7 +35,7 @@ const SERVICE_CATEGORIES = [
     id: 'cabs',
     tabTarget: 'cabs',
     categoryTag: 'VIP Chauffeurs & Transfers',
-    title: 'Cab Pickup & Drop / Transfers',
+    title: 'Cab Pickup & Drop',
     tagline: 'Airport transfers, point-to-point hotel rides, sedans & VIP passenger vans',
     rating: '4.99',
     reviewsCount: '1.9k+ smooth rides',
@@ -57,262 +54,77 @@ const SERVICE_CATEGORIES = [
   {
     id: 'sightseeing',
     tabTarget: 'sightseeing',
-    categoryTag: 'Island & City Excursions',
-    title: 'Sightseeing Tours',
-    tagline: 'Phi Phi island speedboats, James Bond sea caves & Chao Phraya dinner cruises',
-    rating: '4.95',
-    reviewsCount: '3.8k+ happy travelers',
+    categoryTag: 'Tours & Experiences',
+    title: 'Sightseeing & Activities',
+    tagline: 'Phi Phi speedboats, scuba diving, James Bond sea caves, elephant care & dinner cruises',
+    rating: '4.98',
+    reviewsCount: '5.3k+ happy travelers',
     categoryIcon: Compass,
     image: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=1000&q=85',
     fallbackImage: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1000&q=85',
     highlights: [
-      { text: 'Phi Phi Islands', dotColor: '#FF9F1C' },
-      { text: 'James Bond Sea Caves', dotColor: '#38BDF8' },
-      { text: 'Chao Phraya Cruise', dotColor: '#34D399' },
-      { text: 'Certified Tour Guides', dotColor: '#F472B6' }
+      { text: 'Phi Phi & Maya Bay Tours', dotColor: '#FF9F1C' },
+      { text: 'Scuba Diving & Coral Reefs', dotColor: '#38BDF8' },
+      { text: 'Ethical Elephant Sanctuaries', dotColor: '#34D399' },
+      { text: 'Chao Phraya Sunset Cruise', dotColor: '#F472B6' }
     ],
-    actionLabel: 'Discover Sightseeing',
+    actionLabel: 'Explore Sightseeing & Activities',
     route: '/sightseeing'
-  },
-  {
-    id: 'activities',
-    tabTarget: 'activities',
-    categoryTag: 'Adventure & Experiences',
-    title: 'Activities & Experiences',
-    tagline: 'Scuba diving, ethical elephant sanctuaries, cooking masterclasses & water sports',
-    rating: '4.96',
-    reviewsCount: '1.5k+ bookings',
-    categoryIcon: Sparkles,
-    image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1000&q=85',
-    fallbackImage: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1000&q=85',
-    highlights: [
-      { text: 'Water Sports & Scuba', dotColor: '#FF9F1C' },
-      { text: 'Elephant Care Centers', dotColor: '#38BDF8' },
-      { text: 'Thai Culinary Classes', dotColor: '#34D399' },
-      { text: 'Instant Voucher Confirmed', dotColor: '#F472B6' }
-    ],
-    actionLabel: 'Book Activities',
-    route: '/activities'
-  },
-  {
-    id: 'selfdrive',
-    tabTarget: 'cars',
-    categoryTag: 'Freedom Road Trips',
-    title: 'Self-Drive Bikes & Cars',
-    tagline: 'Rent scooters, convertibles & premium SUVs across Phuket, Samui & Chiang Mai',
-    rating: '4.97',
-    reviewsCount: '2.1k+ road explorers',
-    categoryIcon: Bike,
-    image: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=1000&q=85',
-    fallbackImage: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=1000&q=85',
-    highlights: [
-      { text: 'Doorstep Hotel Delivery', dotColor: '#FF9F1C' },
-      { text: 'Zero Hidden Deposit', dotColor: '#38BDF8' },
-      { text: 'Comprehensive Insurance', dotColor: '#34D399' },
-      { text: '24/7 Roadside Assistance', dotColor: '#F472B6' }
-    ],
-    actionLabel: 'Explore Self-Drive',
-    route: '/cars'
-  },
-  {
-    id: 'packages',
-    tabTarget: 'packages',
-    categoryTag: 'Curated Multi-Day Trips',
-    title: 'Crafted VIP Holiday Packages',
-    tagline: 'All-inclusive Thailand vacations with island hopping, luxury stays & VIP transfers',
-    rating: '4.99',
-    reviewsCount: '4.2k+ dream trips',
-    categoryIcon: Palmtree,
-    image: 'https://images.unsplash.com/photo-1506665531195-3566af2b4dfa?auto=format&fit=crop&w=1000&q=85',
-    fallbackImage: 'https://images.unsplash.com/photo-1528181304800-259b08848526?auto=format&fit=crop&w=1000&q=85',
-    highlights: [
-      { text: '100% Customizable', dotColor: '#FF9F1C' },
-      { text: 'Dedicated Trip Concierge', dotColor: '#38BDF8' },
-      { text: 'Honeymoon & Family Spec', dotColor: '#34D399' },
-      { text: 'Best Price Guaranteed', dotColor: '#F472B6' }
-    ],
-    actionLabel: 'Plan Custom Trip',
-    route: '/packages'
   }
 ];
 
-// Tripled list for a seamless, continuous, infinite marquee wrap
-const INFINITE_ITEMS = [
-  ...SERVICE_CATEGORIES,
-  ...SERVICE_CATEGORIES,
-  ...SERVICE_CATEGORIES
-];
-
 export default function ServiceCategoriesSlider({ activeTab, setActiveTab }) {
-  const scrollRef = useRef(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  // Current circular arrangement of the 3 cards
+  const [cards, setCards] = useState(SERVICE_CATEGORIES);
+  const [isSliding, setIsSliding] = useState(false);
+  const isHoveredRef = useRef(false);
 
-  // Auto-scroll control flags
-  const isPausedRef = useRef(false);
-  const resumeTimerRef = useRef(null);
-
-  // Mouse drag state
-  const isDraggingRef = useRef(false);
-  const startXRef = useRef(0);
-  const scrollLeftStartRef = useRef(0);
-  const hasDraggedRef = useRef(false);
-
-  // Track active slide index based on activeTab
+  // Automatic Left-to-Right sliding loop with guaranteed execution
   useEffect(() => {
-    const idx = SERVICE_CATEGORIES.findIndex(
-      (c) => c.id === activeTab || c.tabTarget === activeTab || (c.id === 'hotels' && activeTab === 'hotels')
-    );
-    if (idx !== -1) {
-      setActiveSlideIndex(idx);
-    }
-  }, [activeTab]);
+    let timeoutId = null;
+    let animResetId = null;
 
-  // Pause helper with auto-resume timer
-  const pauseAutoScroll = useCallback((duration = 3500) => {
-    isPausedRef.current = true;
-    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
-    resumeTimerRef.current = setTimeout(() => {
-      isPausedRef.current = false;
-    }, duration);
-  }, []);
+    const scheduleNextSlide = () => {
+      timeoutId = setTimeout(() => {
+        // Only slide when not hovered and document is visible
+        if (!isHoveredRef.current && document.visibilityState !== 'hidden') {
+          // Trigger smooth slide to the right (Left-to-Right translation)
+          setIsSliding(true);
 
-  // ─── TRUE CONTINUOUS INFINITE AUTO-SLIDE LOOP ──────────────────────────────
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-
-    let animId;
-    let lastTime = performance.now();
-    const speed = 0.85; // Silky smooth 50-55px/second continuous glide
-
-    const step = (now) => {
-      const delta = now - lastTime;
-      lastTime = now;
-      const factor = Math.min(delta / 16.67, 2.0);
-
-      if (!isPausedRef.current && !isDraggingRef.current && el) {
-        el.scrollLeft += speed * factor;
-
-        // Measure single loop width dynamically: distance from card 0 to card 6 (one complete set)
-        const totalBaseItems = SERVICE_CATEGORIES.length;
-        if (el.children && el.children.length >= totalBaseItems * 2) {
-          const firstCard = el.children[0];
-          const wrapCard = el.children[totalBaseItems];
-          if (firstCard && wrapCard) {
-            const oneSetWidth = wrapCard.offsetLeft - firstCard.offsetLeft;
-            // Seamless wrap reset: invisible jump back by exactly oneSetWidth
-            if (oneSetWidth > 0 && el.scrollLeft >= oneSetWidth) {
-              el.scrollLeft -= oneSetWidth;
-            }
-          }
+          // Once 650ms animation finishes, rotate array and reset offset with zero transition
+          animResetId = setTimeout(() => {
+            setCards((prev) => [prev[prev.length - 1], ...prev.slice(0, prev.length - 1)]);
+            setIsSliding(false);
+            scheduleNextSlide();
+          }, 650);
+        } else {
+          scheduleNextSlide();
         }
-      }
-
-      animId = requestAnimationFrame(step);
+      }, 3000);
     };
 
-    animId = requestAnimationFrame(step);
+    scheduleNextSlide();
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        setIsSliding(false);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
-      if (animId) cancelAnimationFrame(animId);
-      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+      if (timeoutId) clearTimeout(timeoutId);
+      if (animResetId) clearTimeout(animResetId);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
-
-  // Update active slide index during scroll for pagination dots
-  const handleScroll = () => {
-    if (!scrollRef.current) return;
-    const el = scrollRef.current;
-    const cardWidth = 370 + 24; // card width + gap
-    const rawIdx = Math.round(el.scrollLeft / cardWidth);
-    const normalizedIdx = ((rawIdx % SERVICE_CATEGORIES.length) + SERVICE_CATEGORIES.length) % SERVICE_CATEGORIES.length;
-    setActiveSlideIndex(normalizedIdx);
-  };
-
-  // Scroll to specific card by index
-  const scrollToCard = (index) => {
-    pauseAutoScroll(4000);
-    setActiveSlideIndex(index);
-    if (!scrollRef.current) return;
-    const el = scrollRef.current;
-    const cardWidth = 370 + 24;
-    const targetScroll = index * cardWidth;
-    el.scrollTo({ left: targetScroll, behavior: 'smooth' });
-  };
-
-  // Arrow button navigation (jump by 1 full card: 394px)
-  const handleScrollLeft = () => {
-    pauseAutoScroll(4000);
-    if (!scrollRef.current) return;
-    const el = scrollRef.current;
-    const cardWidth = 370 + 24;
-
-    // If near the left edge, silently jump ahead by one set to allow infinite left scrolling
-    const totalBaseItems = SERVICE_CATEGORIES.length;
-    if (el.children && el.children.length >= totalBaseItems * 2) {
-      const firstCard = el.children[0];
-      const wrapCard = el.children[totalBaseItems];
-      if (firstCard && wrapCard) {
-        const oneSetWidth = wrapCard.offsetLeft - firstCard.offsetLeft;
-        if (oneSetWidth > 0 && el.scrollLeft < cardWidth) {
-          el.scrollLeft += oneSetWidth;
-        }
-      }
-    }
-    el.scrollBy({ left: -cardWidth, behavior: 'smooth' });
-  };
-
-  const handleScrollRight = () => {
-    pauseAutoScroll(4000);
-    if (!scrollRef.current) return;
-    const el = scrollRef.current;
-    const cardWidth = 370 + 24;
-    el.scrollBy({ left: cardWidth, behavior: 'smooth' });
-  };
-
-  // Mouse drag to scroll handlers
-  const handleMouseDown = (e) => {
-    if (!scrollRef.current) return;
-    isDraggingRef.current = true;
-    setIsDragging(true);
-    hasDraggedRef.current = false;
-    startXRef.current = e.pageX - scrollRef.current.offsetLeft;
-    scrollLeftStartRef.current = scrollRef.current.scrollLeft;
-    pauseAutoScroll(5000);
-  };
-
-  const handleMouseMove = (e) => {
-    if (!isDraggingRef.current || !scrollRef.current) return;
-    e.preventDefault();
-    const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startXRef.current) * 1.35;
-    if (Math.abs(walk) > 8) {
-      hasDraggedRef.current = true;
-    }
-    scrollRef.current.scrollLeft = scrollLeftStartRef.current - walk;
-  };
-
-  const handleMouseUpOrLeave = () => {
-    if (isDraggingRef.current) {
-      isDraggingRef.current = false;
-      setIsDragging(false);
-      pauseAutoScroll(2000);
-    }
-  };
 
   // Category Selection & Smooth Scroll to Results
   const handleCategoryClick = (category) => {
-    if (hasDraggedRef.current) {
-      hasDraggedRef.current = false;
-      return;
-    }
-
     if (setActiveTab) {
       setActiveTab(category.tabTarget || category.id);
     }
 
-    // Smoothly scroll down to the category results section
     setTimeout(() => {
       const resultsTarget = document.getElementById('results-section');
       if (resultsTarget) {
@@ -321,10 +133,24 @@ export default function ServiceCategoriesSlider({ activeTab, setActiveTab }) {
     }, 60);
   };
 
+  // Buffer track items:
+  // [cards[last], cards[0], cards[1], cards[2], cards[last]]
+  // Index 0: enters from left during slide
+  // Index 1, 2, 3: The 3 visible cards at rest!
+  // Index 4: exits to the right during slide
+  const lastIdx = cards.length - 1;
+  const displayItems = [
+    { ...cards[lastIdx], _bufKey: `${cards[lastIdx].id}-buf-left` },
+    { ...cards[0], _bufKey: `${cards[0].id}-slot-0` },
+    { ...cards[1], _bufKey: `${cards[1].id}-slot-1` },
+    { ...cards[2], _bufKey: `${cards[2].id}-slot-2` },
+    { ...cards[lastIdx], _bufKey: `${cards[lastIdx].id}-buf-right` }
+  ];
+
   return (
     <section className="service-categories-slider-section" id="categories-slider">
       <div className="container">
-        {/* Header with Luxury Eyebrow & Navigation Arrows */}
+        {/* Header with Luxury Eyebrow */}
         <div className="scs-header-container">
           <div className="scs-header-left">
             <div className="scs-eyebrow">
@@ -333,59 +159,33 @@ export default function ServiceCategoriesSlider({ activeTab, setActiveTab }) {
             </div>
             <h2 className="scs-title">Explore Thailand by Service Category</h2>
             <p className="scs-subtitle">
-              Handpicked 5-star beachfront resorts, breathtaking island excursions, executive private airport transfers & road trips.
+              Handpicked 5-star beachfront resorts, executive airport transfers, and breathtaking sightseeing & activities.
             </p>
-          </div>
-
-          {/* Top-Right Glassmorphic Nav Arrows */}
-          <div className="scs-header-nav-btns d-none d-md-flex">
-            <button
-              type="button"
-              className="scs-nav-btn"
-              onClick={handleScrollLeft}
-              aria-label="Previous Category"
-              title="Previous"
-            >
-              <ArrowLeft size={19} />
-            </button>
-            <button
-              type="button"
-              className="scs-nav-btn"
-              onClick={handleScrollRight}
-              aria-label="Next Category"
-              title="Next"
-            >
-              <ArrowRight size={19} />
-            </button>
           </div>
         </div>
 
-        {/* Horizontal Auto-Sliding Cinematic Luxury Cards Track */}
-        <div className="scs-scroll-track-wrapper">
-          <div
-            className={`scs-scroll-track ${isDragging ? 'is-dragging' : ''}`}
-            ref={scrollRef}
-            onScroll={handleScroll}
-            onMouseEnter={() => { isPausedRef.current = true; }}
-            onMouseLeave={() => { 
-              handleMouseUpOrLeave();
-              pauseAutoScroll(1500); 
-            }}
-            onTouchStart={() => pauseAutoScroll(5000)}
-            onTouchEnd={() => pauseAutoScroll(2000)}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUpOrLeave}
+        {/* Crisp Viewport: Exactly 3 Services, Zero Cut-Offs, Zero Shadows */}
+        <div 
+          className="scs-scroll-track-wrapper scs-viewport"
+          onMouseEnter={() => { isHoveredRef.current = true; }}
+          onMouseLeave={() => { isHoveredRef.current = false; }}
+          onTouchStart={() => { isHoveredRef.current = true; }}
+          onTouchEnd={() => { isHoveredRef.current = false; }}
+        >
+          <div 
+            className={`scs-scroll-track scs-slider-track ${isSliding ? 'is-sliding' : ''}`}
           >
-            {INFINITE_ITEMS.map((cat, index) => {
+            {displayItems.map((cat) => {
               const CategoryIcon = cat.categoryIcon;
               const isActive = activeTab === cat.id || 
                                activeTab === cat.tabTarget || 
-                               (cat.id === 'hotels' && activeTab === 'hotels');
+                               (cat.id === 'hotels' && (activeTab === 'hotels' || activeTab === 'hotel-details')) ||
+                               (cat.id === 'cabs' && (activeTab === 'cabs' || activeTab === 'car-details')) ||
+                               (cat.id === 'sightseeing' && (activeTab === 'sightseeing' || activeTab === 'activities' || activeTab === 'activity-details'));
 
               return (
                 <div
-                  key={`${cat.id}-${index}`}
+                  key={cat._bufKey}
                   className={`scs-luxury-card ${isActive ? 'is-active' : ''}`}
                   onClick={() => handleCategoryClick(cat)}
                   role="button"
@@ -483,38 +283,27 @@ export default function ServiceCategoriesSlider({ activeTab, setActiveTab }) {
           </div>
         </div>
 
-        {/* Carousel Bottom Control Bar: Pagination Dots & Navigation */}
+        {/* Carousel Bottom Control Bar: Exactly 3 Categories Pagination Dots */}
         <div className="scs-carousel-bottom-bar">
           <div className="scs-pagination-dots">
-            {SERVICE_CATEGORIES.map((cat, idx) => (
-              <button
-                key={cat.id}
-                type="button"
-                className={`scs-dot ${activeSlideIndex === idx ? 'is-active' : ''}`}
-                onClick={() => scrollToCard(idx)}
-                aria-label={`Go to ${cat.title}`}
-                title={cat.title}
-              />
-            ))}
-          </div>
+            {SERVICE_CATEGORIES.map((cat) => {
+              const isSelected = activeTab === cat.id || 
+                                 activeTab === cat.tabTarget ||
+                                 (cat.id === 'hotels' && (activeTab === 'hotels' || activeTab === 'hotel-details')) ||
+                                 (cat.id === 'cabs' && (activeTab === 'cabs' || activeTab === 'car-details')) ||
+                                 (cat.id === 'sightseeing' && (activeTab === 'sightseeing' || activeTab === 'activities' || activeTab === 'activity-details'));
 
-          <div className="scs-bottom-nav-btns d-flex d-md-none">
-            <button
-              type="button"
-              className="scs-nav-btn-mobile"
-              onClick={handleScrollLeft}
-              aria-label="Previous Category"
-            >
-              <ArrowLeft size={16} />
-            </button>
-            <button
-              type="button"
-              className="scs-nav-btn-mobile"
-              onClick={handleScrollRight}
-              aria-label="Next Category"
-            >
-              <ArrowRight size={16} />
-            </button>
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  className={`scs-dot ${isSelected ? 'is-active' : ''}`}
+                  onClick={() => handleCategoryClick(cat)}
+                  aria-label={`Select ${cat.title}`}
+                  title={cat.title}
+                />
+              );
+            })}
           </div>
         </div>
       </div>

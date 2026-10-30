@@ -11,6 +11,8 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import fs from 'fs';
+
 import apiRouter from './routes/api.routes.js';
 import compatRouter from './routes/compat.routes.js';
 import { authenticateToken } from './middleware/auth.js';
@@ -19,6 +21,11 @@ import { errorHandler } from './middleware/errorHandler.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '../.env') });
+
+const uploadsDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -35,8 +42,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Auth-Token', 'X-Tenant-ID', 'X-User-Role']
 }));
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+app.use('/uploads', express.static(uploadsDir));
 app.use(authenticateToken);
 
 // 2. Socket.IO Real-Time Engine

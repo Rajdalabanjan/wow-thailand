@@ -1,19 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MapPin } from 'lucide-react';
 
+const STATIC_WHITE_PREFIX = 'Historic Majesty, Luxury Stays';
+
 const FAMOUS_DESTINATIONS = [
-  {
-    id: 'maya_bay',
-    name: 'Maya Bay & Phi Phi Islands',
-    shortName: 'Maya Bay & Phi Phi',
-    region: 'Krabi / Andaman Sea',
-    image: '/destinations/maya_bay.jpg',
-    tab: 'sightseeing',
-    eyebrow: 'Andaman Sea Paradise • Krabi',
-    headlinePrefix: 'Your Trip, Our Planning —',
-    highlightText: 'Travel Stress Free!',
-    tagline: 'Sail through crystal-clear turquoise waters, towering limestone cliffs & world-famous lagoons with VIP island speedboat tours.'
-  },
   {
     id: 'wat_arun',
     name: 'Wat Arun (Temple of Dawn)',
@@ -22,9 +12,21 @@ const FAMOUS_DESTINATIONS = [
     image: '/destinations/wat_arun.jpg',
     tab: 'hotels',
     eyebrow: 'Historic Chao Phraya • Bangkok',
-    headlinePrefix: 'Historic Majesty, Luxury Stays —',
+    headlinePrefix: STATIC_WHITE_PREFIX,
     highlightText: 'Explore Stress Free!',
     tagline: 'Marvel at Bangkok’s shimmering riverside spire at sunset, scenic dinner cruises & handpicked 5-star hotel accommodations.'
+  },
+  {
+    id: 'maya_bay',
+    name: 'Maya Bay & Phi Phi Islands',
+    shortName: 'Maya Bay & Phi Phi',
+    region: 'Krabi / Andaman Sea',
+    image: '/destinations/maya_bay.jpg',
+    tab: 'sightseeing',
+    eyebrow: 'Andaman Sea Paradise • Krabi',
+    headlinePrefix: STATIC_WHITE_PREFIX,
+    highlightText: 'Travel Stress Free!',
+    tagline: 'Sail through crystal-clear turquoise waters, towering limestone cliffs & world-famous lagoons with VIP island speedboat tours.'
   },
   {
     id: 'white_temple',
@@ -34,7 +36,7 @@ const FAMOUS_DESTINATIONS = [
     image: '/destinations/white_temple.jpg',
     tab: 'sightseeing',
     eyebrow: 'Northern Masterpiece • Chiang Rai',
-    headlinePrefix: 'Surreal Architecture, Expert Guides —',
+    headlinePrefix: STATIC_WHITE_PREFIX,
     highlightText: 'Journey Stress Free!',
     tagline: 'Experience the world-renowned silver-white architecture of Northern Thailand with private chauffeur transfers & verified local guides.'
   },
@@ -46,30 +48,149 @@ const FAMOUS_DESTINATIONS = [
     image: '/destinations/railay_beach.jpg',
     tab: 'cabs',
     eyebrow: 'Dramatic Coastline • Krabi',
-    headlinePrefix: 'Tropical Escapes, Private Transfers —',
+    headlinePrefix: STATIC_WHITE_PREFIX,
     highlightText: 'Unwind Stress Free!',
     tagline: 'Relax on secluded white sand shores surrounded by emerald lagoons, dramatic rock-climbing karsts & prompt airport chauffeur pickups.'
   }
 ];
 
+// High-precision RAF letter-by-letter typewriter engine (butter-smooth, zero jitter, zero timer drift)
+function TypewriterHighlight({ text, onCycleComplete, prefersReducedMotion }) {
+  const [displayed, setDisplayed] = useState('');
+  const [phase, setPhase] = useState('typing'); // 'typing' | 'paused' | 'deleting' | 'done'
+
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      setDisplayed(text);
+      const timer = setTimeout(() => {
+        onCycleComplete();
+      }, 5500);
+      return () => clearTimeout(timer);
+    }
+
+    let charCount = 0;
+    let currentPhase = 'typing';
+    let lastTime = performance.now();
+    let pauseEndTime = 0;
+    let animId;
+
+    setDisplayed('');
+    setPhase('typing');
+
+    const tick = (now) => {
+      if (currentPhase === 'typing') {
+        // High-precision 40ms interval per letter (consistent, rhythmic, buttery smooth)
+        if (now - lastTime >= 40) {
+          charCount++;
+          setDisplayed(text.slice(0, charCount));
+          lastTime = now;
+
+          if (charCount >= text.length) {
+            currentPhase = 'paused';
+            setPhase('paused');
+            pauseEndTime = now + 2600; // 2.6s comfortable reading pause
+          }
+        }
+      } else if (currentPhase === 'paused') {
+        if (now >= pauseEndTime) {
+          currentPhase = 'deleting';
+          setPhase('deleting');
+          lastTime = now;
+        }
+      } else if (currentPhase === 'deleting') {
+        // Clean, snappy 18ms backspace delete
+        if (now - lastTime >= 18) {
+          charCount--;
+          setDisplayed(text.slice(0, charCount));
+          lastTime = now;
+
+          if (charCount <= 0) {
+            currentPhase = 'done';
+            setPhase('done');
+            setTimeout(() => {
+              onCycleComplete();
+            }, 220);
+            return;
+          }
+        }
+      }
+
+      if (currentPhase !== 'done') {
+        animId = requestAnimationFrame(tick);
+      }
+    };
+
+    animId = requestAnimationFrame(tick);
+
+    return () => {
+      if (animId) cancelAnimationFrame(animId);
+    };
+  }, [text, prefersReducedMotion, onCycleComplete]);
+
+  const isTypingOrDeleting = phase === 'typing' || phase === 'deleting';
+
+  return (
+    <>
+      <span 
+        className="hero-highlight-phrase"
+        style={{ 
+          background: 'linear-gradient(135deg, #FFE066 0%, #FF9F1C 45%, #FF5A1F 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          display: 'inline-block',
+          fontWeight: 950,
+          letterSpacing: '-0.5px',
+          textShadow: 'none',
+          filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.85))',
+          transform: 'translateZ(0)',
+          backfaceVisibility: 'hidden',
+          willChange: 'contents'
+        }}
+      >
+        {displayed}
+      </span>
+      {!prefersReducedMotion && (
+        <span 
+          className={`hero-typewriter-cursor ${isTypingOrDeleting ? 'active-typing' : 'blinking'}`} 
+          aria-hidden="true" 
+        />
+      )}
+    </>
+  );
+}
+
 export default function Hero({ config, onNavigateTab, activeTab }) {
   const [currentDestIdx, setCurrentDestIdx] = useState(0);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const prevDestIdxRef = useRef(null);
+
+  const whitePrefix = (config && config.headlinePrefix) ? config.headlinePrefix : STATIC_WHITE_PREFIX;
+
+  // Respect prefers-reduced-motion for accessibility
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+    const handler = (e) => setPrefersReducedMotion(e.matches);
+    mediaQuery.addEventListener?.('change', handler);
+    return () => mediaQuery.removeEventListener?.('change', handler);
+  }, []);
+
+  const handleCycleComplete = useCallback(() => {
+    prevDestIdxRef.current = currentDestIdx;
+    setCurrentDestIdx(prev => (prev + 1) % FAMOUS_DESTINATIONS.length);
+  }, [currentDestIdx]);
 
   if (config && !config.visible) return null;
 
-  // Smooth automatic slideshow rotation every 6 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentDestIdx(prev => (prev + 1) % FAMOUS_DESTINATIONS.length);
-    }, 6000);
-    return () => clearInterval(interval);
-  }, []);
-
   const jumpToDestination = (idx) => {
+    if (idx === currentDestIdx) return;
+    prevDestIdxRef.current = currentDestIdx;
     setCurrentDestIdx(idx);
   };
 
   const activeDest = FAMOUS_DESTINATIONS[currentDestIdx] || FAMOUS_DESTINATIONS[0];
+  const fullHeadlineText = `${whitePrefix} ${activeDest.highlightText}`;
 
   return (
     <header 
@@ -152,6 +273,47 @@ export default function Hero({ config, onNavigateTab, activeTab }) {
           letter-spacing: -0.5px;
         }
 
+        /* ─── HERO TYPEWRITER SOLID WHILE MOVING, BREATHING BLINK WHEN PAUSED ─── */
+        .hero-typewriter-cursor {
+          display: inline-block;
+          width: 3.5px;
+          height: 0.84em;
+          background: #FF9F1C;
+          margin-left: 5px;
+          vertical-align: -0.05em;
+          border-radius: 2px;
+          box-shadow: 0 0 10px rgba(255, 159, 28, 0.95), 0 0 20px rgba(255, 107, 53, 0.6);
+          will-change: opacity;
+        }
+
+        .hero-typewriter-cursor.active-typing {
+          opacity: 1 !important;
+          animation: none !important;
+        }
+
+        .hero-typewriter-cursor.blinking {
+          animation: heroCursorBlink 0.85s infinite;
+        }
+
+        @keyframes heroCursorBlink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+
+        @media (max-width: 768px) {
+          .hero-typewriter-cursor {
+            width: 2.5px;
+            margin-left: 3px;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .hero-typewriter-cursor {
+            display: none !important;
+            animation: none !important;
+          }
+        }
+
         .hero-dynamic-message {
           font-size: 17px;
           line-height: 1.68;
@@ -202,7 +364,7 @@ export default function Hero({ config, onNavigateTab, activeTab }) {
       >
         {FAMOUS_DESTINATIONS.map((dest, idx) => {
           const isActive = currentDestIdx === idx;
-          const isPrev = idx < currentDestIdx || (currentDestIdx === 0 && idx === FAMOUS_DESTINATIONS.length - 1);
+          const isPrev = prevDestIdxRef.current === idx;
           const stateClass = isActive ? 'active' : (isPrev ? 'prev-slide' : '');
           return (
             <div
@@ -241,7 +403,7 @@ export default function Hero({ config, onNavigateTab, activeTab }) {
             <div className="text-start">
               
               {/* Dynamic Synchronized Destination Block */}
-              <div key={activeDest.id} className="hero-dynamic-block">
+              <div className="hero-dynamic-block">
                 
                 {/* Eyebrow Badge */}
                 <div 
@@ -279,40 +441,58 @@ export default function Hero({ config, onNavigateTab, activeTab }) {
                   </span>
                 </div>
 
-                {/* Headline */}
+                {/* Headline with Typewriter Animation & CLS Phantom Sizer */}
                 <h1
                   className="hero-title mb-3"
+                  aria-label={fullHeadlineText}
                   style={{
                     fontSize: 'clamp(34px, 4.4vw, 56px)',
                     fontWeight: 950,
                     marginBottom: '16px',
                     lineHeight: 1.14,
-                    letterSpacing: '-1.2px'
+                    letterSpacing: '-1.2px',
+                    display: 'grid',
+                    gridTemplateAreas: '"stack"',
+                    position: 'relative',
+                    whiteSpace: 'pre-wrap'
                   }}
                 >
-                  <span 
-                    className="hero-title-white"
+                  {/* Phantom Sizer: invisibly reserves exact space for longest headline across all viewport sizes */}
+                  <span
+                    aria-hidden="true"
                     style={{
-                      color: '#ffffff',
-                      textShadow: '0 2px 10px rgba(0, 0, 0, 0.95), 0 4px 25px rgba(0, 0, 0, 0.85)'
+                      gridArea: 'stack',
+                      visibility: 'hidden',
+                      pointerEvents: 'none',
+                      userSelect: 'none',
+                      opacity: 0
                     }}
                   >
-                    {activeDest.headlinePrefix}{' '}
+                    <span className="hero-title-white d-block mb-1">
+                      {whitePrefix}
+                    </span>
+                    <span className="hero-highlight-phrase">
+                      Explore Stress Free!
+                    </span>
                   </span>
-                  <span 
-                    className="hero-highlight-phrase"
-                    style={{ 
-                      background: 'linear-gradient(135deg, #FFE066 0%, #FF9F1C 45%, #FF5A1F 100%)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      display: 'inline-block',
-                      fontWeight: 950,
-                      letterSpacing: '-0.5px',
-                      textShadow: 'none',
-                      filter: 'drop-shadow(0 2px 12px rgba(0, 0, 0, 0.85))'
-                    }}
-                  >
-                    {activeDest.highlightText}
+
+                  {/* Visible Typewriter Headline */}
+                  <span style={{ gridArea: 'stack' }}>
+                    <span 
+                      className="hero-title-white d-block mb-1"
+                      style={{
+                        color: '#ffffff',
+                        textShadow: '0 2px 10px rgba(0, 0, 0, 0.95), 0 4px 25px rgba(0, 0, 0, 0.85)'
+                      }}
+                    >
+                      {whitePrefix}
+                    </span>
+                    <TypewriterHighlight 
+                      key={activeDest.id}
+                      text={activeDest.highlightText}
+                      onCycleComplete={handleCycleComplete}
+                      prefersReducedMotion={prefersReducedMotion}
+                    />
                   </span>
                 </h1>
 

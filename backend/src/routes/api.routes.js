@@ -47,20 +47,20 @@ router.get('/bookings/:id', bookingController.getBookingById);
 router.post('/bookings/verify-payment', bookingController.verifyPayment);
 router.post('/bookings/:id/cancel', bookingController.cancelBooking);
 
-// Hotel PMS
-router.get('/pms/dashboard', pmsController.getPMSDashboard);
-router.get('/pms/room-types', pmsController.getRoomTypes);
-router.get('/pms/calendar', pmsController.getAvailabilityCalendar);
+// Hotel PMS (Hotel Vendor, Admin, SuperAdmin)
+router.get('/pms/dashboard', requireAuth, requireRole(['hotel_vendor', 'admin', 'superadmin']), pmsController.getPMSDashboard);
+router.get('/pms/room-types', requireAuth, requireRole(['hotel_vendor', 'admin', 'superadmin']), pmsController.getRoomTypes);
+router.get('/pms/calendar', requireAuth, requireRole(['hotel_vendor', 'admin', 'superadmin']), pmsController.getAvailabilityCalendar);
 
-// Driver Portal
-router.get('/drivers/jobs', driverController.getDriverJobs);
-router.put('/drivers/jobs/:id', driverController.updateJobStatus);
+// Driver Portal (Driver, Admin, SuperAdmin)
+router.get('/drivers/jobs', requireAuth, requireRole(['driver', 'admin', 'superadmin']), driverController.getDriverJobs);
+router.put('/drivers/jobs/:id', requireAuth, requireRole(['driver', 'admin', 'superadmin']), driverController.updateJobStatus);
 
-// B2B Agent Portal
-router.get('/b2b/dashboard', b2bController.getB2BDashboard);
+// B2B Agent Portal (B2B Agent, Admin, SuperAdmin)
+router.get('/b2b/dashboard', requireAuth, requireRole(['b2b_agent', 'admin', 'superadmin']), b2bController.getB2BDashboard);
 
 // Wallets
-router.get('/wallets/:vendorId', walletController.getVendorWallet);
-router.post('/wallets/top-up', walletController.topUpWallet);
+router.get('/wallets/:vendorId', requireAuth, requireRole(['hotel_vendor', 'transfer_vendor', 'b2b_agent', 'admin', 'superadmin']), walletController.getVendorWallet);
+router.post('/wallets/top-up', requireAuth, requireRole(['admin', 'superadmin', 'b2b_agent']), walletController.topUpWallet);
 
 export default router;

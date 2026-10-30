@@ -134,8 +134,17 @@ export async function createBookingTransaction(connection, payload) {
   );
 
   // 7. Insert Booking Items
-  if (items.length > 0) {
-    for (const item of items) {
+  const effectiveItems = items.length > 0 ? items : (roomTypeId ? [{
+    item_type: 'HOTEL',
+    reference_id: roomTypeId,
+    unit_price_thb: baseAmountTHB,
+    quantity: requestedRooms,
+    subtotal_thb: baseAmountTHB,
+    details: { hotel_id: payload.hotel_id, dates: `${startDate} to ${endDate}` }
+  }] : []);
+
+  if (effectiveItems.length > 0) {
+    for (const item of effectiveItems) {
       const itemId = `itm_${Date.now()}_${Math.floor(Math.random() * 900 + 100)}`;
       await connection.execute(
         `INSERT INTO booking_items (id, booking_id, item_type, reference_id, unit_price_thb, quantity, subtotal_thb, details_json) 

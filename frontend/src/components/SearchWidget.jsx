@@ -473,8 +473,8 @@ export default function SearchWidget({
           <button 
             type="button" 
             role="tab"
-            aria-selected={activeTab === 'sightseeing'}
-            className={`widget-tab-btn ${activeTab === 'sightseeing' ? 'active' : ''}`}
+            aria-selected={activeTab === 'sightseeing' || activeTab === 'activities'}
+            className={`widget-tab-btn ${activeTab === 'sightseeing' || activeTab === 'activities' ? 'active' : ''}`}
             onClick={() => { 
               setActiveTab('sightseeing'); 
               setActiveDropdown(null); 
@@ -484,26 +484,8 @@ export default function SearchWidget({
               }, 50);
             }}
           >
-            <Binoculars />
-            <span>Sightseeing Tours</span>
-          </button>
-
-          <button 
-            type="button" 
-            role="tab"
-            aria-selected={activeTab === 'activities'}
-            className={`widget-tab-btn ${activeTab === 'activities' ? 'active' : ''}`}
-            onClick={() => { 
-              setActiveTab('activities'); 
-              setActiveDropdown(null); 
-              setValidationError(''); 
-              setTimeout(() => {
-                document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
-              }, 50);
-            }}
-          >
             <Compass />
-            <span>Activities</span>
+            <span>Sightseeing &amp; Activities</span>
           </button>
         </div>
 

@@ -6,7 +6,7 @@ import {
   Plane, Fuel, Navigation, Check, X, Sparkles, Filter, Bike, Crown, Cake, ArrowUpRight,
   Wand2
 } from 'lucide-react';
-import SelfDriveCategoryShowcase from '../widgets/SelfDriveCategoryShowcase';
+// Customer Overview Tab
 import CustomerLoyaltyCard from './CustomerLoyaltyCard';
 import CraftMyTripPage from '../../pages/customer/CraftMyTripPage';
 import { getBookingDisplayImage } from '../../utils/bookingImageHelper';
@@ -341,11 +341,11 @@ export default function CustomerOverviewTab({
   );
 
   // Next upcoming self drive holiday
-  const nextHoliday = selfDriveBookings.find(b => 
+  const nextHoliday = activeBookings.find(b => 
     b.status?.toLowerCase() === 'confirmed' || 
     b.status?.toLowerCase() === 'upcoming' ||
     b.status?.toLowerCase() === 'pending'
-  ) || selfDriveBookings[0] || myBookings[0];
+  ) || activeBookings[0] || myBookings[0];
 
   // Calculate pending payment
   const pendingPaymentTotal = myBookings.reduce((sum, b) => {
@@ -439,15 +439,15 @@ export default function CustomerOverviewTab({
                 Welcome back, {currentUser?.name || currentUser?.username || 'Thailand Explorer'}! 👋
               </h2>
               <p className="text-white-50 mb-3 small">
-                Manage your Self Drive Holidays, live driver assignments, vouchers, wallet balance, and Thailand itineraries in one place.
+                Manage your hotel stays, airport cab transfers, vouchers, wallet balance, and Thailand itineraries in one place.
               </p>
               <div className="d-flex flex-wrap gap-2">
                 <button 
-                  onClick={() => onNavigateTab('selfdrive')}
+                  onClick={() => onNavigateTab('cabs')}
                   className="btn btn-sm btn-warning text-dark fw-bold px-3 py-2 rounded-pill d-inline-flex align-items-center gap-1.5 shadow-sm"
                 >
                   <Car size={15} />
-                  <span>My Self Drive Holidays</span>
+                  <span>My Cab Transfers</span>
                   <ArrowRight size={14} />
                 </button>
                 <button 
@@ -493,7 +493,7 @@ export default function CustomerOverviewTab({
                 </span>
               </div>
               <p className="text-white-50 text-xs mb-0 mt-0.5">
-                Usable on future bookings across Self Drive Cars, Hotels, and Tours upon trip completion.
+                Usable on future bookings across Cab Transfers, Hotels, and Sightseeing Tours upon trip completion.
               </p>
             </div>
           </div>
@@ -666,10 +666,10 @@ export default function CustomerOverviewTab({
             </div>
           </div>
           <button 
-            onClick={() => onNavigateTab('selfdrive')}
+            onClick={() => onNavigateTab('bookings')}
             className="btn btn-sm btn-link text-warning text-decoration-none fw-bold p-0 d-flex align-items-center gap-1"
           >
-            <span>View All Holidays</span>
+            <span>View All Bookings</span>
             <ChevronRight size={14} />
           </button>
         </div>
@@ -703,7 +703,7 @@ export default function CustomerOverviewTab({
                 const categoryBadge = isActivity
                   ? '🎯 Sightseeing & Activity'
                   : isSelfDrivePkg 
-                    ? '⭐ Self Drive Holiday' 
+                    ? '🚖 Cab Transfer & Chauffeur' 
                     : isHotel 
                       ? '🏨 Hotel & Resort Stay' 
                       : isBike 
@@ -712,7 +712,7 @@ export default function CustomerOverviewTab({
                           ? '🌴 Tour Package' 
                           : isFlight 
                             ? '✈️ Flight Booking' 
-                            : '🚗 Self Drive Car';
+                            : '🚖 Cab Transfer & Chauffeur';
 
                 const subtitleText = isActivity
                   ? 'Curated Sightseeing & Adventure Experience in Thailand'
@@ -721,10 +721,10 @@ export default function CustomerOverviewTab({
                     : isBike
                       ? 'Unlimited KMs • Clean Helmets • Thailand Tourist Permit'
                       : isSelfDrivePkg
-                        ? 'Self Drive Vehicle + Hotel Stay + Unlimited KMs'
+                        ? 'Dedicated Chauffeur • AC Vehicle • Airport & Hotel Pickup'
                         : isTourPkg
                           ? 'Guided Tour Itinerary • Transfers Included'
-                          : 'Unlimited KMs • Comprehensive Insurance • Thailand Permit';
+                          : 'Dedicated Chauffeur • AC Vehicle • Airport & Hotel Pickup';
 
                 return (
                   <div className="row g-4 align-items-center">

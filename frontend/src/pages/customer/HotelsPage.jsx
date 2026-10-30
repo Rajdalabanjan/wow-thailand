@@ -16,9 +16,7 @@ import {
 } from 'lucide-react';
 import ImageCarousel from '../../components/common/ImageCarousel';
 import UnifiedGalleryViewer from '../../components/UnifiedGalleryViewer';
-
-// Only these 3 approved hotels are allowed in the customer hotel inventory
-const APPROVED_HOTEL_IDS = ['hotel-3star', 'hotel-4star', 'hotel-5star'];
+import { fetchHotels } from '../../services/api';
 
 export default function HotelsPage({
   handleOpenBooking,
@@ -37,6 +35,32 @@ export default function HotelsPage({
   appliedFilters = {},
   setAppliedFilters
 }) {
+  // Live hotel state synchronized with database
+  const [liveHotels, setLiveHotels] = useState(hotels || []);
+
+  React.useEffect(() => {
+    if (Array.isArray(hotels) && hotels.length > 0) {
+      setLiveHotels(hotels);
+    }
+  }, [hotels]);
+
+  const refreshLiveHotels = async () => {
+    try {
+      const fresh = await fetchHotels();
+      if (Array.isArray(fresh) && fresh.length > 0) {
+        setLiveHotels(fresh);
+      }
+    } catch (e) {}
+  };
+
+  React.useEffect(() => {
+    refreshLiveHotels();
+    window.addEventListener('hotelsUpdated', refreshLiveHotels);
+    return () => {
+      window.removeEventListener('hotelsUpdated', refreshLiveHotels);
+    };
+  }, []);
+
   // Local state for star filters
   const [selectedStars, setSelectedStars] = useState(() => appliedFilters?.hotelStars || []);
   const [galleryHotel, setGalleryHotel] = useState(null);
@@ -94,17 +118,16 @@ export default function HotelsPage({
     return basePrice;
   };
 
-  // Strictly enforce only the 3 approved hotels for customer browsing
+  // Curated Thailand hotel inventory for customer browsing
   const rawDisplayHotels = useMemo(() => {
-    return (hotels || []).filter(h => {
-      // Must be one of the approved 3 hotels
-      if (!APPROVED_HOTEL_IDS.includes(String(h.id))) return false;
-      // Must be active and live
+    return (liveHotels || []).filter(h => {
+      // Must not be explicitly unpublished or inactive
+      if (h.is_published === 0 || h.is_published === false || h.is_published === '0') return false;
       if (h.is_available === 0 || h.is_available === '0' || h.is_available === false) return false;
       if (h.hotel_status === 'Archived' || h.hotel_status === 'Inactive') return false;
       return true;
     });
-  }, [hotels]);
+  }, [liveHotels]);
 
   const displayHotels = useMemo(() => {
     return (rawDisplayHotels || []).map(h => ({
@@ -122,6 +145,7 @@ export default function HotelsPage({
       const hotelName = (hotel.name || '').toLowerCase();
       const hotelArea = (hotel.area || '').toLowerCase();
       const hotelLoc = (hotel.location || '').toLowerCase();
+      const hotelCity = (hotel.city || '').toLowerCase();
       const hotelDesc = (hotel.description || '').toLowerCase();
 
       // Search query filter
@@ -133,7 +157,8 @@ export default function HotelsPage({
                           q === 'india' || 
                           hotelName.includes(q) || 
                           hotelArea.includes(q) || 
-                          hotelLoc.includes(q);
+                          hotelLoc.includes(q) ||
+                          hotelCity.includes(q);
 
       // Star rating filter
       const hotelStarsStr = String(hotel.stars || hotel.star_rating || 3);
@@ -169,6 +194,8 @@ export default function HotelsPage({
                    cleanLoc.includes(hotelArea) || 
                    hotelName.includes(cleanLoc) || 
                    hotelLoc.includes(cleanLoc) ||
+                   hotelCity.includes(cleanLoc) ||
+                   cleanLoc.includes(hotelCity) ||
                    cleanLoc.includes('thailand');
       }
 

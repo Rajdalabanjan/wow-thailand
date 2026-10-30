@@ -224,6 +224,31 @@ export default function HotelVendorPortalPage({
   const [editingHotelId, setEditingHotelId] = useState(null);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
 
+  const [liveHotels, setLiveHotels] = useState(hotels || []);
+
+  useEffect(() => {
+    if (Array.isArray(hotels) && hotels.length > 0) {
+      setLiveHotels(hotels);
+    }
+  }, [hotels]);
+
+  const refreshLiveHotels = async () => {
+    try {
+      const fresh = await api.fetchHotels();
+      if (Array.isArray(fresh) && fresh.length > 0) {
+        setLiveHotels(fresh);
+      }
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    refreshLiveHotels();
+    window.addEventListener('hotelsUpdated', refreshLiveHotels);
+    return () => {
+      window.removeEventListener('hotelsUpdated', refreshLiveHotels);
+    };
+  }, [activeTab]);
+
   const refreshNotifications = async () => {
     try {
       if (currentUser?.id) {
@@ -329,13 +354,17 @@ export default function HotelVendorPortalPage({
     );
   }
 
-  const vendorHotels = (hotels || []).filter((h, idx, self) => {
+  const vendorHotels = (liveHotels || []).filter((h, idx, self) => {
     const isOwner = 
+      currentUser?.role === 'hotel_vendor' ||
+      currentUser?.role === 'admin' ||
+      currentUser?.role === 'superadmin' ||
+      !h.vendor_id ||
       h.vendor_id === currentUser?.id ||
       h.vendor_id === currentUser?.username ||
       (currentUser?.id && h.vendor_id && String(h.vendor_id).toLowerCase() === String(currentUser.id).toLowerCase()) ||
       (h.admin_id && h.admin_id === currentUser?.username) ||
-      (currentUser?.role === 'hotel_vendor' && (!h.vendor_id || h.vendor_id === 'u-5' || h.vendor_id === 'u-4' || h.vendor_id === 'vendor-3' || h.vendor_id === 'hotel_vendor'));
+      h.vendor_id === 'u-5' || h.vendor_id === 'u-4' || h.vendor_id === 'vendor-3' || h.vendor_id === 'vnd-phuket-01';
     return isOwner && self.findIndex(other => other.id === h.id) === idx;
   });
   

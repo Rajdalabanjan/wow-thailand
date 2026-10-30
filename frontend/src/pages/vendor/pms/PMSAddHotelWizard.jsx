@@ -244,7 +244,7 @@ export default function PMSAddHotelWizard({ currentUser, onAddHotel, onUpdateHot
     year_established: '', total_rooms: '', floors: '', phone: '', reservation_phone: '',
     email: '', website: '', property_registration_no: '', gst_number: '',
     // Location
-    country: 'India', state: 'Thailand', city: 'Bangkok', area: '', address: '',
+    country: 'Thailand', state: 'Bangkok', city: 'Bangkok', area: '', address: '',
     pincode: '', landmark: '', latitude: '', longitude: '',
     // Images
     images: [], image_urls: '', cover_image: '',
@@ -275,6 +275,33 @@ export default function PMSAddHotelWizard({ currentUser, onAddHotel, onUpdateHot
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+  // Auto-save form progress to localStorage on any change (preserves Steps 1-10 even upon errors)
+  useEffect(() => {
+    if (!editingHotelId && form.name) {
+      try {
+        localStorage.setItem('pms_wizard_hotel_draft', JSON.stringify({ form, step, savedAt: Date.now() }));
+      } catch (e) {}
+    }
+  }, [form, step, editingHotelId]);
+
+  // Restore draft on mount if available
+  useEffect(() => {
+    if (!editingHotelId) {
+      try {
+        const savedDraft = localStorage.getItem('pms_wizard_hotel_draft');
+        if (savedDraft) {
+          const parsed = JSON.parse(savedDraft);
+          if (parsed && parsed.form && parsed.form.name) {
+            setForm(parsed.form);
+            if (parsed.step && parsed.step > 1) {
+              setStep(parsed.step);
+            }
+          }
+        }
+      } catch (e) {}
+    }
+  }, [editingHotelId]);
+
   // Load existing data if editing
   useEffect(() => {
     if (editingHotelId) {
@@ -290,7 +317,7 @@ export default function PMSAddHotelWizard({ currentUser, onAddHotel, onUpdateHot
             phone: existing.phone || '',
             email: existing.email || '',
             website: existing.website || '',
-            country: existing.country || 'India',
+            country: existing.country || 'Thailand',
             state: existing.state || 'Thailand',
             city: existing.city || 'Bangkok',
             area: existing.location || '',
@@ -612,8 +639,8 @@ export default function PMSAddHotelWizard({ currentUser, onAddHotel, onUpdateHot
       checkout_time: form.checkout_time || '12:00',
       address: form.address || '',
       city: form.city || 'Bangkok',
-      state: form.state || 'Thailand',
-      country: form.country || 'India',
+      state: form.state || 'Bangkok',
+      country: form.country || 'Thailand',
       pincode: form.pincode || '',
       gst_number: form.gst_number || '',
       property_registration_no: form.property_registration_no || '',
@@ -623,23 +650,22 @@ export default function PMSAddHotelWizard({ currentUser, onAddHotel, onUpdateHot
       documents_json: JSON.stringify(form.documents || {})
     };
 
+    const hotelIdToUse = effectiveId || createdHotelId || `th-htl-${Date.now().toString().slice(-6)}`;
+    let savedHotelId = hotelIdToUse;
+    setCreatedHotelId(savedHotelId);
+
     setSavingStatusMsg('Saving hotel property record...');
-    let savedHotelId = effectiveId;
     if (effectiveId) {
-      if (onUpdateHotel) await onUpdateHotel({ ...payload, id: effectiveId });
-      else await updateHotel({ ...payload, id: effectiveId });
+      if (onUpdateHotel) await onUpdateHotel({ ...payload, id: savedHotelId });
+      else await updateHotel({ ...payload, id: savedHotelId });
     } else {
       let res;
-      if (onAddHotel) res = await onAddHotel(payload);
-      else res = await addMasterHotel(payload);
+      if (onAddHotel) res = await onAddHotel({ ...payload, id: savedHotelId });
+      else res = await addMasterHotel({ ...payload, id: savedHotelId });
       if (res && (res.id || res.hotel_id)) {
         savedHotelId = res.id || res.hotel_id;
         setCreatedHotelId(savedHotelId);
       }
-    }
-
-    if (!savedHotelId) {
-      throw new Error('Hotel ID could not be established.');
     }
 
     // 2. Save Bar & Lounge Profile if configured
@@ -751,6 +777,7 @@ export default function PMSAddHotelWizard({ currentUser, onAddHotel, onUpdateHot
     setError('');
     try {
       await executeSaveProcess('Draft');
+      window.dispatchEvent(new CustomEvent('hotelsUpdated'));
       setSuccess('Draft saved successfully with rooms & bar configurations!');
       setTimeout(() => setSuccess(''), 3000);
     } catch (e) {
@@ -767,6 +794,8 @@ export default function PMSAddHotelWizard({ currentUser, onAddHotel, onUpdateHot
     setError('');
     try {
       await executeSaveProcess('Submitted');
+      try { localStorage.removeItem('pms_wizard_hotel_draft'); } catch (e) {}
+      window.dispatchEvent(new CustomEvent('hotelsUpdated'));
       setSuccess('Hotel, Room Types & Bar submitted successfully for approval!');
       setTimeout(() => onComplete && onComplete(), 1500);
     } catch (e) {
@@ -1722,9 +1751,39 @@ export default function PMSAddHotelWizard({ currentUser, onAddHotel, onUpdateHot
       </div>
 
       <div className="card border-0 rounded-4 shadow-sm p-4">
-        <ProgressBar current={step} total={10} />
+        <ProgressBar current={step} total={10} onSelectStep={(targetStep) => setStep(targetStep)} />
 
-        {error && <div className="alert alert-danger py-2 px-3 mb-3 d-flex align-items-center gap-2" style={{ fontSize: '0.82rem' }}><AlertCircle size={14} /> {error}</div>}
+        {error && (
+          <div 
+            onClick={() => {
+              const errLower = (error || '').toLowerCase();
+              if (errLower.includes('phone') || errLower.includes('email') || errLower.includes('contact') || errLower.includes('name')) {
+                setStep(1);
+              } else if (errLower.includes('location') || errLower.includes('city') || errLower.includes('area')) {
+                setStep(2);
+              } else if (errLower.includes('image') || errLower.includes('photo')) {
+                setStep(3);
+              } else if (errLower.includes('room') || errLower.includes('inventory')) {
+                setStep(6);
+              } else if (errLower.includes('document')) {
+                setStep(9);
+              } else {
+                setStep(1);
+              }
+            }}
+            className="alert alert-danger py-2.5 px-3.5 mb-3 d-flex align-items-center justify-content-between rounded-3 shadow-xs" 
+            style={{ fontSize: '0.82rem', cursor: 'pointer', border: '1.5px solid #ff7675' }}
+            title="Click to jump to the step to fix this error"
+          >
+            <div className="d-flex align-items-center gap-2">
+              <AlertCircle size={16} className="text-danger flex-shrink-0" />
+              <span className="fw-medium">{error}</span>
+            </div>
+            <span className="badge bg-danger text-white rounded-pill px-2.5 py-1" style={{ fontSize: '0.68rem' }}>
+              Click to Fix →
+            </span>
+          </div>
+        )}
         {success && <div className="alert alert-success py-2 px-3 mb-3" style={{ fontSize: '0.82rem' }}>✅ {success}</div>}
         {savingStatusMsg && <div className="alert alert-info py-2 px-3 mb-3" style={{ fontSize: '0.82rem' }}>⏳ {savingStatusMsg}</div>}
 

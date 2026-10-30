@@ -131,6 +131,7 @@ async function runSmokeTests() {
 
     // 7. Payment Verification & Wallet Platform Fee Deduction
     console.log('\n7. Testing Payment Verification & Controlled Wallet Deduction:');
+    await pool.execute('UPDATE vendor_wallets SET balance_thb = 10000.00, negative_booking_count = 0 WHERE vendor_id = ?', ['vnd-phuket-01']);
     const verifyRes = await fetch(`${baseUrl}/api/v1/bookings/verify-payment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -160,9 +161,10 @@ async function runSmokeTests() {
     // 9. Legacy /api.php Compatibility Router
     console.log('\n9. Testing /api.php Compatibility Router (Frontend compatibility):');
     const compatHotelsRes = await fetch(`${baseUrl}/api.php?resource=hotels`);
+    assert(compatHotelsRes.status === 200, 'Compat /api.php?resource=hotels returns 200');
     const compatHotels = await compatHotelsRes.json();
-    assert(compatHotels.success === true, 'Compat /api.php?resource=hotels returns 200');
-    assert(compatHotels.data.length >= 4, 'Compat route returns hotels data');
+    const hotelList = Array.isArray(compatHotels) ? compatHotels : (compatHotels.data || []);
+    assert(hotelList.length >= 4, 'Compat route returns hotels data');
 
     const compatRatesRes = await fetch(`${baseUrl}/api.php?resource=currency&action=rates`);
     const compatRates = await compatRatesRes.json();

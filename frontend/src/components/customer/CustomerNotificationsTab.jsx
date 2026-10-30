@@ -16,7 +16,7 @@ export default function CustomerNotificationsTab({
     {
       id: 'notif-welcome',
       title: 'Welcome to WOW THAILAND Holidays!',
-      message: 'Your customer portal is active. You can now track your Self Drive rentals, hotel vouchers, and driver assignments in real time.',
+      message: 'Your customer portal is active. You can now track your hotel stays, cab transfers, and sightseeing bookings in real time.',
       time: 'Just now',
       type: 'info',
       icon: <CheckCircle2 size={16} className="text-primary" />
@@ -24,16 +24,16 @@ export default function CustomerNotificationsTab({
     ...bookings.slice(0, 5).map((b, idx) => ({
       id: `notif-book-${b.id || idx}`,
       title: `Booking #${b.id || b.booking_id || `WOW-${idx}`} Confirmed`,
-      message: `Your reservation for "${b.item_name || b.package_name || 'Self Drive'}" is confirmed for ${b.pickup_date || b.travel_date || 'your upcoming trip'}.`,
+      message: `Your reservation for "${b.item_name || b.package_name || 'Cab Transfer'}" is confirmed for ${b.pickup_date || b.travel_date || 'your upcoming trip'}.`,
       time: b.created_at ? new Date(b.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : 'Recent',
       type: 'booking',
       icon: <Car size={16} className="text-warning" />,
-      tab: 'selfdrive'
+      tab: 'cabs'
     })),
     {
       id: 'notif-reward',
-      title: 'Self Drive Reward Program',
-      message: 'Earn 5% cashback on all completed holiday rentals in Thailand directly into your digital wallet.',
+      title: 'WOW Thailand Reward Program',
+      message: 'Earn 5% cashback on all completed bookings in Thailand directly into your digital wallet.',
       time: '1 day ago',
       type: 'reward',
       icon: <Gift size={16} className="text-success" />,

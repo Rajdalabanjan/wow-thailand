@@ -396,21 +396,25 @@ export default function AIChatbot() {
       ctx.imageSmoothingQuality = 'medium';
     }
 
-    // High performance processing resolution (540x304 = 2x Retina HD density for 275px CSS display)
-    const TARGET_WIDTH = 540;
-    const TARGET_HEIGHT = 304;
+    // Full HD Native 1280x720 video processing resolution for crystal clear clarity
+    const TARGET_WIDTH = 1280;
+    const TARGET_HEIGHT = 720;
 
-    // Precise loop timestamps:
-    // Frame 0 is pitch black (0.00s). Frame 1 starts clean at ~0.042s.
-    // Frame 367/368 (15.28s) has character fully rendered and matches Frame 1 pose closely.
-    // Frames 369 to 379 (15.35s - 15.83s) fade out to pitch black, causing the character to break & turn black.
-    const LOOP_START_SEC = 0.05;
-    const LOOP_END_SEC = 15.25;
+    // Adaptive loop timestamps based on current video duration
+    const LOOP_START_SEC = 0.04;
+    const getLoopEndSec = () => {
+      const dur = video.duration;
+      if (dur && !isNaN(dur) && isFinite(dur) && dur > 0.5) {
+        return Math.min(dur - 0.22, 9.75);
+      }
+      return 9.75;
+    };
 
     const renderCurrentFrame = () => {
       if (video.readyState >= 2) {
         // Prevent playing into the fading/blackout frames at the end, and skip initial black frame 0
-        if (video.currentTime >= LOOP_END_SEC || video.currentTime < 0.04) {
+        const endSec = getLoopEndSec();
+        if (video.currentTime >= endSec || video.currentTime < 0.02) {
           video.currentTime = LOOP_START_SEC;
           return; // Keep holding previous clean frame on canvas until seek completes
         }
@@ -443,39 +447,77 @@ export default function AIChatbot() {
           return;
         }
 
+        const invCw = 1 / cw;
+        const invCh = 1 / ch;
+        let px = 0;
+        let py = 0;
+
         for (let i = 0; i < l; i++) {
-          const idx = i * 4;
+          const idx = i << 2;
           const r = data[idx];
           const g = data[idx + 1];
           const b = data[idx + 2];
-          const px = i % cw;
-          const py = (i / cw) | 0;
 
-          // Clean extreme edge borders and corner sparkle watermark (x > 87% and y > 77%)
-          if (px < cw * 0.035 || px > cw * 0.965 || py < ch * 0.02 || (px > cw * 0.87 && py > ch * 0.77)) {
+          const normX = px * invCw;
+          const normY = py * invCh;
+
+          px++;
+          if (px === cw) {
+            px = 0;
+            py++;
+          }
+
+          // 1. Extreme edge borders and bottom-right corner watermark
+          if (normX < 0.02 || normX > 0.98 || normY < 0.02 || (normX > 0.84 && normY > 0.74)) {
             data[idx + 3] = 0;
             continue;
           }
 
-          const normX = px / cw;
-          const normY = py / ch;
-          const isEyeZone = (normY >= 0.20 && normY <= 0.42 && normX >= 0.43 && normX <= 0.59);
+          const maxChannel = r > g ? (r > b ? r : b) : (g > b ? g : b);
 
-          if (isEyeZone) {
+          // 2. Ambient outer space (top sky and far sides) - zero tolerance for background haze
+          if ((normY < 0.05 || normX < 0.16 || normX > 0.90) && maxChannel <= 50) {
+            data[idx + 3] = 0;
+            continue;
+          }
+
+          // Distance squared to background center (R=11, G=18, B=26)
+          const dr = r - 11;
+          const dg = g - 18;
+          const db = b - 26;
+          const distSq = dr * dr + dg * dg + db * db;
+
+          // 3. Dynamic sway-aware face protection (covers eyes, dark pupils, nose, mouth)
+          const dxFace = (normX - 0.47) / 0.14;
+          const dyFace = (normY - 0.35) / 0.16;
+          if (dxFace * dxFace + dyFace * dyFace <= 1.0 && (r >= b - 2 || maxChannel > 38) && distSq > 110) {
             data[idx + 3] = 255;
-          } else {
-            const maxChannel = Math.max(r, g, b);
-            // Outer dust flake cleaner in empty ambient space
-            const isFarOuter = (normX < 0.20 || normX > 0.82 || normY < 0.06);
-            const lowerCut = isFarOuter ? 36 : 22;
-            const upperCut = isFarOuter ? 54 : 38;
+            continue;
+          }
 
-            if (maxChannel < lowerCut) {
-              data[idx + 3] = 0;
-            } else if (maxChannel < upperCut) {
-              data[idx + 3] = Math.floor(((maxChannel - lowerCut) / (upperCut - lowerCut)) * 255);
+          // 4. Head & Hair zone: protect warm brown hair across crown, bangs, and side curls
+          const dxHead = (normX - 0.47) / 0.19;
+          const dyHead = (normY - 0.27) / 0.23;
+          if (dxHead * dxHead + dyHead * dyHead <= 1.0) {
+            if ((r >= b - 2 && (r > 20 || maxChannel > 34)) && distSq > 110) {
+              data[idx + 3] = 255;
+              continue;
             }
           }
+
+          // 5. Pure background removal:
+          // Key out cold navy background, compression noise, and dark artifacts anywhere in the frame
+          if (
+            distSq <= 110 ||
+            (maxChannel <= 38 && b >= r + 2 && r <= 22) ||
+            (maxChannel <= 32 && b >= r)
+          ) {
+            data[idx + 3] = 0;
+            continue;
+          }
+
+          // 6. Character body, clothes, collar, waving hand, and floating hearts
+          data[idx + 3] = 255;
         }
         ctx.putImageData(frame, 0, 0);
       }
@@ -491,7 +533,8 @@ export default function AIChatbot() {
     };
 
     const handleLoopCheck = () => {
-      if (video.currentTime >= LOOP_END_SEC || video.currentTime < 0.04) {
+      const endSec = getLoopEndSec();
+      if (video.currentTime >= endSec || video.currentTime < 0.02) {
         video.currentTime = LOOP_START_SEC;
       }
     };
@@ -1205,7 +1248,7 @@ export default function AIChatbot() {
         autoPlay
         muted
         playsInline
-        style={{ display: 'none' }}
+        style={{ position: 'fixed', top: '-9999px', left: '-9999px', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none' }}
       />
 
       <div
@@ -1244,8 +1287,8 @@ export default function AIChatbot() {
           <canvas
             ref={canvasRef}
             id="ai-avatar-canvas"
-            width="540"
-            height="304"
+            width="1280"
+            height="720"
           />
         </div>
       </div>
@@ -1255,8 +1298,8 @@ export default function AIChatbot() {
         .sophia-floating-trigger,
         .ai-floating-trigger {
           position: fixed;
-          bottom: 12px;
-          right: -6px;
+          bottom: 6px;
+          right: -32px;
           z-index: 1045;
           display: flex;
           align-items: center;
@@ -1292,7 +1335,7 @@ export default function AIChatbot() {
         .ai-speech-pill {
           position: relative;
           z-index: 1;
-          margin-right: -42px;
+          margin-right: -48px;
           padding: 12px 26px;
           background: #ffffff;
           border: 1.5px solid rgba(0, 168, 255, 0.28);
@@ -1326,7 +1369,7 @@ export default function AIChatbot() {
           border-color: rgba(0, 168, 255, 0.4);
         }
 
-        /* 3. Glowing Green Status Indicator Dot */
+        /* 3. Glowing Status Indicator Dot */
         .sophia-status-dot,
         .ai-status-indicator {
           width: 10px;
@@ -1348,7 +1391,7 @@ export default function AIChatbot() {
         .ai-avatar-wrapper {
           position: relative;
           z-index: 10;
-          width: 275px;
+          width: 325px;
           height: auto;
           display: flex;
           align-items: center;
@@ -1363,53 +1406,36 @@ export default function AIChatbot() {
           50% { transform: translateY(-10px); }
         }
 
-        /* Centered Blue Aura Glow behind character */
-        .sophia-avatar-wrapper::before,
-        .ai-avatar-wrapper::before {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 260px;
-          height: 260px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(0, 195, 255, 0.48) 0%, rgba(0, 140, 255, 0.14) 55%, transparent 75%);
-          filter: blur(26px);
-          z-index: 0;
-          pointer-events: none;
-        }
-
         /* 5. Canvas Display Resolution & HD Clarity */
         #ai-avatar-canvas {
           -webkit-mask-image: linear-gradient(to bottom, black 84%, rgba(0, 0, 0, 0.85) 93%, transparent 100%);
           mask-image: linear-gradient(to bottom, black 84%, rgba(0, 0, 0, 0.85) 93%, transparent 100%);
-          width: 275px;
+          width: 325px;
           height: auto;
           z-index: 10;
           position: relative;
           pointer-events: none;
           display: block;
-          filter: drop-shadow(0 10px 28px rgba(0, 195, 255, 0.28)) contrast(1.04) brightness(1.02);
+          filter: drop-shadow(0 10px 24px rgba(0, 140, 255, 0.22)) contrast(1.04) brightness(1.02);
           image-rendering: -webkit-optimize-contrast;
         }
 
         @media (max-width: 640px) {
+          .sophia-floating-trigger,
+          .ai-floating-trigger {
+            right: -24px !important;
+            bottom: 4px !important;
+          }
           .sophia-avatar-wrapper,
           .ai-avatar-wrapper,
           #ai-avatar-canvas {
-            width: 220px !important;
+            width: 255px !important;
           }
           .sophia-speech-pill,
           .ai-speech-pill {
             margin-right: -32px !important;
             padding: 9px 18px !important;
             font-size: 13.5px !important;
-          }
-          .sophia-avatar-wrapper::before,
-          .ai-avatar-wrapper::before {
-            width: 200px !important;
-            height: 200px !important;
           }
         }
 

@@ -84,7 +84,7 @@ export default function CustomerProfileTab({
             Customer Profile & Verification
           </h4>
           <p className="text-muted text-xs mb-0">
-            Keep your traveler details and driving license updated for fast, paperless Self Drive delivery in Thailand.
+            Keep your traveler details updated for fast check-in and seamless hotel & cab vouchers in Thailand.
           </p>
         </div>
       </div>
@@ -278,7 +278,7 @@ export default function CustomerProfileTab({
                 </div>
 
                 <div className="col-md-6">
-                  <label className="form-label text-xs fw-bold text-muted">Driving License Number (For Self Drive)</label>
+                  <label className="form-label text-xs fw-bold text-muted">ID / Passport Number (For Check-in)</label>
                   <div className="input-group">
                     <span className="input-group-text bg-light border-end-0"><Key size={14} /></span>
                     <input 

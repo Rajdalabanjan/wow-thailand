@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Building2, LayoutDashboard, Gift, Tag, Hotel, Car, Compass, 
   FileText, Users, TrendingUp, User, LogOut, Globe, Menu, X, ArrowLeft,
-  Lock, Clock, ShieldCheck, Plane, Wand2, Wallet
+  Lock, Clock, ShieldCheck, Wallet
 } from 'lucide-react';
 import * as api from '../../services/api';
 import B2BLoginPage from './B2BLoginPage';

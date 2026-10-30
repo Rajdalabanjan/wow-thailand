@@ -122,7 +122,7 @@ export default function CustomerPaymentsTab({
                     </td>
 
                     <td>
-                      <div className="fw-bold text-dark">{b.item_name || b.package_name || 'Self Drive Rental'}</div>
+                      <div className="fw-bold text-dark">{b.item_name || b.package_name || 'Booking'}</div>
                       <div className="text-muted text-xxs">Date: {b.pickup_date || b.travel_date || 'Scheduled'}</div>
                     </td>
 

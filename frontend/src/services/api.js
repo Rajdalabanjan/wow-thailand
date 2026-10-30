@@ -185,7 +185,10 @@ export async function fetchHotels(params = {}) {
     const res = await apiFetch(url);
     if (!res.ok) return [];
     const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.data)) return data.data;
+    if (data && Array.isArray(data.hotels)) return data.hotels;
+    return [];
   } catch (err) {
     console.warn('[API] Hotels fetch fallback used:', err.message);
     return [];

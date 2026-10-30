@@ -37,8 +37,7 @@ export const DEFAULT_CONFIG = {
     header: [
       { id: 'hotels', label: 'Hotels & Resorts', href: '/hotels', children: [] },
       { id: 'cabs', label: 'Cab Pickup & Drop', href: '/cabs', children: [] },
-      { id: 'sightseeing', label: 'Sightseeing Tours', href: '/sightseeing', children: [] },
-      { id: 'activities', label: 'Activities & Experiences', href: '/activities', children: [] }
+      { id: 'sightseeing', label: 'Sightseeing & Activities', href: '/sightseeing', children: [] }
     ],
     footer: [
       { id: 'about', label: 'About Us', href: '/about' },

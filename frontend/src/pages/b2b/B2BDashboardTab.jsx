@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Building2, Calendar, CheckCircle2, Clock, XCircle, DollarSign, Gift, Tag, 
   TrendingUp, ArrowUpRight, Hotel, Car, Compass, ChevronRight, Users, 
-  ShieldCheck, Wallet, Plane, Wand2, ArrowRight, Lock, AlertCircle, Sparkles
+  ShieldCheck, Wallet, ArrowRight, Lock, AlertCircle, Sparkles
 } from 'lucide-react';
 
 export default function B2BDashboardTab({ 

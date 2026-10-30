@@ -36,16 +36,6 @@ const VENDOR_CONFIG = {
     icon: Car,
     loginRoute: '/vehicle/login',
     loginLabel: 'Go to Cab Vendor Login'
-  },
-  tour_vendor: {
-    role: 'tour_vendor',
-    title: 'Sightseeing & Activities Partner Registration',
-    subtitle: 'Register to list guided excursions, island tours, and adventures on WOW THAILAND',
-    badge: 'TOUR & ACTIVITIES VENDOR',
-    badgeClass: 'bg-sky-100 text-sky-800 border-sky-300',
-    icon: Compass,
-    loginRoute: '/portal',
-    loginLabel: 'Go to Partner Portal'
   }
 };
 
