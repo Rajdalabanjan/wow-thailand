@@ -43,9 +43,9 @@ router.get('/activities', tourController.getAllActivities);
 
 // Bookings & Vouchers
 router.post('/bookings', bookingController.createBooking);
-router.get('/bookings/:id', bookingController.getBookingById);
-router.post('/bookings/verify-payment', bookingController.verifyPayment);
-router.post('/bookings/:id/cancel', bookingController.cancelBooking);
+router.get('/bookings/:id', requireAuth, bookingController.getBookingById);
+router.post('/bookings/verify-payment', requireAuth, requireRole(['hotel_vendor', 'transfer_vendor', 'tour_vendor', 'admin', 'superadmin']), bookingController.verifyPayment);
+router.post('/bookings/:id/cancel', requireAuth, requireRole(['hotel_vendor', 'transfer_vendor', 'tour_vendor', 'admin', 'superadmin']), bookingController.cancelBooking);
 
 // Hotel PMS (Hotel Vendor, Admin, SuperAdmin)
 router.get('/pms/dashboard', requireAuth, requireRole(['hotel_vendor', 'admin', 'superadmin']), pmsController.getPMSDashboard);
@@ -61,6 +61,6 @@ router.get('/b2b/dashboard', requireAuth, requireRole(['b2b_agent', 'admin', 'su
 
 // Wallets
 router.get('/wallets/:vendorId', requireAuth, requireRole(['hotel_vendor', 'transfer_vendor', 'b2b_agent', 'admin', 'superadmin']), walletController.getVendorWallet);
-router.post('/wallets/top-up', requireAuth, requireRole(['admin', 'superadmin', 'b2b_agent']), walletController.topUpWallet);
+router.post('/wallets/top-up', requireAuth, requireRole(['admin', 'superadmin']), walletController.topUpWallet);
 
 export default router;

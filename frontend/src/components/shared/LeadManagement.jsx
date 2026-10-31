@@ -11,6 +11,7 @@ import AIChatbotToggle from '../common/AIChatbotToggle';
 
 const SOURCE_TABS = [
   'All',
+  'IAMKRATU AI',
   'Hotel Enquiries',
   'Vehicle Rental',
   'Vendor Onboarding',

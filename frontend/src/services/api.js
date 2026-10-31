@@ -13,11 +13,13 @@ export function getTenantId() {
 
 export function getCustomerToken() {
   try {
+    const directCustToken = localStorage.getItem('customer_token');
+    if (directCustToken) return directCustToken;
     const custStr = localStorage.getItem('customerUser');
     if (custStr) {
       const cust = JSON.parse(custStr);
-      if (cust && (cust.role === 'customer' || !cust.role)) {
-        return cust.token || cust.id || cust.phone || '';
+      if (cust && cust.token) {
+        return cust.token;
       }
     }
   } catch (e) {}
@@ -30,19 +32,30 @@ export function getAuthToken() {
     if (adminToken) return adminToken;
     const b2bToken = localStorage.getItem('b2b_partner_token');
     if (b2bToken) return b2bToken;
+    const directCustToken = localStorage.getItem('customer_token');
+    if (directCustToken) return directCustToken;
     const custStr = localStorage.getItem('customerUser');
     if (custStr) {
       const cust = JSON.parse(custStr);
-      if (cust.token || cust.id || cust.phone) return cust.token || cust.id || cust.phone;
+      if (cust.token) return cust.token;
     }
     const currStr = localStorage.getItem('currentUser');
     if (currStr) {
       const user = JSON.parse(currStr);
-      return user.token || user.id || user.username || '';
+      return user.token || '';
     }
     return '';
   } catch (e) {
     return '';
+  }
+}
+
+// Staff/partner logins store a signed JWT in auth_token; customers and visitors don't have one.
+function hasStaffSession() {
+  try {
+    return Boolean(localStorage.getItem('auth_token'));
+  } catch (e) {
+    return false;
   }
 }
 
@@ -302,17 +315,23 @@ export async function approveVendor(vendorId) {
 
 export async function fetchUsers() {
   let list = [];
-  try {
-    const res = await apiFetch(`${API_BASE}?resource=users`);
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) list = data;
+  // User list is admin-only; visitors and non-admins get no list (and no mock data)
+  let restricted = !hasStaffSession();
+  if (!restricted) {
+    try {
+      const res = await apiFetch(`${API_BASE}?resource=users`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) list = data;
+      } else if (res.status === 401 || res.status === 403) {
+        restricted = true;
+      }
+    } catch (err) {
+      console.warn('[API] Users fetch fallback used:', err.message);
     }
-  } catch (err) {
-    console.warn('[API] Users fetch fallback used:', err.message);
   }
 
-  if (!list.length) list = [...usersData];
+  if (!list.length && !restricted) list = [...usersData];
 
   // Merge locally created users from localStorage
   try {
@@ -380,18 +399,23 @@ export async function fetchUsers() {
 
 export async function fetchBookings() {
   let list = [];
-  let fetchSucceeded = false;
-  try {
-    const res = await apiFetch(`${API_BASE}?resource=bookings`);
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        list = data;
+  // The full booking list is staff-only; visitors get an empty list (not mock data)
+  let fetchSucceeded = !hasStaffSession();
+  if (!fetchSucceeded) {
+    try {
+      const res = await apiFetch(`${API_BASE}?resource=bookings`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          list = data;
+          fetchSucceeded = true;
+        }
+      } else if (res.status === 401 || res.status === 403) {
         fetchSucceeded = true;
       }
+    } catch (err) {
+      console.warn('[API] Bookings fetch error:', err.message);
     }
-  } catch (err) {
-    console.warn('[API] Bookings fetch error:', err.message);
   }
 
   // Only fall back to mock data if the API request completely failed and no list was fetched
@@ -410,6 +434,35 @@ export async function fetchBookings() {
   } catch (e) {}
 
   return list;
+}
+
+export async function fetchBookingById(id) {
+  if (!id) return null;
+  const cleanId = String(id).trim();
+  try {
+    const res = await apiFetch(`${API_BASE}?resource=bookings&id=${encodeURIComponent(cleanId)}`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.success && json.data) {
+        return json.data;
+      }
+      if (json && (json.id || json.booking_id)) {
+        return json;
+      }
+    }
+  } catch (err) {
+    console.warn('[API] fetchBookingById error:', err.message);
+  }
+
+  try {
+    const local = JSON.parse(localStorage.getItem('local_bookings') || '[]');
+    const match = local.find(b => String(b.id) === cleanId || String(b.booking_id) === cleanId);
+    if (match) return match;
+    const last = JSON.parse(localStorage.getItem('last_created_booking') || 'null');
+    if (last && (String(last.id) === cleanId || String(last.booking_id) === cleanId)) return last;
+  } catch (e) {}
+
+  return null;
 }
 
 export async function fetchCustomerBookings(identifier) {

@@ -62,6 +62,7 @@ import CraftMyTripPage from './pages/customer/CraftMyTripPage';
 import AIPlannerPage from './pages/customer/AIPlannerPage';
 import CustomerDashboard from './pages/customer/CustomerDashboard';
 import CustomerPortalPage from './pages/customer/CustomerPortalPage';
+import DirectVoucherPage from './pages/customer/DirectVoucherPage';
 import DriverLoginPage from './pages/driver/DriverLoginPage';
 import VendorPortalPage from './pages/vendor/VendorPortalPage';
 import FlightVendorPortalPage from './pages/vendor/FlightVendorPortalPage';
@@ -101,6 +102,7 @@ export default function App() {
       if (p.startsWith('/admin') || p === '/portal' || p.startsWith('/sub-admin') || p.startsWith('/subadmin') || p.startsWith('/superadmin') || p.startsWith('/super-admin') || p === '/vendor' || p === '/cab-vendor' || p === '/hotel-vendor' || p === '/vehicle/login' || p === '/hotel/login') return 'portal';
       if (p.startsWith('/b2b') || p === '/register' || p.startsWith('/vendor/register')) return 'b2b';
       if (p.startsWith('/driver')) return 'driver';
+      if (p.startsWith('/voucher')) return 'voucher';
       if (p.startsWith('/customer')) return 'customer';
       if (p.startsWith('/dashboard')) return 'dashboard';
       if (p.startsWith('/cabs') || p.startsWith('/cab') || p.startsWith('/transfers') || p.startsWith('/transfer')) return 'cabs';
@@ -1918,6 +1920,19 @@ export default function App() {
           }}
         />
       </Suspense>
+    );
+  }
+
+    // ─── DIRECT OFFICIAL VOUCHER ROUTE (Direct link from Email / SMS / WhatsApp) ───
+  if (path.startsWith('/voucher') || activeTab === 'voucher') {
+    return (
+      <DirectVoucherPage
+        onBackHome={() => {
+          window.history.pushState(null, '', '/');
+          setCurrentPath('/');
+          setActiveTab('hotels');
+        }}
+      />
     );
   }
 

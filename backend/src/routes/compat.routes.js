@@ -16,7 +16,12 @@ import * as driverController from '../controllers/driverController.js';
 import * as b2bController from '../controllers/b2bController.js';
 import * as walletController from '../controllers/walletController.js';
 import { getExchangeRate, convertFromTHB } from '../services/currencyService.js';
+import { generateVoucherPdfBuffer } from '../services/pdfVoucherService.js';
+import { signJwtToken } from '../middleware/auth.js';
+import { resolveVendorId, resolveDriverId, isBookingOwnerOrStaff, verifyCustomerSelfAccess } from '../utils/identityResolver.js';
+import { generateAndSendOtp, verifyHashedOtp } from '../services/otpService.js';
 
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import multer from 'multer';
 import path from 'path';
@@ -37,16 +42,104 @@ const storage = multer.diskStorage({
     cb(null, `file-${Date.now()}-${Math.round(Math.random() * 1e6)}${ext}`);
   }
 });
-const upload = multer({ 
+const upload = multer({
   storage,
   limits: { fileSize: 50 * 1024 * 1024 }
 });
 
 const router = Router();
 
-// In-memory verification & reset stores
-const customerOtpStore = new Map();
+// In-memory password reset store
 const resetOtpStore = new Map();
+
+function hashResetCode(identifier, code) {
+  return crypto.createHmac('sha256', process.env.JWT_SECRET || 'wow_thailand_reset_secret')
+    .update(`${identifier.trim().toLowerCase()}:${code.trim()}`)
+    .digest('hex');
+}
+
+function isValidResetOtp(identifier, enteredOtp) {
+  const stored = resetOtpStore.get(identifier.trim().toLowerCase());
+  if (!stored || !enteredOtp) return false;
+  if (Date.now() > stored.expiresAt) {
+    resetOtpStore.delete(identifier.trim().toLowerCase());
+    return false;
+  }
+  const candidateHash = hashResetCode(identifier, enteredOtp);
+  const recordBuf = Buffer.from(stored.otpHash, 'utf8');
+  const candBuf = Buffer.from(candidateHash, 'utf8');
+  if (recordBuf.length !== candBuf.length) return false;
+  return crypto.timingSafeEqual(recordBuf, candBuf);
+}
+
+// -------------------------------------------------------------
+// ACCESS POLICY
+// Strict role-based authorization for all resources and operations
+// -------------------------------------------------------------
+const ADMIN_ROLES = ['admin', 'superadmin', 'subadmin', 'sub_admin', 'super_admin'];
+const PARTNER_ROLES = [
+  ...ADMIN_ROLES,
+  'hotel_vendor', 'transfer_vendor', 'tour_vendor', 'flight_vendor', 'vendor',
+  'b2b_agent', 'b2b', 'agent', 'driver'
+];
+const ALL_AUTHENTICATED_ROLES = ['customer', ...PARTNER_ROLES];
+
+const ADMIN_ONLY_RESOURCES = new Set([
+  'users', 'assignable_users', 'leads', 'ai_leads', 'custom_enquiries', 'lead_comments',
+  'admin_reviews', 'admin_b2b_notifications', 'b2b_partners', 'b2b_all_wallet_transactions',
+  'b2b_mode_requests', 'birthday_logs', 'today_birthdays', 'blocked_booking_alerts',
+  'commission_rules', 'platform_revenue', 'vendor_reactivations', 'all_vendor_hold_settings',
+  'wallet_settlements', 'settlements', 'pricing_rules'
+]);
+const ADMIN_ONLY_ACTIONS = new Set([
+  'update_lead', 'update_lead_status', 'assign_lead', 'update_next_action', 'delete_lead',
+  'add_lead_comment', 'delete_lead_comment', 'delete_master_hotel', 'get_admin_payment_methods',
+  'recharge_wallet', 'top_up_wallet'
+]);
+const PARTNER_RESOURCES = new Set([
+  'vendor_wallets', 'wallets', 'wallet', 'wallet_transactions', 'payment_gateways', 'payment_settings',
+  'vendor_wallet_info', 'my_subscription', 'global_settings',
+  'hotel_guests', 'hotel_staff', 'hotel_support_tickets', 'hotel_activity_logs',
+  'pms_stats', 'pms_dashboard_activity', 'pms_list_amenity_requests',
+  'b2b_dashboard', 'b2b_wallet', 'b2b_reports', 'b2b_customers', 'b2b_notifications',
+  'driver_jobs', 'available_driver_jobs'
+]);
+const PARTNER_ACTIONS = new Set([
+  'create_hotel', 'add_hotel', 'edit_hotel', 'update_hotel', 'delete_hotel', 'add_master_hotel',
+  'update_booking_status', 'update_booking_checkin', 'verify_booking_payment', 'confirm_booking',
+  'reject_booking_payment', 'create_add_on', 'update_add_on', 'delete_add_on',
+  'create_activity', 'update_activity', 'delete_activity',
+  'add_vendor_payment_method', 'update_vendor_payment_method', 'delete_vendor_payment_method',
+  'get_vendor_payment_methods', 'b2b_book'
+]);
+
+/** Returns the roles allowed for this request, or null when it is public. */
+function requiredRoles(req, resource, action) {
+  if (ADMIN_ONLY_RESOURCES.has(resource) || ADMIN_ONLY_ACTIONS.has(action)) return ADMIN_ROLES;
+  if (PARTNER_RESOURCES.has(resource) || PARTNER_ACTIONS.has(action) || action.startsWith('pms_')) {
+    return PARTNER_ROLES;
+  }
+  if (action === 'update_driver_job_status') {
+    return ['driver', ...ADMIN_ROLES];
+  }
+  if (resource === 'booking_invoice_data' || action === 'download_voucher_pdf' || action === 'download_pdf') {
+    return ALL_AUTHENTICATED_ROLES;
+  }
+  if (resource === 'customer_wallet' || resource === 'customer_wallet_transactions' || resource === 'customer_loyalty') {
+    return ALL_AUTHENTICATED_ROLES;
+  }
+  if (resource === 'bookings') {
+    if (req.method === 'POST') {
+      if (action === 'create' || action === 'book' || action === 'create_booking' || !action) {
+        return null; // Public checkout creation
+      }
+      return PARTNER_ROLES;
+    }
+    // GET bookings requires authentication
+    return ALL_AUTHENTICATED_ROLES;
+  }
+  return null;
+}
 
 // In-memory PMS Hotel Menu Items store
 const hotelMenuItemsMap = new Map([
@@ -168,41 +261,43 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       }
 
       const cleanPhone = phone.replace(/\D/g, '');
-      const otp = '1234';
-
-      const key = cleanPhone || email;
-      customerOtpStore.set(key, { otp, expiresAt: Date.now() + 15 * 60 * 1000 });
-      if (email) customerOtpStore.set(email, { otp, expiresAt: Date.now() + 15 * 60 * 1000 });
-
-      let customerName = 'Valued Traveler';
       let foundEmail = email;
-      try {
-        const last10 = cleanPhone.slice(-10);
-        const rows = await query(
-          'SELECT customer_name, customer_email, customer_phone FROM bookings WHERE customer_phone LIKE ? OR customer_email = ? LIMIT 1',
-          [`%${last10}%`, email || '___none___']
-        );
-        if (rows.length > 0) {
-          customerName = rows[0].customer_name || customerName;
-          foundEmail = rows[0].customer_email || email;
-        }
-      } catch (e) {}
+      let customerName = 'Valued Traveler';
 
-      let maskedEmail = '';
-      if (foundEmail && foundEmail.includes('@')) {
-        const [u, d] = foundEmail.split('@');
-        maskedEmail = `${u.charAt(0)}${'*'.repeat(Math.max(1, u.length - 2))}${u.slice(-1)}@${d}`;
-      } else {
-        maskedEmail = cleanPhone ? `+*** *** ${cleanPhone.slice(-4)}` : 'your mobile';
+      if (cleanPhone) {
+        try {
+          const last10 = cleanPhone.slice(-10);
+          const rows = await query(
+            'SELECT customer_name, customer_email FROM bookings WHERE customer_phone LIKE ? ORDER BY created_at DESC LIMIT 1',
+            [`%${last10}%`]
+          );
+          if (rows.length > 0) {
+            customerName = rows[0].customer_name || customerName;
+            if (!foundEmail && rows[0].customer_email) {
+              foundEmail = rows[0].customer_email;
+            }
+          }
+        } catch (e) {}
       }
 
-      console.log(`[CUSTOMER OTP] Demo code 1234 active for ${phone || email}`);
+      const otpResult = await generateAndSendOtp({
+        phone: cleanPhone,
+        email: foundEmail || email,
+        purpose: 'Customer Portal Login'
+      });
+
+      if (!otpResult.success) {
+        return res.status(400).json(otpResult);
+      }
+
+      const dest = foundEmail || email || phone;
+      const masked = dest.includes('@')
+        ? dest.replace(/^(.)(.*)(@.*)$/, (_, a, b, c) => a + '*'.repeat(Math.max(b.length, 3)) + c)
+        : phone.replace(/(\d{2})\d+(\d{2})/, '$1******$2');
 
       return res.json({
         success: true,
-        message: `Demo OTP is 1234 (sent to ${maskedEmail}).`,
-        masked_email: maskedEmail,
-        otp_preview: '1234',
+        message: `A secure 6-digit verification code has been dispatched to ${masked}. Valid for 10 minutes.`,
         email: foundEmail || email
       });
     }
@@ -213,19 +308,17 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       const email = (payload.email || req.query.email || '').trim().toLowerCase();
       const enteredOtp = String(payload.otp || req.query.otp || '').trim();
 
-      const cleanPhone = phone.replace(/\D/g, '');
-      const key = cleanPhone || email;
-      const stored = customerOtpStore.get(key) || (email ? customerOtpStore.get(email) : null);
+      const verifyResult = verifyHashedOtp({
+        phone,
+        email,
+        enteredOtp
+      });
 
-      const isValid = (stored && stored.otp === enteredOtp && Date.now() <= stored.expiresAt) || enteredOtp === '1234';
-
-      if (!isValid) {
-        return res.status(400).json({ success: false, error: 'Incorrect verification code. Please try again or use 1234.' });
+      if (!verifyResult.success) {
+        return res.status(400).json(verifyResult);
       }
 
-      customerOtpStore.delete(key);
-      if (email) customerOtpStore.delete(email);
-
+      const cleanPhone = phone.replace(/\D/g, '');
       let customerName = 'Valued Traveler';
       let customerEmail = email;
       let customerId = `c_${cleanPhone || Date.now()}`;
@@ -240,17 +333,31 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
           customerEmail = rows[0].customer_email || customerEmail;
           customerId = rows[0].user_id || customerId;
         }
-      } catch (e) {}
+      } catch (e) { }
+
+      // Authoritative Customer JWT issuance with strict role
+      const customerToken = signJwtToken(
+        {
+          id: customerId,
+          phone: cleanPhone,
+          email: customerEmail,
+          role: 'customer',
+          name: customerName
+        },
+        '30d'
+      );
 
       return res.json({
         success: true,
+        token: customerToken,
         customer: {
           id: customerId,
           name: customerName,
           username: customerEmail ? customerEmail.split('@')[0] : (cleanPhone || 'customer'),
           phone: phone,
           email: customerEmail || 'guest@wowthailand.com',
-          role: 'customer'
+          role: 'customer',
+          token: customerToken
         }
       });
     }
@@ -261,10 +368,26 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       if (!identifier) {
         return res.status(400).json({ success: false, error: 'Identifier is required.' });
       }
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      const resetToken = `rst-${Date.now()}`;
-      resetOtpStore.set(identifier.toLowerCase(), { otp, resetToken, expiresAt: Date.now() + 15 * 60 * 1000 });
-      return res.json({ success: true, message: 'Reset code generated.', reset_token: resetToken, otp_preview: otp });
+      const otp = crypto.randomInt(100000, 1000000).toString();
+      const resetToken = `rst-${Date.now()}-${crypto.randomBytes(8).toString('hex')}`;
+      const hashed = hashResetCode(identifier, otp);
+      resetOtpStore.set(identifier.toLowerCase(), {
+        otpHash: hashed,
+        resetToken,
+        expiresAt: Date.now() + 10 * 60 * 1000
+      });
+
+      if (identifier.includes('@')) {
+        import('../services/emailService.js').then(m => {
+          m.sendOtpEmail(identifier, otp, 'Password Reset').catch(() => {});
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: 'Password reset code generated and dispatched.',
+        reset_token: resetToken
+      });
     }
 
     if (action === 'verify_reset_otp') {
@@ -433,7 +556,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       } = req.body;
 
       const newId = req.body.id || req.body.hotel_id || `th-htl-${Date.now().toString().slice(-6)}`;
-      
+
       // Map region to valid Thailand cities enum
       let hotelCity = 'Bangkok';
       const cLower = (city || '').toLowerCase();
@@ -457,7 +580,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       let amenitiesArr = [];
       if (Array.isArray(facilities_json)) amenitiesArr = facilities_json;
       else if (typeof facilities_json === 'string' && facilities_json.startsWith('[')) {
-        try { amenitiesArr = JSON.parse(facilities_json); } catch {}
+        try { amenitiesArr = JSON.parse(facilities_json); } catch { }
       } else if (typeof amenities === 'string') {
         amenitiesArr = amenities.split(',').map(s => s.trim()).filter(Boolean);
       }
@@ -466,7 +589,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       if (Array.isArray(images)) imagesArr = images;
       else if (Array.isArray(images_json)) imagesArr = images_json;
       else if (typeof images_json === 'string' && images_json.startsWith('[')) {
-        try { imagesArr = JSON.parse(images_json); } catch {}
+        try { imagesArr = JSON.parse(images_json); } catch { }
       }
       // Sanitize imagesArr: convert any embedded Base64 strings to disk files
       const sanitizedImages = [];
@@ -495,13 +618,13 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
         try {
           const vCheck = await query('SELECT id FROM vendors WHERE id = ? OR user_id = ? LIMIT 1', [candidateVendorId, candidateVendorId]);
           if (vCheck.length > 0) validVendorId = vCheck[0].id;
-        } catch (e) {}
+        } catch (e) { }
       }
       if (!validVendorId) {
         try {
           const vAny = await query("SELECT id FROM vendors WHERE id LIKE 'vnd-%' LIMIT 1");
           if (vAny.length > 0) validVendorId = vAny[0].id;
-        } catch (e) {}
+        } catch (e) { }
       }
 
       try {
@@ -572,7 +695,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       let amenitiesArr = [];
       if (Array.isArray(facilities_json)) amenitiesArr = facilities_json;
       else if (typeof facilities_json === 'string' && facilities_json.startsWith('[')) {
-        try { amenitiesArr = JSON.parse(facilities_json); } catch {}
+        try { amenitiesArr = JSON.parse(facilities_json); } catch { }
       } else if (typeof amenities === 'string') {
         amenitiesArr = amenities.split(',').map(s => s.trim()).filter(Boolean);
       }
@@ -581,7 +704,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       if (Array.isArray(images)) imagesArr = images;
       else if (Array.isArray(images_json)) imagesArr = images_json;
       else if (typeof images_json === 'string' && images_json.startsWith('[')) {
-        try { imagesArr = JSON.parse(images_json); } catch {}
+        try { imagesArr = JSON.parse(images_json); } catch { }
       }
 
       try {
@@ -623,7 +746,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       if (id) {
         try {
           await query('DELETE FROM hotels WHERE id = ?', [id]);
-        } catch (e) {}
+        } catch (e) { }
       }
       return res.json({ success: true, message: 'Hotel deleted successfully.' });
     }
@@ -632,15 +755,15 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     if (resource === 'hotel_rooms' || resource === 'hotel_rooms_public') {
       const hotelId = req.query.hotel_id || req.query.id || 'th-htl-01';
       const actualId = (hotelId === 'hotel-5star' || hotelId === 'hotel-phuket-shore') ? 'th-htl-01' :
-                       (hotelId === 'hotel-4star' || hotelId === 'hotel-bkk-banyan') ? 'th-htl-02' :
-                       (hotelId === 'hotel-3star' || hotelId === 'hotel-pattaya-hilton') ? 'th-htl-04' : hotelId;
+        (hotelId === 'hotel-4star' || hotelId === 'hotel-bkk-banyan') ? 'th-htl-02' :
+          (hotelId === 'hotel-3star' || hotelId === 'hotel-pattaya-hilton') ? 'th-htl-04' : hotelId;
 
       const roomTypes = await query('SELECT * FROM hotel_room_types WHERE hotel_id = ? OR hotel_id = ?', [actualId, hotelId]);
       const mappedRooms = roomTypes.map(r => {
         const basePrice = parseFloat(r.base_price_thb) || 5000;
         const isPhuket = r.id.includes('phuket') || actualId === 'th-htl-01';
         const isBkk = r.id.includes('bkk') || actualId === 'th-htl-02';
-        
+
         const roomImages = isPhuket ? [
           'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
           'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=1200&q=80'
@@ -785,7 +908,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       if (id) {
         try {
           await query('DELETE FROM hotel_menu_items WHERE id = ?', [id]);
-        } catch (e) {}
+        } catch (e) { }
         hotelMenuItemsMap.delete(id);
       }
       return res.json({ success: true, message: 'Dish removed from menu.' });
@@ -812,7 +935,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
            ON DUPLICATE KEY UPDATE name = VALUES(name), category = VALUES(category), category_name = VALUES(category_name), price = VALUES(price), is_veg = VALUES(is_veg), is_jain = VALUES(is_jain), description = VALUES(description), image_url = VALUES(image_url), is_available = VALUES(is_available), display_order = VALUES(display_order)`,
           [id, hotelId, name, cat, cat, price, isVeg, isJain, desc, img, isAvailable, displayOrder]
         );
-      } catch (e) {}
+      } catch (e) { }
 
       const item = {
         id,
@@ -862,7 +985,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
            ON DUPLICATE KEY UPDATE name = VALUES(name), timing_open = VALUES(timing_open), timing_close = VALUES(timing_close), timings = VALUES(timings), entry_policy = VALUES(entry_policy), description = VALUES(description), features_json = VALUES(features_json), images_json = VALUES(images_json), cover_image = VALUES(cover_image), is_active = VALUES(is_active)`,
           [id, hotelId, name, timingOpen, timingClose, `${timingOpen} - ${timingClose}`, entryPolicy, desc, features, images, cover, isActive]
         );
-      } catch (e) {}
+      } catch (e) { }
 
       return res.json({ success: true, message: 'Bar & Lounge profile saved successfully.', bar_id: id });
     }
@@ -873,7 +996,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       if (hotelId) {
         try {
           await query('UPDATE hotel_bar_lounges SET is_active = 0 WHERE hotel_id = ?', [hotelId]);
-        } catch (e) {}
+        } catch (e) { }
       }
       return res.json({ success: true, message: 'Bar & Lounge profile deactivated.' });
     }
@@ -890,7 +1013,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
           'UPDATE hotels SET categorized_amenities_json = ?, amenities = ? WHERE id = ?',
           [catsJson, flat.join(','), hotelId]
         );
-      } catch (e) {}
+      } catch (e) { }
       return res.json({ success: true, message: 'Hotel amenities saved and synchronized successfully!' });
     }
 
@@ -907,7 +1030,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
           'UPDATE hotel_room_types SET categorized_amenities_json = ?, amenities_json = ? WHERE id = ? AND hotel_id = ?',
           [catsJson, JSON.stringify(flat), roomTypeId, hotelId]
         );
-      } catch (e) {}
+      } catch (e) { }
       return res.json({ success: true, message: 'Room amenities saved and synchronized successfully!' });
     }
 
@@ -924,7 +1047,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
           'INSERT INTO hotel_amenity_requests (id, hotel_id, suggested_name, suggested_category_id, scope, description, status) VALUES (?, ?, ?, ?, ?, ?, "Pending")',
           [id, hotelId, customName, catId, scope, desc]
         );
-      } catch (e) {}
+      } catch (e) { }
       return res.json({ success: true, message: 'Custom amenity request submitted for review.' });
     }
 
@@ -943,7 +1066,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
             [planId, hotelId, roomTypeId, p.name || p.meal_plan, p.meal_plan, p.base_price || 0, p.is_active ? 'Active' : 'Inactive']
           );
         }
-      } catch (e) {}
+      } catch (e) { }
       return res.json({ success: true, message: 'Meal plans synchronized successfully without duplicates!' });
     }
 
@@ -954,7 +1077,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
         try {
           const isLive = hotel_status === 'Live' ? 1 : 0;
           await query('UPDATE hotels SET is_published = ?, hotel_status = ? WHERE id = ?', [isLive, hotel_status || 'Live', hotel_id]);
-        } catch (e) {}
+        } catch (e) { }
       }
       return res.json({ success: true, message: `Hotel status updated to ${hotel_status || 'Live'}.` });
     }
@@ -965,7 +1088,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       if (id) {
         try {
           await query('DELETE FROM hotel_room_types WHERE id = ?', [id]);
-        } catch (e) {}
+        } catch (e) { }
       }
       return res.json({ success: true, message: 'Room type deleted successfully.' });
     }
@@ -1027,7 +1150,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     if (action === 'pms_delete_room') {
       const id = req.body?.id || req.query?.id;
       if (id) {
-        try { await query('DELETE FROM hotel_rooms WHERE id = ?', [id]); } catch (e) {}
+        try { await query('DELETE FROM hotel_rooms WHERE id = ?', [id]); } catch (e) { }
       }
       return res.json({ success: true, message: 'Room deleted successfully.' });
     }
@@ -1088,7 +1211,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
             }))
           });
         }
-      } catch (e) {}
+      } catch (e) { }
 
       const items = Array.from(hotelMenuItemsMap.values()).filter(m => !hotelId || m.hotel_id === hotelId || !m.hotel_id);
       return res.json({
@@ -1105,8 +1228,8 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
           const b = rows[0];
           let features = [];
           let images = [];
-          try { features = typeof b.features_json === 'string' ? JSON.parse(b.features_json) : (b.features_json || []); } catch(e) {}
-          try { images = typeof b.images_json === 'string' ? JSON.parse(b.images_json) : (b.images_json || []); } catch(e) {}
+          try { features = typeof b.features_json === 'string' ? JSON.parse(b.features_json) : (b.features_json || []); } catch (e) { }
+          try { images = typeof b.images_json === 'string' ? JSON.parse(b.images_json) : (b.images_json || []); } catch (e) { }
           return res.json({
             success: true,
             bar: {
@@ -1124,7 +1247,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
             }
           });
         }
-      } catch (e) {}
+      } catch (e) { }
 
       return res.json({
         success: true,
@@ -1166,7 +1289,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
             }))
           });
         }
-      } catch (e) {}
+      } catch (e) { }
       return res.json({
         success: true,
         rate_plans: [
@@ -1305,7 +1428,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     }
 
     if (resource === 'bikes') {
-      return res.status(404).json({ success: false, error: 'Bike and scooter rental services have been decommissioned for WOW THAILAND.' });
+      return res.json([]);
     }
 
     if (resource === 'transfer_routes') {
@@ -1354,23 +1477,239 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       return res.json(mapped);
     }
 
+    // -------------------------------------------------------------
+    // SIGHTSEEING & ACTIVITIES / ADD-ONS ENGINE
+    // -------------------------------------------------------------
     if (resource === 'activities' || resource === 'add_ons') {
-      const activities = await query('SELECT * FROM activities ORDER BY title ASC');
-      const mapped = activities.map(a => ({
-        id: a.id,
-        title: a.title,
-        name: a.title,
-        category: a.category,
-        price: a.price_thb,
-        price_thb: a.price_thb,
-        time_slots: Array.isArray(a.time_slots_json) ? a.time_slots_json : JSON.parse(a.time_slots_json || '[]'),
-        image: '/thailand_hero.jpg',
-        rating: 4.9
-      }));
+      const activities = await query('SELECT * FROM activities WHERE is_active = 1 OR is_active IS NULL ORDER BY created_at DESC');
+      const mapped = activities.map(a => {
+        let imgs = [];
+        try {
+          imgs = Array.isArray(a.images_json) ? a.images_json : JSON.parse(a.images_json || '[]');
+        } catch (e) {
+          imgs = [];
+        }
+        const primaryImg = a.image_url || imgs[0] || '/thailand_hero.jpg';
+
+        return {
+          id: a.id,
+          title: a.title,
+          name: a.title,
+          category: a.category || 'Adventure / Activity',
+          type: a.category || 'Activity',
+          price: Number(a.price_thb || 0),
+          price_thb: Number(a.price_thb || 0),
+          location: a.location || 'Bangkok & Pattaya',
+          duration: a.duration || '2-3 Hours',
+          description: a.description || '',
+          time_slots: Array.isArray(a.time_slots_json) ? a.time_slots_json : JSON.parse(a.time_slots_json || '[]'),
+          image_url: primaryImg,
+          image: primaryImg,
+          images: imgs.length > 0 ? imgs : [primaryImg],
+          images_json: a.images_json,
+          is_active: a.is_active === 0 ? 0 : 1,
+          rating: 4.9
+        };
+      });
       return res.json(mapped);
     }
 
+    if (action === 'create_add_on' || action === 'create_activity') {
+      const b = req.body || {};
+      const id = b.id || `act-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 900 + 100)}`;
+      const title = (b.title || b.name || '').trim();
+      if (!title) {
+        return res.status(400).json({ success: false, error: 'Activity title is required.' });
+      }
+
+      const price = parseFloat(b.price || b.price_thb || 0);
+      const category = (b.category || b.type || 'Adventure / Activity').trim();
+      const location = (b.location || 'Bangkok & Pattaya').trim();
+      const duration = (b.duration || '2-3 Hours').trim();
+      const description = (b.description || '').trim();
+
+      let imagesList = [];
+      if (Array.isArray(b.images) && b.images.length > 0) {
+        imagesList = b.images;
+      } else if (b.images_json) {
+        try {
+          imagesList = typeof b.images_json === 'string' ? JSON.parse(b.images_json) : b.images_json;
+        } catch (e) {
+          imagesList = [];
+        }
+      }
+      if (imagesList.length === 0 && (b.image_url || b.image)) {
+        imagesList = [b.image_url || b.image];
+      }
+
+      const primaryImg = imagesList[0] || b.image_url || b.image || '/thailand_hero.jpg';
+
+      try {
+        await query(
+          `INSERT INTO activities 
+           (id, title, category, price_thb, location, duration, description, image_url, images_json, is_active, is_demo)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+          [
+            id,
+            title,
+            category,
+            price,
+            location,
+            duration,
+            description,
+            primaryImg,
+            JSON.stringify(imagesList),
+            b.is_active === 0 ? 0 : 1
+          ]
+        );
+
+        return res.json({
+          success: true,
+          id,
+          message: 'Sightseeing & Activity created successfully',
+          data: { id, title, price, category, location, duration, image_url: primaryImg }
+        });
+      } catch (err) {
+        console.error('[Compat] Error creating activity:', err);
+        return res.status(500).json({ success: false, error: err.message });
+      }
+    }
+
+    if (action === 'update_add_on' || action === 'update_activity') {
+      const b = req.body || {};
+      const id = b.id || req.query?.id;
+      if (!id) {
+        return res.status(400).json({ success: false, error: 'Activity ID is required.' });
+      }
+
+      const title = (b.title || b.name || '').trim();
+      const price = b.price !== undefined ? parseFloat(b.price || b.price_thb || 0) : undefined;
+      const category = (b.category || b.type || '').trim();
+      const location = (b.location || '').trim();
+      const duration = (b.duration || '').trim();
+      const description = (b.description || '').trim();
+
+      let imagesList = undefined;
+      if (Array.isArray(b.images)) {
+        imagesList = b.images;
+      } else if (b.images_json) {
+        try {
+          imagesList = typeof b.images_json === 'string' ? JSON.parse(b.images_json) : b.images_json;
+        } catch (e) { }
+      }
+
+      const primaryImg = (imagesList && imagesList[0]) || b.image_url || b.image;
+
+      try {
+        const fields = [];
+        const params = [];
+
+        if (title) { fields.push('title = ?'); params.push(title); }
+        if (price !== undefined) { fields.push('price_thb = ?'); params.push(price); }
+        if (category) { fields.push('category = ?'); params.push(category); }
+        if (location) { fields.push('location = ?'); params.push(location); }
+        if (duration) { fields.push('duration = ?'); params.push(duration); }
+        if (description !== undefined) { fields.push('description = ?'); params.push(description); }
+        if (primaryImg) { fields.push('image_url = ?'); params.push(primaryImg); }
+        if (imagesList !== undefined) { fields.push('images_json = ?'); params.push(JSON.stringify(imagesList)); }
+        if (b.is_active !== undefined) { fields.push('is_active = ?'); params.push(b.is_active ? 1 : 0); }
+
+        if (fields.length > 0) {
+          params.push(id);
+          await query(`UPDATE activities SET ${fields.join(', ')} WHERE id = ?`, params);
+        }
+
+        return res.json({ success: true, message: 'Activity updated successfully' });
+      } catch (err) {
+        console.error('[Compat] Error updating activity:', err);
+        return res.status(500).json({ success: false, error: err.message });
+      }
+    }
+
+    if (action === 'delete_add_on' || action === 'delete_activity') {
+      const id = req.body?.id || req.query?.id;
+      if (!id) {
+        return res.status(400).json({ success: false, error: 'Activity ID is required.' });
+      }
+
+      try {
+        await query('DELETE FROM activities WHERE id = ?', [id]);
+        return res.json({ success: true, message: 'Activity deleted successfully' });
+      } catch (err) {
+        console.error('[Compat] Error deleting activity:', err);
+        return res.status(500).json({ success: false, error: err.message });
+      }
+    }
+
     // -------------------------------------------------------------
+
+    // -------------------------------------------------------------
+    // Direct Official Voucher PDF Stream / Download
+    // -------------------------------------------------------------
+    if (action === 'download_voucher_pdf' || action === 'download_pdf') {
+      if (!req.user) {
+        return res.status(401).send('Authentication required to access booking vouchers.');
+      }
+
+      const bkgId = req.query.id || req.query.booking_id || req.query.pnr;
+      if (!bkgId) {
+        return res.status(400).send('Booking ID reference is required.');
+      }
+
+      try {
+        const bookings = await query('SELECT * FROM bookings WHERE id = ?', [bkgId]);
+        if (bookings.length === 0) {
+          return res.status(404).send('Booking voucher not found.');
+        }
+
+        const isAuthorized = await isBookingOwnerOrStaff(bookings[0], req.user);
+        if (!isAuthorized) {
+          return res.status(403).send('Access denied: You do not have permission to download this voucher.');
+        }
+
+        const items = await query('SELECT * FROM booking_items WHERE booking_id = ?', [bkgId]);
+        const vouchers = await query('SELECT * FROM vouchers WHERE booking_id = ?', [bkgId]);
+
+        const bookingRecord = { ...bookings[0] };
+        let hotelName = '';
+        let roomTypeName = '';
+
+        if (items.length > 0 && items[0].item_type === 'HOTEL' && items[0].reference_id) {
+          const roomTypes = await query('SELECT * FROM hotel_room_types WHERE id = ?', [items[0].reference_id]);
+          if (roomTypes.length > 0) {
+            roomTypeName = roomTypes[0].name;
+            const hotels = await query('SELECT * FROM hotels WHERE id = ?', [roomTypes[0].hotel_id]);
+            if (hotels.length > 0) {
+              hotelName = hotels[0].name;
+            }
+          }
+        }
+
+        const enriched = {
+          ...bookingRecord,
+          name: bookingRecord.customer_name,
+          phone: bookingRecord.customer_phone,
+          email: bookingRecord.customer_email,
+          hotel_name: hotelName || bookingRecord.hotel_name || 'Thailand Travel Reservation',
+          item_name: hotelName || bookingRecord.item_name || 'Thailand Travel Reservation',
+          room_type: roomTypeName,
+          total_amount: bookingRecord.base_amount_thb || bookingRecord.customer_total_amount,
+          total_paid: bookingRecord.payment_amount || 0,
+          voucher_code: vouchers[0]?.voucher_code || `VCH-${bkgId}`
+        };
+
+        const pdfBuffer = await generateVoucherPdfBuffer(enriched, vouchers[0]?.voucher_code);
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="WOW_THAILAND_Voucher_${bkgId}.pdf"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
+        return res.end(pdfBuffer);
+      } catch (err) {
+        console.error('[Compat] Voucher PDF download error:', err);
+        return res.status(500).send('Failed to generate official voucher PDF');
+      }
+    }
+
     // 5. BOOKINGS & CHECKOUT ENGINE
     // -------------------------------------------------------------
     if (resource === 'bookings' || action === 'book' || action === 'create_booking') {
@@ -1387,23 +1726,52 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
         return bookingController.getBookingById(req, res, next);
       }
       // List bookings
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: 'Authentication required to list bookings.' });
+      }
+
       let sql = 'SELECT * FROM bookings';
       const where = [];
       const params = [];
-      const phoneParam = req.query.customer_phone || req.query.mobile || req.query.phone;
-      if (phoneParam) {
-        const clean = String(phoneParam).replace(/\D/g, '');
-        where.push('(customer_phone LIKE ? OR customer_phone = ?)');
-        params.push(`%${clean.slice(-9)}%`, phoneParam);
-      }
-      if (req.query.email) {
-        where.push('customer_email = ?');
-        params.push(String(req.query.email).trim().toLowerCase());
-      }
-      if (req.query.vendor_id) {
+
+      if (req.user.role === 'customer') {
+        const cleanUserPhone = String(req.user.phone || '').replace(/\D/g, '');
+        const userEmail = String(req.user.email || '').trim().toLowerCase();
+        const userId = req.user.id;
+
+        // Disallow querying another customer's data
+        const phoneParam = req.query.customer_phone || req.query.mobile || req.query.phone;
+        const emailParam = req.query.email;
+        if (!verifyCustomerSelfAccess(req.user, phoneParam, emailParam)) {
+          return res.status(403).json({ success: false, error: 'Access denied: Cannot query bookings for another customer.' });
+        }
+
+        where.push('(customer_phone LIKE ? OR customer_email = ? OR user_id = ?)');
+        params.push(`%${cleanUserPhone.slice(-8)}%`, userEmail || '___none___', userId || '___none___');
+      } else if (['hotel_vendor', 'transfer_vendor', 'tour_vendor', 'flight_vendor', 'vendor'].includes(req.user.role)) {
+        const resolvedVendorId = await resolveVendorId(req.user);
+        if (req.query.vendor_id && resolvedVendorId && String(req.query.vendor_id) !== String(resolvedVendorId)) {
+          return res.status(403).json({ success: false, error: 'Access denied: Vendors can only query their own bookings.' });
+        }
         where.push('vendor_id = ?');
-        params.push(req.query.vendor_id);
+        params.push(resolvedVendorId || req.user.id);
+      } else if (ADMIN_ROLES.includes(req.user.role)) {
+        const phoneParam = req.query.customer_phone || req.query.mobile || req.query.phone;
+        if (phoneParam) {
+          const clean = String(phoneParam).replace(/\D/g, '');
+          where.push('(customer_phone LIKE ? OR customer_phone = ?)');
+          params.push(`%${clean.slice(-9)}%`, phoneParam);
+        }
+        if (req.query.email) {
+          where.push('customer_email = ?');
+          params.push(String(req.query.email).trim().toLowerCase());
+        }
+        if (req.query.vendor_id) {
+          where.push('vendor_id = ?');
+          params.push(req.query.vendor_id);
+        }
       }
+
       if (where.length > 0) {
         sql += ' WHERE ' + where.join(' AND ');
       }
@@ -1413,37 +1781,58 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     }
 
     if (action === 'update_booking_checkin') {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: 'Authentication required.' });
+      }
+
       const payload = req.body || {};
       const bookingId = payload.booking_id || payload.id;
       const assignedRoom = payload.assigned_room_no || payload.room_number || '';
       const checkinStatus = payload.checkin_status || 'Checked In';
       const mealPlan = payload.meal_plan || '';
 
-      if (bookingId) {
-        try {
-          const dbStatus = checkinStatus === 'Checked Out' ? 'Completed' : 'Confirmed';
-          await query(
-            `UPDATE bookings 
-             SET booking_status = ?,
-                 special_requests = CONCAT(COALESCE(special_requests, ''), ' [Room: ', ?, ', Checkin: ', ?, ', Meal: ', ?, ']')
-             WHERE id = ?`,
-            [dbStatus, assignedRoom, checkinStatus, mealPlan, bookingId]
-          );
+      if (!bookingId) {
+        return res.status(400).json({ success: false, error: 'Booking ID is required.' });
+      }
 
-          const items = await query('SELECT id, details_json FROM booking_items WHERE booking_id = ?', [bookingId]);
-          if (items.length > 0) {
-            for (const it of items) {
-              let curDetails = {};
-              try { curDetails = typeof it.details_json === 'string' ? JSON.parse(it.details_json) : (it.details_json || {}); } catch {}
-              curDetails.assigned_room_no = assignedRoom;
-              curDetails.checkin_status = checkinStatus;
-              curDetails.meal_plan = mealPlan;
-              await query('UPDATE booking_items SET details_json = ? WHERE id = ?', [JSON.stringify(curDetails), it.id]);
-            }
+      const existingBookings = await query('SELECT * FROM bookings WHERE id = ?', [bookingId]);
+      if (existingBookings.length === 0) {
+        return res.status(404).json({ success: false, error: 'Booking not found.' });
+      }
+      const booking = existingBookings[0];
+
+      // Vendor ownership check
+      const resolvedVendorId = await resolveVendorId(req.user);
+      if (resolvedVendorId && String(booking.vendor_id) !== String(resolvedVendorId)) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: Vendors can only update check-in for their own bookings.'
+        });
+      }
+
+      try {
+        const dbStatus = checkinStatus === 'Checked Out' ? 'Completed' : 'Confirmed';
+        await query(
+          `UPDATE bookings 
+           SET booking_status = ?,
+               special_requests = CONCAT(COALESCE(special_requests, ''), ' [Room: ', ?, ', Checkin: ', ?, ', Meal: ', ?, ']')
+           WHERE id = ?`,
+          [dbStatus, assignedRoom, checkinStatus, mealPlan, bookingId]
+        );
+
+        const items = await query('SELECT id, details_json FROM booking_items WHERE booking_id = ?', [bookingId]);
+        if (items.length > 0) {
+          for (const it of items) {
+            let curDetails = {};
+            try { curDetails = typeof it.details_json === 'string' ? JSON.parse(it.details_json) : (it.details_json || {}); } catch {}
+            curDetails.assigned_room_no = assignedRoom;
+            curDetails.checkin_status = checkinStatus;
+            curDetails.meal_plan = mealPlan;
+            await query('UPDATE booking_items SET details_json = ? WHERE id = ?', [JSON.stringify(curDetails), it.id]);
           }
-        } catch (dbErr) {
-          console.warn('[update_booking_checkin] Database notice:', dbErr.message);
         }
+      } catch (dbErr) {
+        console.warn('[update_booking_checkin] Database notice:', dbErr.message);
       }
 
       return res.json({
@@ -1457,26 +1846,47 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     }
 
     if (action === 'update_booking_status') {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: 'Authentication required.' });
+      }
+
       const payload = req.body || {};
       const bookingId = payload.id || payload.booking_id;
       const rawStatus = payload.status || 'Confirmed';
       const paymentStatus = payload.payment_status;
+
+      if (!bookingId) {
+        return res.status(400).json({ success: false, error: 'Booking ID is required.' });
+      }
+
+      const existingBookings = await query('SELECT * FROM bookings WHERE id = ?', [bookingId]);
+      if (existingBookings.length === 0) {
+        return res.status(404).json({ success: false, error: 'Booking not found.' });
+      }
+      const booking = existingBookings[0];
+
+      // Vendor ownership check
+      const resolvedVendorId = await resolveVendorId(req.user);
+      if (resolvedVendorId && String(booking.vendor_id) !== String(resolvedVendorId)) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: Vendors can only update status for their own bookings.'
+        });
+      }
 
       let dbStatus = 'Confirmed';
       if (rawStatus === 'Checked Out' || rawStatus === 'Completed') dbStatus = 'Completed';
       else if (rawStatus === 'Cancelled') dbStatus = 'Cancelled';
       else if (rawStatus === 'Awaiting Payment') dbStatus = 'Awaiting Payment';
 
-      if (bookingId) {
-        try {
-          if (paymentStatus) {
-            await query('UPDATE bookings SET booking_status = ?, payment_status = ? WHERE id = ?', [dbStatus, paymentStatus, bookingId]);
-          } else {
-            await query('UPDATE bookings SET booking_status = ? WHERE id = ?', [dbStatus, bookingId]);
-          }
-        } catch (dbErr) {
-          console.warn('[update_booking_status] Database notice:', dbErr.message);
+      try {
+        if (paymentStatus) {
+          await query('UPDATE bookings SET booking_status = ?, payment_status = ? WHERE id = ?', [dbStatus, paymentStatus, bookingId]);
+        } else {
+          await query('UPDATE bookings SET booking_status = ? WHERE id = ?', [dbStatus, bookingId]);
         }
+      } catch (dbErr) {
+        console.warn('[update_booking_status] Database notice:', dbErr.message);
       }
 
       return res.json({
@@ -1488,9 +1898,23 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     }
 
     if (resource === 'booking_invoice_data' || action === 'booking_invoice_data') {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: 'Authentication required to access invoice data.' });
+      }
+
       const bId = req.query.booking_id || req.query.id;
+      if (!bId) {
+        return res.status(400).json({ success: false, error: 'Booking ID is required.' });
+      }
+
       const bookings = await query('SELECT * FROM bookings WHERE id = ?', [bId]);
       if (bookings.length === 0) return res.status(404).json({ success: false, error: 'Booking not found' });
+
+      const isAuthorized = await isBookingOwnerOrStaff(bookings[0], req.user);
+      if (!isAuthorized) {
+        return res.status(403).json({ success: false, error: 'Access denied: You do not have permission to view this invoice.' });
+      }
+
       const items = await query('SELECT * FROM booking_items WHERE booking_id = ?', [bId]);
       return res.json({
         success: true,
@@ -1542,11 +1966,31 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     // -------------------------------------------------------------
     // 7. WALLETS, SETTLEMENTS & FINANCIAL CONTROLS
     // -------------------------------------------------------------
+    if (req.method === 'POST' && (action === 'recharge_wallet' || action === 'top_up_wallet')) {
+      return walletController.topUpWallet(req, res, next);
+    }
+
     if (resource === 'vendor_wallets' || resource === 'wallets' || resource === 'wallet') {
-      if (req.method === 'POST' && (action === 'recharge_wallet' || action === 'top_up_wallet')) {
-        return walletController.topUpWallet(req, res, next);
+
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: 'Authentication required.' });
       }
-      const wallets = await query('SELECT * FROM vendor_wallets');
+
+      const resolvedVendorId = await resolveVendorId(req.user);
+      let sql = 'SELECT * FROM vendor_wallets';
+      const params = [];
+
+      if (resolvedVendorId) {
+        // Strict vendor isolation: vendor can only view their own wallet
+        sql += ' WHERE vendor_id = ?';
+        params.push(resolvedVendorId);
+      } else if (req.query.vendor_id) {
+        // Admin filtering
+        sql += ' WHERE vendor_id = ?';
+        params.push(req.query.vendor_id);
+      }
+
+      const wallets = await query(sql, params);
       const mapped = wallets.map(w => ({
         ...w,
         balance: parseFloat(w.balance_thb),
@@ -1560,8 +2004,23 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     }
 
     if (resource === 'vendor_wallet_info') {
-      const vendorId = req.query.vendor_id || 'vnd-phuket-01';
-      const wallets = await query('SELECT * FROM vendor_wallets WHERE vendor_id = ?', [vendorId]);
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: 'Authentication required.' });
+      }
+
+      const resolvedVendorId = await resolveVendorId(req.user);
+      const requestedVendorId = req.query.vendor_id;
+
+      // Ownership enforcement: prevent Vendor A from querying Vendor B's wallet
+      if (resolvedVendorId && requestedVendorId && String(requestedVendorId) !== String(resolvedVendorId)) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: Vendors are strictly limited to viewing their own wallet.'
+        });
+      }
+
+      const effectiveVendorId = resolvedVendorId || requestedVendorId || 'vnd-phuket-01';
+      const wallets = await query('SELECT * FROM vendor_wallets WHERE vendor_id = ?', [effectiveVendorId]);
       if (wallets.length === 0) {
         return res.json({ success: true, wallet: { balance: 0, hold_amount: 0 }, is_blocked: false });
       }
@@ -1579,7 +2038,26 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     }
 
     if (resource === 'wallet_transactions') {
-      const txs = await query('SELECT * FROM wallet_transactions ORDER BY created_at DESC LIMIT 50');
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: 'Authentication required.' });
+      }
+
+      const resolvedVendorId = await resolveVendorId(req.user);
+      let sql = 'SELECT * FROM wallet_transactions';
+      const params = [];
+
+      if (resolvedVendorId) {
+        // Strict vendor isolation: vendor can only view their own ledger transactions
+        sql += ' WHERE vendor_id = ?';
+        params.push(resolvedVendorId);
+      } else if (req.query.vendor_id) {
+        // Admin filtering
+        sql += ' WHERE vendor_id = ?';
+        params.push(req.query.vendor_id);
+      }
+
+      sql += ' ORDER BY created_at DESC LIMIT 50';
+      const txs = await query(sql, params);
       const mapped = txs.map(t => ({
         ...t,
         amount: parseFloat(t.amount_thb),
@@ -1618,13 +2096,71 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     // 8. DRIVER PORTAL
     // -------------------------------------------------------------
     if (resource === 'driver_jobs' || resource === 'available_driver_jobs') {
-      const jobs = await query(`
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: 'Authentication required.' });
+      }
+
+      const resolvedDriverId = await resolveDriverId(req.user);
+      const requestedDriverId = req.query.driver_id;
+
+      // Driver isolation check
+      if (resolvedDriverId && requestedDriverId && String(requestedDriverId) !== String(resolvedDriverId) && String(requestedDriverId) !== String(req.user.id)) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: Drivers cannot view other drivers\' assigned jobs.'
+        });
+      }
+
+      let sql = `
         SELECT da.*, b.customer_name, b.customer_phone, b.start_date, b.special_requests
         FROM driver_assignments da
         JOIN bookings b ON da.booking_id = b.id
-        ORDER BY da.pickup_time ASC
-      `);
+      `;
+      const params = [];
+
+      if (resolvedDriverId) {
+        sql += ' WHERE da.driver_id = ?';
+        params.push(resolvedDriverId);
+      } else if (requestedDriverId) {
+        sql += ' WHERE da.driver_id = ?';
+        params.push(requestedDriverId);
+      }
+
+      sql += ' ORDER BY da.pickup_time ASC';
+      const jobs = await query(sql, params);
       return res.json(jobs);
+    }
+
+    if (action === 'update_driver_job_status') {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: 'Authentication required.' });
+      }
+
+      const payload = req.body || {};
+      const bookingId = payload.booking_id || payload.id;
+      const status = payload.status || 'ACCEPTED';
+
+      if (!bookingId) {
+        return res.status(400).json({ success: false, error: 'booking_id or job id is required.' });
+      }
+
+      const assignments = await query('SELECT * FROM driver_assignments WHERE id = ? OR booking_id = ? LIMIT 1', [bookingId, bookingId]);
+      if (assignments.length === 0) {
+        return res.status(404).json({ success: false, error: 'Driver job assignment not found.' });
+      }
+      const assignment = assignments[0];
+
+      // Driver ownership check
+      const resolvedDriverId = await resolveDriverId(req.user);
+      if (resolvedDriverId && String(assignment.driver_id) !== String(resolvedDriverId) && String(assignment.driver_id) !== String(req.user.id)) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: Drivers cannot modify unrelated driver jobs.'
+        });
+      }
+
+      await query('UPDATE driver_assignments SET status = ? WHERE id = ?', [status, assignment.id]);
+      return res.json({ success: true, message: `Driver job updated to ${status}.` });
     }
 
     if (resource === 'drivers') {
@@ -1848,7 +2384,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     // -------------------------------------------------------------
     // 11. CURRENCY EXCHANGE & FLIGHTS
     // -------------------------------------------------------------
-    if (resource === 'currency' || resource === 'exchange_rates' || action === 'rates') {
+    if (resource === 'currency' || resource === 'currencies' || resource === 'exchange_rates' || action === 'rates') {
       return res.json({
         success: true,
         base_currency: 'THB',
@@ -1861,7 +2397,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     }
 
     if (resource === 'flights') {
-      return res.status(404).json({ success: false, error: 'Flight booking service has been decommissioned for WOW THAILAND.' });
+      return res.json([]);
     }
 
     // -------------------------------------------------------------
@@ -1888,12 +2424,270 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       });
     }
 
+    // -------------------------------------------------------------
+    // LEADS & IAMKRATU AI CRM ENGINE
+    // -------------------------------------------------------------
     if (resource === 'leads' || resource === 'ai_leads' || resource === 'custom_enquiries') {
-      return res.json([]);
+      try {
+        let sql = 'SELECT * FROM leads';
+        const params = [];
+        if (resource === 'ai_leads') {
+          sql += " WHERE source LIKE '%AI%' OR source LIKE '%KRATU%'";
+        }
+        sql += ' ORDER BY created_at DESC';
+        const leads = await query(sql, params);
+        return res.json(leads);
+      } catch (err) {
+        console.error('[Compat] Error fetching leads:', err);
+        return res.json([]);
+      }
     }
 
-    if (resource === 'lead_comments' || resource === 'enquiry_timeline') {
-      return res.json([]);
+    if (action === 'create_ai_lead') {
+      const { name, phone, message } = req.body || {};
+      if (!name || !phone) {
+        return res.status(400).json({ success: false, error: 'Name and phone are required.' });
+      }
+
+      const id = `LD-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 900 + 100)}`;
+      const cleanPhone = String(phone).replace(/\D/g, '');
+
+      try {
+        await query(
+          `INSERT INTO leads (id, name, phone, source, service, status, notes, next_action, chat_history)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            id,
+            name.trim(),
+            cleanPhone,
+            'IAMKRATU AI',
+            'AI Inbound Consultation',
+            'New',
+            message || 'Chat inquiry initiated via IAMKRATU AI Assistant',
+            'Contact Traveler via WhatsApp/Phone',
+            JSON.stringify([{ role: 'user', content: message || 'Initiated chat' }])
+          ]
+        );
+
+        await query(
+          `INSERT INTO lead_comments (id, lead_id, user_name, user_role, comment)
+           VALUES (?, ?, ?, ?, ?)`,
+          [
+            `cm_${Date.now()}`,
+            id,
+            'IAMKRATU AI Bot',
+            'system',
+            `Lead created via IAMKRATU AI Assistant: "${message || 'Inquiry initiated'}"`
+          ]
+        );
+
+        return res.json({
+          success: true,
+          lead_id: id,
+          id: id,
+          message: 'Lead created successfully'
+        });
+      } catch (err) {
+        console.error('[Compat] Error creating AI lead:', err);
+        return res.status(500).json({ success: false, error: err.message });
+      }
+    }
+
+    if (action === 'create_lead') {
+      const b = req.body || {};
+      const id = b.id || `LD-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 900 + 100)}`;
+      const cleanPhone = String(b.phone || '').replace(/\D/g, '');
+
+      try {
+        await query(
+          `INSERT INTO leads (id, name, phone, email, source, service, assigned_to, assigned_by, assigned_at, status, budget, notes, next_action)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            id,
+            (b.name || 'Customer').trim(),
+            cleanPhone,
+            (b.email || '').trim(),
+            b.source || 'IAMKRATU AI',
+            b.service || 'General Trip Consultation',
+            b.assigned_to || b.assignedTo || 'Unassigned',
+            b.assigned_by || null,
+            (b.assigned_to && b.assigned_to !== 'Unassigned') ? new Date() : null,
+            b.status || 'New',
+            b.budget || '',
+            b.notes || '',
+            b.next_action || 'Contact Traveler'
+          ]
+        );
+
+        await query(
+          `INSERT INTO lead_comments (id, lead_id, user_name, user_role, comment)
+           VALUES (?, ?, ?, ?, ?)`,
+          [
+            `cm_${Date.now()}`,
+            id,
+            b.assigned_by || 'Admin',
+            'admin',
+            `Lead created manually with source "${b.source || 'IAMKRATU AI'}"`
+          ]
+        );
+
+        return res.json({ success: true, lead_id: id, id, message: 'Lead created' });
+      } catch (err) {
+        console.error('[Compat] Error creating lead:', err);
+        return res.status(500).json({ success: false, error: err.message });
+      }
+    }
+
+    if (action === 'update_lead') {
+      const { id, notes, budget, service, source } = req.body || {};
+      if (!id) return res.status(400).json({ success: false, error: 'ID required' });
+
+      try {
+        const fields = [];
+        const params = [];
+        if (notes !== undefined) { fields.push('notes = ?'); params.push(notes); }
+        if (budget !== undefined) { fields.push('budget = ?'); params.push(budget); }
+        if (service !== undefined) { fields.push('service = ?'); params.push(service); }
+        if (source !== undefined) { fields.push('source = ?'); params.push(source); }
+
+        if (fields.length > 0) {
+          params.push(id);
+          await query(`UPDATE leads SET ${fields.join(', ')} WHERE id = ?`, params);
+        }
+        return res.json({ success: true, message: 'Lead updated' });
+      } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+      }
+    }
+
+    if (action === 'update_lead_status') {
+      const { id, status, user_name, user_role } = req.body || {};
+      if (!id || !status) return res.status(400).json({ success: false, error: 'ID and status required' });
+
+      try {
+        await query('UPDATE leads SET status = ? WHERE id = ?', [status, id]);
+
+        await query(
+          `INSERT INTO lead_comments (id, lead_id, user_name, user_role, comment)
+           VALUES (?, ?, ?, ?, ?)`,
+          [`cm_${Date.now()}`, id, user_name || 'Admin', user_role || 'admin', `Status changed to: ${status}`]
+        );
+
+        return res.json({ success: true, message: 'Status updated' });
+      } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+      }
+    }
+
+    if (action === 'assign_lead') {
+      const { id, assigned_to, assigned_by } = req.body || {};
+      if (!id || !assigned_to) return res.status(400).json({ success: false, error: 'ID and assignee required' });
+
+      try {
+        const now = new Date();
+        await query(
+          'UPDATE leads SET assigned_to = ?, assigned_by = ?, assigned_at = ? WHERE id = ?',
+          [assigned_to, assigned_by || 'Admin', now, id]
+        );
+
+        await query(
+          `INSERT INTO lead_comments (id, lead_id, user_name, user_role, comment)
+           VALUES (?, ?, ?, ?, ?)`,
+          [`cm_${Date.now()}`, id, assigned_by || 'Admin', 'admin', `Assigned to: ${assigned_to}`]
+        );
+
+        return res.json({ success: true, assigned_at: now.toISOString(), message: 'Lead assigned' });
+      } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+      }
+    }
+
+    if (action === 'update_next_action') {
+      const { id, next_action, user_name, user_role } = req.body || {};
+      if (!id) return res.status(400).json({ success: false, error: 'ID required' });
+
+      try {
+        await query('UPDATE leads SET next_action = ? WHERE id = ?', [next_action, id]);
+        return res.json({ success: true, message: 'Next action updated' });
+      } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+      }
+    }
+
+    if (action === 'delete_lead') {
+      const id = req.body?.id || req.query?.id;
+      if (!id) return res.status(400).json({ success: false, error: 'ID required' });
+
+      try {
+        await query('DELETE FROM leads WHERE id = ?', [id]);
+        await query('DELETE FROM lead_comments WHERE lead_id = ?', [id]);
+        return res.json({ success: true, message: 'Lead deleted' });
+      } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+      }
+    }
+
+    if (resource === 'lead_comments') {
+      const leadId = req.query.lead_id || req.body?.lead_id;
+      if (!leadId) return res.json([]);
+      try {
+        const comments = await query(
+          'SELECT * FROM lead_comments WHERE lead_id = ? ORDER BY created_at ASC',
+          [leadId]
+        );
+        return res.json(comments);
+      } catch (err) {
+        return res.json([]);
+      }
+    }
+
+    if (action === 'add_lead_comment') {
+      const { lead_id, comment, user_name, user_role } = req.body || {};
+      if (!lead_id || !comment) return res.status(400).json({ success: false, error: 'Lead ID and comment required' });
+
+      const commentId = `cm_${Date.now()}`;
+      try {
+        await query(
+          `INSERT INTO lead_comments (id, lead_id, user_name, user_role, comment)
+           VALUES (?, ?, ?, ?, ?)`,
+          [commentId, lead_id, user_name || 'Admin', user_role || 'admin', comment]
+        );
+
+        return res.json({
+          success: true,
+          comment: {
+            id: commentId,
+            lead_id,
+            user_name: user_name || 'Admin',
+            user_role: user_role || 'admin',
+            comment,
+            created_at: new Date().toISOString()
+          }
+        });
+      } catch (err) {
+        return res.status(500).json({ success: false, error: err.message });
+      }
+    }
+
+    if (action === 'delete_lead_comment') {
+      const id = req.body?.id || req.query?.id;
+      if (id) {
+        await query('DELETE FROM lead_comments WHERE id = ?', [id]);
+      }
+      return res.json({ success: true, message: 'Comment deleted' });
+    }
+
+    if (resource === 'assignable_users') {
+      try {
+        const users = await query("SELECT id, username, email, phone, role, status FROM users WHERE status = 'active' OR status IS NULL");
+        const mapped = users.map(u => ({
+          ...u,
+          name: u.username || 'Staff User'
+        }));
+        return res.json(mapped);
+      } catch (err) {
+        return res.json([]);
+      }
     }
 
     if (resource === 'vendor_cancellation_policies' || resource === 'vendor_cancellation_policy') {

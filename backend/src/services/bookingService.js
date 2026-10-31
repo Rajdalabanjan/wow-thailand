@@ -20,10 +20,70 @@ function getDatesInRange(startDateStr, endDateStr) {
   return dates;
 }
 
+function priceError(message) {
+  const err = new Error(message);
+  err.statusCode = 400;
+  err.code = 'INVALID_PRICE';
+  return err;
+}
+
+/**
+ * Reject customer bookings whose submitted total is missing or below the catalog
+ * room rate for the stay. Totals may legitimately be higher (tax, fees, markups,
+ * add-ons), so only the floor is enforced.
+ */
+async function assertMinimumPrice(connection, payload, totalTHB, startDate, endDate) {
+  if (!Number.isFinite(totalTHB) || totalTHB <= 0) {
+    throw priceError('A valid booking amount is required.');
+  }
+
+  let roomLines = payload.selected_rooms;
+  if (typeof roomLines === 'string') {
+    try { roomLines = JSON.parse(roomLines); } catch { roomLines = null; }
+  }
+  if (!Array.isArray(roomLines) || roomLines.length === 0) {
+    roomLines = payload.room_type_id
+      ? [{ room_type_id: payload.room_type_id, quantity: payload.num_rooms || payload.rooms || payload.quantity || 1 }]
+      : [];
+  }
+  roomLines = roomLines.filter(r => r && r.room_type_id);
+  if (roomLines.length === 0) return;
+
+  const nights = Math.max(1, getDatesInRange(startDate, endDate).length);
+  let floorTHB = 0;
+  for (const line of roomLines) {
+    const [rooms] = await connection.execute(
+      'SELECT base_price_thb FROM hotel_room_types WHERE id = ?',
+      [line.room_type_id]
+    );
+    if (rooms.length === 0) {
+      throw priceError(`Unknown room type: ${line.room_type_id}`);
+    }
+    let nightlyFloor = parseFloat(rooms[0].base_price_thb);
+    try {
+      const [plans] = await connection.execute(
+        "SELECT MIN(price) AS min_price FROM hotel_rate_plans WHERE room_type_id = ? AND price > 0 AND (status IS NULL OR status = 'Active')",
+        [line.room_type_id]
+      );
+      const planMin = parseFloat(plans[0]?.min_price);
+      if (Number.isFinite(planMin) && planMin < nightlyFloor) nightlyFloor = planMin;
+    } catch {
+      // hotel_rate_plans is optional; fall back to the room base price
+    }
+    const qty = Math.max(1, parseInt(line.quantity || 1, 10));
+    floorTHB += nightlyFloor * qty * nights;
+  }
+
+  // 1% tolerance for client-side rounding
+  if (totalTHB < floorTHB * 0.99) {
+    throw priceError(`Booking amount ฿${totalTHB} is below the room rate for this stay (minimum ฿${Math.round(floorTHB)}).`);
+  }
+}
+
 /**
  * Create a new booking inside a transaction with multi-night room availability locking
  */
-export async function createBookingTransaction(connection, payload) {
+export async function createBookingTransaction(connection, payload, { trustedPricing = false } = {}) {
   // 1. Idempotency Check
   const idempotencyKey = (payload.idempotency_key || '').trim();
   if (idempotencyKey) {
@@ -69,13 +129,28 @@ export async function createBookingTransaction(connection, payload) {
     const nights = getDatesInRange(startDate, endDate);
     for (const night of nights) {
       // Row-level lock on each requested date
-      const [rows] = await connection.execute(
+      let [rows] = await connection.execute(
         `SELECT available_rooms, is_blackout 
          FROM hotel_room_availability 
          WHERE room_type_id = ? AND calendar_date = ? 
          FOR UPDATE`,
         [roomTypeId, night]
       );
+
+      if (rows.length === 0) {
+        await connection.execute(
+          `INSERT IGNORE INTO hotel_room_availability (id, room_type_id, calendar_date, available_rooms, price_multiplier) 
+           VALUES (?, ?, ?, 10, 1.00)`,
+          [`avail_${Date.now()}_${Math.floor(Math.random() * 900 + 100)}`, roomTypeId, night]
+        );
+        [rows] = await connection.execute(
+          `SELECT available_rooms, is_blackout 
+           FROM hotel_room_availability 
+           WHERE room_type_id = ? AND calendar_date = ? 
+           FOR UPDATE`,
+          [roomTypeId, night]
+        );
+      }
 
       if (rows.length === 0 || rows[0].available_rooms < requestedRooms || rows[0].is_blackout) {
         const err = new Error(`Rooms are unavailable for selected date: ${night}. Please select another date or room type.`);
@@ -98,6 +173,9 @@ export async function createBookingTransaction(connection, payload) {
 
   // 4. Calculate Base Amount & Currency Snapshot
   const baseAmountTHB = parseFloat(payload.base_amount_thb || payload.total_amount || 0.00);
+  if (!trustedPricing) {
+    await assertMinimumPrice(connection, payload, baseAmountTHB, startDate, endDate);
+  }
   const customerCurrency = payload.customer_currency || 'THB';
   const currencySnapshot = createCurrencySnapshot(baseAmountTHB, customerCurrency);
 

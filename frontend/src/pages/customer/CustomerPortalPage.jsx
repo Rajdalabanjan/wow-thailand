@@ -577,7 +577,7 @@ export default function CustomerPortalPage({
     const entered = otpCode.trim();
 
     if (!entered) {
-      setLoginError('Please enter the 4-digit verification code.');
+      setLoginError('Please enter the 6-digit verification code.');
       return;
     }
 
@@ -590,37 +590,16 @@ export default function CustomerPortalPage({
         setCustomerUser(res.customer);
         try {
           localStorage.setItem('customerUser', JSON.stringify(res.customer));
+          if (res.token) {
+            localStorage.setItem('customer_token', res.token);
+          }
           sessionStorage.removeItem('customer_login_phone');
         } catch (err) {}
         setLoginError('');
         setOtpStep('phone');
         refreshCustomerBookings(phoneToSend || res.customer.phone);
       } else {
-        // Backup master code
-        if (entered === '1234') {
-          const match = await findMatchingBooking(phoneToSend, loginEmail.trim());
-          if (match) {
-            const userObj = {
-              id: match.customer_id || `c_${phoneToSend.replace(/\D/g, '')}`,
-              name: match.customer_name || match.name || 'Valued Traveler',
-              username: match.customer_name || match.name || phoneToSend,
-              phone: match.phone || phoneToSend,
-              email: loginEmail || match.customer_email || match.email || 'guest@wowthailand.com',
-              city: match.pickup_location || 'Thailand',
-              role: 'customer'
-            };
-            setCustomerUser(userObj);
-            try {
-              localStorage.setItem('customerUser', JSON.stringify(userObj));
-              sessionStorage.removeItem('customer_login_phone');
-            } catch (err) {}
-            setLoginError('');
-            setOtpStep('phone');
-            refreshCustomerBookings(phoneToSend || userObj.phone);
-            return;
-          }
-        }
-        setLoginError(res?.error || 'Incorrect verification code. Please check your Gmail.');
+        setLoginError(res?.error || 'Incorrect verification code. Please check your email or SMS.');
       }
     } catch (err) {
       setLoginError('Unable to verify OTP. Please try again.');
@@ -632,6 +611,7 @@ export default function CustomerPortalPage({
   const handleCustomerLogout = () => {
     try {
       localStorage.removeItem('customerUser');
+      localStorage.removeItem('customer_token');
       sessionStorage.removeItem('customer_login_phone');
     } catch (e) {}
     setCustomerUser(null);
@@ -1614,7 +1594,7 @@ export default function CustomerPortalPage({
                     <h4 className="fw-black text-dark mb-1 font-heading">Enter Verification Code</h4>
                     <p className="text-muted text-xs mb-4">
                       {otpNotice ? otpNotice : (
-                        <>We sent a 4-digit verification code to <strong className="text-dark">{maskedEmail || loginEmail || (loginPhone ? (loginPhone.startsWith('+') ? loginPhone : `+91 ${loginPhone}`) : 'your mobile')}</strong></>
+                        <>We sent a 6-digit verification code to <strong className="text-dark">{maskedEmail || loginEmail || (loginPhone ? (loginPhone.startsWith('+') ? loginPhone : `+91 ${loginPhone}`) : 'your mobile')}</strong></>
                       )}
                       {' '}<button type="button" onClick={() => { setOtpStep('phone'); setLoginError(''); }} className="btn btn-link p-0 text-warning text-xs fw-bold">Change</button>
                     </p>
@@ -1627,10 +1607,10 @@ export default function CustomerPortalPage({
 
                     <form onSubmit={handleVerifyOtp}>
                       <div className="mb-3 text-start">
-                        <label className="form-label text-xs fw-bold text-muted">4-Digit OTP Code</label>
+                        <label className="form-label text-xs fw-bold text-muted">6-Digit OTP Code</label>
                         <input 
                           type="text"
-                          maxLength={4}
+                          maxLength={6}
                           className="form-control form-control-lg text-center fw-black text-dark tracking-widest rounded-3 font-heading"
                           style={{ fontSize: '24px', letterSpacing: '8px' }}
                           placeholder="••••"

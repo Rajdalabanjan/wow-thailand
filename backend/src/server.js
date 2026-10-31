@@ -78,6 +78,14 @@ app.use('/', compatRouter); // Handles /api.php queries from existing frontend
 // 4. Error Handling
 app.use(errorHandler);
 
+process.on('uncaughtException', (err) => {
+  console.error('🔥 [UNCAUGHT EXCEPTION]:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🔥 [UNHANDLED REJECTION]:', reason);
+});
+
 // 5. Start Server
 if (process.env.NODE_ENV !== 'test') {
   server.listen(PORT, () => {

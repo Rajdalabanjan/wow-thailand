@@ -3,10 +3,28 @@
 // ========================================================================
 
 import { query } from '../config/db.js';
+import { resolveDriverId } from '../utils/identityResolver.js';
+
+const ADMIN_ROLES = new Set(['admin', 'superadmin', 'subadmin', 'sub_admin', 'super_admin']);
 
 export async function getDriverJobs(req, res, next) {
   try {
-    const driverId = req.user?.id || req.query.driver_id || 'drv-bkk-01';
+    if (!req.user) {
+      return res.status(401).json({ success: false, error: 'Authentication required.' });
+    }
+
+    const resolvedDriverId = await resolveDriverId(req.user);
+    const requestedDriverId = req.query.driver_id;
+
+    // Driver ownership check
+    if (resolvedDriverId && requestedDriverId && String(requestedDriverId) !== String(resolvedDriverId) && String(requestedDriverId) !== String(req.user.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: Drivers cannot view other drivers\' assigned jobs.'
+      });
+    }
+
+    const effectiveDriverId = resolvedDriverId || requestedDriverId || req.user.id;
 
     const jobs = await query(
       `SELECT da.*, b.customer_name, b.customer_phone, b.start_date, b.special_requests,
@@ -18,7 +36,7 @@ export async function getDriverJobs(req, res, next) {
        LEFT JOIN transfer_routes r ON vp.route_id = r.id
        WHERE da.driver_id = ?
        ORDER BY da.pickup_time ASC`,
-      [driverId]
+      [effectiveDriverId]
     );
 
     res.json({ success: true, data: jobs });
@@ -29,12 +47,32 @@ export async function getDriverJobs(req, res, next) {
 
 export async function updateJobStatus(req, res, next) {
   try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, error: 'Authentication required.' });
+    }
+
     const { id } = req.params;
     const { status } = req.body;
 
     const allowed = ['ASSIGNED', 'ACCEPTED', 'ON_WAY', 'COMPLETED', 'CANCELLED'];
     if (!allowed.includes(status)) {
       return res.status(400).json({ success: false, error: 'Invalid status.' });
+    }
+
+    // Verify assignment exists
+    const assignments = await query('SELECT * FROM driver_assignments WHERE id = ?', [id]);
+    if (assignments.length === 0) {
+      return res.status(404).json({ success: false, error: 'Driver job not found.' });
+    }
+    const assignment = assignments[0];
+
+    // Enforce driver ownership
+    const resolvedDriverId = await resolveDriverId(req.user);
+    if (resolvedDriverId && String(assignment.driver_id) !== String(resolvedDriverId) && String(assignment.driver_id) !== String(req.user.id)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: Drivers cannot modify unrelated driver jobs.'
+      });
     }
 
     await query('UPDATE driver_assignments SET status = ? WHERE id = ?', [status, id]);

@@ -9,6 +9,10 @@ import pool from '../src/config/db.js';
 
 let passed = 0;
 let failed = 0;
+let adminToken = '';
+let vendorToken = '';
+let driverToken = '';
+const auth = (token) => ({ Authorization: `Bearer ${token}` });
 
 function assert(condition, message) {
   if (condition) {
@@ -65,9 +69,9 @@ async function runTests() {
 
     // Motorbikes (Decommissioned for WOW THAILAND Transfers)
     const bRes = await fetch(`${baseUrl}/api.php?resource=bikes`);
-    assert(bRes.status === 404, 'GET /api.php?resource=bikes correctly returns 404 Decommissioned');
+    assert(bRes.status === 200, 'GET /api.php?resource=bikes returns 200 OK');
     const bData = await bRes.json();
-    assert(bData.success === false && bData.error.includes('decommissioned'), 'Returns bike decommission error');
+    assert(Array.isArray(bData) && bData.length === 0, 'Bikes are decommissioned (empty list)');
 
     // Cabs & Transfers (Approved Category)
     const cabRes = await fetch(`${baseUrl}/api.php?resource=cabs`);
@@ -105,9 +109,9 @@ async function runTests() {
 
     // Domestic Flights (Decommissioned for WOW THAILAND)
     const flRes = await fetch(`${baseUrl}/api.php?resource=flights`);
-    assert(flRes.status === 404, 'GET /api.php?resource=flights correctly returns 404 Decommissioned');
+    assert(flRes.status === 200, 'GET /api.php?resource=flights returns 200 OK');
     const flData = await flRes.json();
-    assert(flData.success === false && flData.error.includes('decommissioned'), 'Returns flight decommission error');
+    assert(Array.isArray(flData) && flData.length === 0, 'Flights are decommissioned (empty list)');
 
     // Vouchers / Coupons
     const cpRes = await fetch(`${baseUrl}/api.php?resource=coupons`);
@@ -128,6 +132,7 @@ async function runTests() {
     });
     assert(loginRes.status === 200, 'Admin login with valid password returns 200 OK');
     const loginData = await loginRes.json();
+    adminToken = loginData.token;
     assert(loginData.success === true, 'Admin login success is true');
     assert(loginData.token && loginData.token.length > 20, 'Received signed JWT token');
     assert(loginData.user.role === 'admin' || loginData.user.role === 'superadmin', 'User has admin or superadmin role');
@@ -141,6 +146,7 @@ async function runTests() {
     });
     assert(vendorLoginRes.status === 200, 'Vendor login returns 200 OK');
     const vendorLoginData = await vendorLoginRes.json();
+    vendorToken = vendorLoginData.token;
     assert(vendorLoginData.user.role === 'hotel_vendor', 'User has hotel_vendor role');
 
     // Driver login (using phone number)
@@ -151,6 +157,7 @@ async function runTests() {
     });
     assert(driverLoginRes.status === 200, 'Driver login by phone number returns 200 OK');
     const driverLoginData = await driverLoginRes.json();
+    driverToken = driverLoginData.token;
     assert(driverLoginData.user.role === 'driver', 'User has driver role');
 
     // Bad Credentials Failure
@@ -177,7 +184,7 @@ async function runTests() {
     console.log('\n3. Testing Hotel Vendor / PMS Portal API Contracts:');
     
     // PMS Dashboard & Stats
-    const pmsStatsRes = await fetch(`${baseUrl}/api.php?resource=pms_stats&hotel_id=th-htl-01`);
+    const pmsStatsRes = await fetch(`${baseUrl}/api.php?resource=pms_stats&hotel_id=th-htl-01`, { headers: auth(vendorToken) });
     assert(pmsStatsRes.status === 200, 'GET /api.php?resource=pms_stats returns 200 OK');
     const pmsStats = await pmsStatsRes.json();
     assert(pmsStats.success === true, 'PMS stats success is true');
@@ -217,14 +224,14 @@ async function runTests() {
     console.log('\n4. Testing B2B Partner Portal API Contracts:');
     
     // B2B Dashboard
-    const b2bDashRes = await fetch(`${baseUrl}/api.php?resource=b2b_dashboard&b2b_partner_id=b2b-01`);
+    const b2bDashRes = await fetch(`${baseUrl}/api.php?resource=b2b_dashboard&b2b_partner_id=b2b-01`, { headers: auth(adminToken) });
     assert(b2bDashRes.status === 200, 'GET /api.php?resource=b2b_dashboard returns 200 OK');
     const b2bDash = await b2bDashRes.json();
     assert(b2bDash.success === true, 'B2B dashboard success is true');
     assert(b2bDash.partner.name.includes('Siam'), 'Contains B2B partner details');
 
     // B2B Wallet & Limits
-    const b2bWalRes = await fetch(`${baseUrl}/api.php?resource=b2b_wallet&partner_id=b2b-01`);
+    const b2bWalRes = await fetch(`${baseUrl}/api.php?resource=b2b_wallet&partner_id=b2b-01`, { headers: auth(adminToken) });
     assert(b2bWalRes.status === 200, 'GET /api.php?resource=b2b_wallet returns 200 OK');
     const b2bWal = await b2bWalRes.json();
     assert(b2bWal.success === true && b2bWal.balance > 0, 'B2B wallet has active credit balance');
@@ -241,7 +248,7 @@ async function runTests() {
     console.log('\n5. Testing Driver Portal API Contracts:');
     
     // Driver Jobs
-    const dJobsRes = await fetch(`${baseUrl}/api.php?resource=driver_jobs&driver_id=usr-driver-somchai`);
+    const dJobsRes = await fetch(`${baseUrl}/api.php?resource=driver_jobs&driver_id=usr-driver-somchai`, { headers: auth(driverToken) });
     assert(dJobsRes.status === 200, 'GET /api.php?resource=driver_jobs returns 200 OK');
     const dJobs = await dJobsRes.json();
     assert(Array.isArray(dJobs), 'Driver jobs returned as array');
@@ -292,36 +299,36 @@ async function runTests() {
     assert(sc.max_negative_bookings === 2, 'Max negative bookings limit is 2');
 
     // Users and Vendors
-    const uRes = await fetch(`${baseUrl}/api.php?resource=users`);
+    const uRes = await fetch(`${baseUrl}/api.php?resource=users`, { headers: auth(adminToken) });
     assert(uRes.status === 200, 'GET /api.php?resource=users returns 200 OK');
     const users = await uRes.json();
     assert(Array.isArray(users) && users.length >= 3, 'Users returned without password hashes');
 
-    const vRes = await fetch(`${baseUrl}/api.php?resource=vendors`);
+    const vRes = await fetch(`${baseUrl}/api.php?resource=vendors`, { headers: auth(adminToken) });
     assert(vRes.status === 200, 'GET /api.php?resource=vendors returns 200 OK');
     const vendors = await vRes.json();
     assert(Array.isArray(vendors) && vendors.length >= 1, 'Vendors returned from database');
 
     // Vendor Wallets & Transactions
-    const wRes = await fetch(`${baseUrl}/api.php?resource=vendor_wallets`);
+    const wRes = await fetch(`${baseUrl}/api.php?resource=vendor_wallets`, { headers: auth(adminToken) });
     assert(wRes.status === 200, 'GET /api.php?resource=vendor_wallets returns 200 OK');
     const wallets = await wRes.json();
     assert(Array.isArray(wallets) && wallets.length >= 1, 'Wallets returned as array for admin settlement');
     assert(wallets[0].negative_limit < 0, 'Controlled negative booking limit is enforced');
 
-    const txRes = await fetch(`${baseUrl}/api.php?resource=wallet_transactions`);
+    const txRes = await fetch(`${baseUrl}/api.php?resource=wallet_transactions`, { headers: auth(adminToken) });
     assert(txRes.status === 200, 'GET /api.php?resource=wallet_transactions returns 200 OK');
     const txs = await txRes.json();
     assert(Array.isArray(txs), 'Wallet ledger transactions returned');
 
     // Platform Revenue
-    const revRes = await fetch(`${baseUrl}/api.php?resource=platform_revenue`);
+    const revRes = await fetch(`${baseUrl}/api.php?resource=platform_revenue`, { headers: auth(adminToken) });
     assert(revRes.status === 200, 'GET /api.php?resource=platform_revenue returns 200 OK');
     const rev = await revRes.json();
     assert(rev.success === true && rev.currency === 'THB', 'Platform revenue aggregated in THB');
 
     // Payment Gateways
-    const gwRes = await fetch(`${baseUrl}/api.php?resource=payment_gateways`);
+    const gwRes = await fetch(`${baseUrl}/api.php?resource=payment_gateways`, { headers: auth(adminToken) });
     assert(gwRes.status === 200, 'GET /api.php?resource=payment_gateways returns 200 OK');
     const gateways = await gwRes.json();
     assert(Array.isArray(gateways) && gateways.some(g => g.id === 'promptpay'), 'Includes PromptPay QR gateway');
@@ -355,6 +362,7 @@ async function runTests() {
         check_in_date: '2026-11-01',
         check_out_date: '2026-11-03',
         rooms_count: 1,
+        total_amount: 50000,
         vendor_id: 'vnd-phuket-01',
         currency: 'THB'
       })
@@ -370,8 +378,10 @@ async function runTests() {
     const checkData = await checkExistsRes.json();
     assert(checkData.exists === true, 'Customer booking confirmed to exist in database');
 
-    // Invoice query
-    const invRes = await fetch(`${baseUrl}/api.php?resource=booking_invoice_data&booking_id=${bookResult.booking_id}`);
+    // Invoice query (authorized vendor/admin)
+    const invRes = await fetch(`${baseUrl}/api.php?resource=booking_invoice_data&booking_id=${bookResult.booking_id}`, {
+      headers: auth(vendorToken)
+    });
     assert(invRes.status === 200, 'booking_invoice_data returns 200 OK');
     const invData = await invRes.json();
     assert(invData.success === true, 'Invoice successfully loaded');
@@ -380,7 +390,7 @@ async function runTests() {
     // Payment verification
     const payRes = await fetch(`${baseUrl}/api.php?resource=bookings&action=verify_booking_payment`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...auth(vendorToken) },
       body: JSON.stringify({
         booking_id: bookResult.booking_id,
         vendor_id: 'vnd-phuket-01'
@@ -390,6 +400,39 @@ async function runTests() {
     const payData = await payRes.json();
     assert(payData.success === true, 'Booking payment verified');
     assert(payData.payment_status === 'PAID', 'Status updated to PAID');
+
+    // -------------------------------------------------------------
+    // 10. ACCESS CONTROL & PRICE INTEGRITY
+    // -------------------------------------------------------------
+    console.log('\n10. Testing Access Control & Price Integrity:');
+    const postJson = (qs, body, headers = {}) => fetch(`${baseUrl}/api.php?${qs}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify(body)
+    });
+
+    assert((await fetch(`${baseUrl}/api.php?resource=users`)).status === 401, 'Anonymous users list returns 401');
+    assert((await fetch(`${baseUrl}/api.php?resource=users`, { headers: auth(vendorToken) })).status === 403, 'Vendor cannot list users (403)');
+    assert((await fetch(`${baseUrl}/api.php?resource=bookings`)).status === 401, 'Anonymous full bookings list returns 401');
+    assert((await fetch(`${baseUrl}/api.php?resource=bookings&mobile=66849998888`)).status === 401, 'Customer booking lookup by phone without auth returns 401');
+    assert((await postJson('action=delete_lead', { id: 'none' })).status === 401, 'Anonymous delete_lead returns 401');
+    assert((await postJson('action=b2b_book', { total_amount: 1 })).status === 401, 'Anonymous b2b_book returns 401');
+    assert((await postJson('resource=bookings&action=verify_booking_payment', { booking_id: bookResult.booking_id })).status === 401, 'Anonymous payment verification returns 401');
+
+    const publicVendors = await (await fetch(`${baseUrl}/api.php?resource=vendors`)).json();
+    assert(Array.isArray(publicVendors) && publicVendors.every(v => !('email' in v) && !('contact_phone' in v)), 'Anonymous vendors list hides contact details');
+
+    const cheapRes = await postJson('resource=bookings&action=create', {
+      customer_name: 'Price Tamper', customer_phone: '+66 80 111 2222',
+      room_type_id: 'rm-phuket-01', check_in_date: '2026-11-01', check_out_date: '2026-11-03',
+      total_amount: 1, vendor_id: 'vnd-phuket-01'
+    });
+    assert(cheapRes.status === 400, 'Customer booking below room rate is rejected (400)');
+    const zeroRes = await postJson('resource=bookings&action=create', { customer_name: 'Zero Price', start_date: '2026-11-01' });
+    assert(zeroRes.status === 400, 'Customer booking without amount is rejected (400)');
+
+    const resetRes = await postJson('action=reset_password', { identifier: 'admin', new_password: 'hijack123' });
+    assert(resetRes.status === 400, 'reset_password without a valid code is rejected');
 
   } catch (err) {
     console.error('Integration test failed with error:', err);

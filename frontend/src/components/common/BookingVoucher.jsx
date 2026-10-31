@@ -484,21 +484,33 @@ export default function BookingVoucher({
     const waPhone = cleanPhone ? (cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone) : '';
     const bId = String(bookingId || '').replace(/^#/, '');
 
-    const summaryText = 
-      `🎟️ *WOW THAILAND — OFFICIAL RESERVATION VOUCHER*\\n\\n` +
-      `*Booking ID:* #${bId}\\n` +
-      `*Guest Name:* ${guestName}\\n` +
-      `*Service:* ${serviceLabel} — ${reservedItemName}\\n` +
-      (pickupDate ? `*Schedule:* ${pickupDate}${dropDate ? ` to ${dropDate}` : ''}\\n` : '') +
-      `*Total Amount:* ฿${Number(booking.total_amount || booking.total_paid || 0).toLocaleString('en-US')}\\n` +
-      `*Status:* ${bookingStatus}\\n\\n` +
-      `View your official A4 Voucher PDF & Track Booking:\\n` +
-      `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173'}/customer\\n\\n` +
-      `*WOW THAILAND Rentals & Stays* • 24x7 Support: +91 9916933476`;
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
+    const voucherUrl = `${origin}/voucher?id=${encodeURIComponent(bId)}`;
 
-    const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(summaryText)}`;
+    const lines = [
+      '🇹🇭 *WOW THAILAND — OFFICIAL RESERVATION VOUCHER*',
+      '',
+      `*Booking ID:* #${bId}`,
+      `*Guest Name:* ${guestName}`,
+      `*Service:* ${serviceLabel} — ${reservedItemName}`,
+      pickupDate ? `*Schedule:* ${pickupDate}${dropDate ? ` to ${dropDate}` : ''}` : null,
+      `*Total Amount:* ฿${Number(booking.total_amount || booking.total_paid || 0).toLocaleString('en-US')}`,
+      `*Status:* ${bookingStatus}`,
+      '',
+      '📄 *Official Voucher & Instant PDF Download:*',
+      voucherUrl,
+      '',
+      '*WOW THAILAND Concierge Desk* • 24x7 Helpline: +91 9916933476'
+    ].filter(line => line !== null);
+
+    const summaryText = lines.join('\n');
+    const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const waUrl = isMobile 
+      ? `https://wa.me/${waPhone}?text=${encodeURIComponent(summaryText)}`
+      : `https://web.whatsapp.com/send?phone=${waPhone}&text=${encodeURIComponent(summaryText)}`;
+
     if (typeof window !== 'undefined') {
-      window.open(waUrl, '_blank');
+      window.open(waUrl, '_blank', 'noopener,noreferrer');
     }
   };
 

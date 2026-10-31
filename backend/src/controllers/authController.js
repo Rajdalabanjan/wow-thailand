@@ -3,11 +3,8 @@
 // ========================================================================
 
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { query } from '../config/db.js';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_only_for_dev';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+import { signJwtToken } from '../middleware/auth.js';
 
 export async function login(req, res, next) {
   try {
@@ -29,19 +26,19 @@ export async function login(req, res, next) {
 
     const user = users[0];
     const isBcryptMatch = await bcrypt.compare(password, user.password_hash);
-    const isDevMatch = [
-      'admin@2026', 'admin@123', 'cabs@123', 'resort@123', 'partner@123', 
-      'superadmin@123', 'admin', 'vendor', 'hotel_vendor', 'TestPassword123!', user.username
+    // Shared demo passwords are for local development only; never enable in production.
+    const isDevMatch = process.env.ALLOW_DEMO_PASSWORDS === 'true' && [
+      'admin@2026', 'admin@123', 'cabs@123', 'resort@123', 'partner@123',
+      'superadmin@123', 'admin', 'vendor', 'hotel_vendor', 'TestPassword123!'
     ].includes(password);
 
     if (!isBcryptMatch && !isDevMatch) {
       return res.status(401).json({ success: false, error: 'Invalid credentials.' });
     }
 
-    const token = jwt.sign(
-      { id: user.id, username: user.username, role: user.role },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
+    const token = signJwtToken(
+      { id: user.id, username: user.username, role: user.role, phone: user.phone, email: user.email },
+      '7d'
     );
 
     // Sanitize user output (omit password_hash)

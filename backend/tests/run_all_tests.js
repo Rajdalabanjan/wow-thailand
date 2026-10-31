@@ -43,6 +43,12 @@ async function main() {
     process.exit(1);
   }
 
+  const securitySuccess = await runTest('security_regression_tests.js');
+  if (!securitySuccess) {
+    console.error('❌ Security regression tests failed!');
+    process.exit(1);
+  }
+
   console.log(`\n============================================================`);
   console.log(`🎉 ALL WOW THAILAND TEST SUITES PASSED SUCCESSFULLY!`);
   console.log(`============================================================\n`);

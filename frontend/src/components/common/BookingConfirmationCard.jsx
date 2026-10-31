@@ -1,8 +1,9 @@
 import React from 'react';
 import { 
   CheckCircle2, Gift, Clock, CreditCard, Lock, 
-  Compass, Calendar, MapPin, Check, MessageSquare
+  Compass, Calendar, MapPin, Check, MessageSquare, FileText, Printer 
 } from 'lucide-react';
+import BookingVoucher from './BookingVoucher';
 
 /**
  * CashbackRewardCard — Prominent Brand Reward Section
@@ -96,7 +97,42 @@ export default function BookingConfirmationCard({
   isModalView = true,
   serviceType = '',
   portalDescription = null,
+  booking = null,
+  onViewVoucher = null,
 }) {
+  const [showDirectVoucher, setShowDirectVoucher] = React.useState(false);
+  
+  const resolvedBooking = React.useMemo(() => {
+    if (booking && typeof booking === 'object') return booking;
+    try {
+      const last = JSON.parse(localStorage.getItem('last_created_booking') || 'null');
+      if (last && (String(last.id) === String(bookingId) || String(last.booking_id) === String(bookingId))) {
+        return last;
+      }
+      const local = JSON.parse(localStorage.getItem('local_bookings') || '[]');
+      const match = local.find(b => String(b.id) === String(bookingId) || String(b.booking_id) === String(bookingId));
+      if (match) return match;
+    } catch (e) {}
+
+    return {
+      id: bookingId,
+      booking_id: bookingId,
+      customer_name: customerName,
+      name: customerName,
+      customer_phone: customerPhone,
+      phone: customerPhone,
+      item_name: serviceTitle,
+      service_type: serviceType,
+      type: serviceType,
+      total_amount: totalAmount,
+      customer_total_amount: totalAmount,
+      total_paid: amountPaid || 0,
+      payment_status: paymentStatus,
+      payment_method: paymentMode,
+      details: details
+    };
+  }, [booking, bookingId, customerName, customerPhone, serviceTitle, serviceType, totalAmount, amountPaid, paymentStatus, paymentMode, details]);
+
   const handlePortalRedirect = () => {
     if (customerPhone) {
       try {
@@ -120,21 +156,33 @@ export default function BookingConfirmationCard({
     const waPhone = cleanPhone ? (cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone) : '';
     const bId = String(bookingId || '').replace(/^#/, '');
 
-    const summaryText = 
-      `🎟️ *WOW THAILAND — BOOKING CONFIRMATION VOUCHER*\\n\\n` +
-      `*Booking ID:* #${bId}\\n` +
-      `*Guest Name:* ${customerName}\\n` +
-      (serviceTitle ? `*Service:* ${serviceTitle}\\n` : '') +
-      (totalAmount !== null ? `*Total Amount:* ฿${Number(totalAmount).toLocaleString('en-US')}\\n` : '') +
-      (amountPaid !== null ? `*Amount Paid:* ฿${Number(amountPaid).toLocaleString('en-US')}\\n` : '') +
-      (paymentStatus ? `*Payment Status:* ${paymentStatus}\\n` : '') +
-      `\\nTrack booking itinerary or download official A4 voucher:\\n` +
-      `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173'}/customer\\n\\n` +
-      `*WOW THAILAND Rentals & Stays* • Helpline: +91 9916933476`;
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
+    const voucherUrl = `${origin}/voucher?id=${encodeURIComponent(bId)}`;
 
-    const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(summaryText)}`;
+    const lines = [
+      '🇹🇭 *WOW THAILAND — BOOKING CONFIRMATION VOUCHER*',
+      '',
+      `*Booking ID:* #${bId}`,
+      `*Guest Name:* ${customerName}`,
+      serviceTitle ? `*Service:* ${serviceTitle}` : null,
+      totalAmount !== null ? `*Total Amount:* ฿${Number(totalAmount).toLocaleString('en-US')}` : null,
+      amountPaid !== null ? `*Amount Paid:* ฿${Number(amountPaid).toLocaleString('en-US')}` : null,
+      paymentStatus ? `*Payment Status:* ${paymentStatus}` : null,
+      '',
+      '📄 *Official Voucher & Instant PDF Download:*',
+      voucherUrl,
+      '',
+      '*WOW THAILAND Concierge Desk* • Helpline: +91 9916933476'
+    ].filter(line => line !== null);
+
+    const summaryText = lines.join('\n');
+    const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const waUrl = isMobile 
+      ? `https://wa.me/${waPhone}?text=${encodeURIComponent(summaryText)}`
+      : `https://web.whatsapp.com/send?phone=${waPhone}&text=${encodeURIComponent(summaryText)}`;
+
     if (typeof window !== 'undefined') {
-      window.open(waUrl, '_blank');
+      window.open(waUrl, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -349,6 +397,23 @@ export default function BookingConfirmationCard({
             {renderPortalDescription()}
           </p>
           <div className="d-flex flex-column gap-2">
+                        {/* 1. Direct View & Print Voucher (Zero login required) */}
+            <button 
+              type="button" 
+              id="view-voucher-direct-btn"
+              className="btn btn-dark text-white fw-bold rounded-pill px-4 py-2.5 text-xs d-flex align-items-center justify-content-center gap-2 shadow-sm w-100 font-heading mb-1"
+              style={{ background: 'linear-gradient(135deg, #070f1e 0%, #0f172a 100%)', border: '1.5px solid #ff9f1c' }}
+              onClick={() => {
+                if (onViewVoucher && typeof onViewVoucher === 'function') {
+                  onViewVoucher();
+                } else {
+                  setShowDirectVoucher(true);
+                }
+              }}
+            >
+              <FileText size={16} className="text-warning" />
+              <span>📄 View &amp; Print Official Voucher (Direct)</span>
+            </button>
             <button 
               type="button" 
               id="track-booking-portal-btn"
@@ -388,6 +453,14 @@ export default function BookingConfirmationCard({
             Close Window
           </button>
         </div>
+      )}
+
+      {/* ── Direct Voucher Modal Render (Full Screen & Print Ready) ── */}
+      {showDirectVoucher && (
+        <BookingVoucher 
+          booking={resolvedBooking} 
+          onClose={() => setShowDirectVoucher(false)} 
+        />
       )}
     </div>
   );

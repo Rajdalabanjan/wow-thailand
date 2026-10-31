@@ -131,10 +131,16 @@ async function runSmokeTests() {
 
     // 7. Payment Verification & Wallet Platform Fee Deduction
     console.log('\n7. Testing Payment Verification & Controlled Wallet Deduction:');
+    const vendorLogin = await (await fetch(`${baseUrl}/api/v1/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'phuket_resorts', password: 'TestPassword123!' })
+    })).json();
+    const vendorAuth = { Authorization: `Bearer ${vendorLogin.token}` };
     await pool.execute('UPDATE vendor_wallets SET balance_thb = 10000.00, negative_booking_count = 0 WHERE vendor_id = ?', ['vnd-phuket-01']);
     const verifyRes = await fetch(`${baseUrl}/api/v1/bookings/verify-payment`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...vendorAuth },
       body: JSON.stringify({
         booking_id: bookResult.booking_id,
         vendor_id: 'vnd-phuket-01'
@@ -149,7 +155,7 @@ async function runSmokeTests() {
     console.log('\n8. Testing Payment Idempotency:');
     const repeatVerifyRes = await fetch(`${baseUrl}/api/v1/bookings/verify-payment`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...vendorAuth },
       body: JSON.stringify({
         booking_id: bookResult.booking_id,
         vendor_id: 'vnd-phuket-01'
