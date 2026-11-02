@@ -1,73 +1,117 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MapPin } from 'lucide-react';
+import { 
+  MapPin, Play, Pause, Volume2, VolumeX, Calendar, 
+  Users, Search, ChevronRight, X, Sparkles, Navigation, 
+  Compass, Car, Hotel, Check, Info
+} from 'lucide-react';
+import { getTodayDateStr, getNextDayDateStr } from '../utils/dateUtils';
 
-const STATIC_WHITE_PREFIX = 'Historic Majesty, Luxury Stays';
-
+// ─── THAILAND DESTINATIONS CATALOGUE ─────────────────────────────────────────
 const FAMOUS_DESTINATIONS = [
   {
-    id: 'wat_arun',
-    name: 'Wat Arun (Temple of Dawn)',
-    shortName: 'Wat Arun',
-    region: 'Bangkok, Chao Phraya River',
-    image: '/destinations/wat_arun.jpg',
+    id: 'bangkok',
+    name: 'Bangkok',
+    fullName: 'Bangkok Historic & Modern Hub',
+    region: 'Chao Phraya River',
+    bgImage: '/destinations/wat_arun.jpg',
+    thumb: '/destinations/wat_arun.jpg',
     tab: 'hotels',
     eyebrow: 'Historic Chao Phraya • Bangkok',
-    headlinePrefix: STATIC_WHITE_PREFIX,
-    highlightText: 'Explore Stress Free!',
+    highlightWord: 'Bangkok',
     tagline: 'Marvel at Bangkok’s shimmering riverside spire at sunset, scenic dinner cruises & handpicked 5-star hotel accommodations.'
   },
   {
-    id: 'maya_bay',
-    name: 'Maya Bay & Phi Phi Islands',
-    shortName: 'Maya Bay & Phi Phi',
-    region: 'Krabi / Andaman Sea',
-    image: '/destinations/maya_bay.jpg',
-    tab: 'sightseeing',
-    eyebrow: 'Andaman Sea Paradise • Krabi',
-    headlinePrefix: STATIC_WHITE_PREFIX,
-    highlightText: 'Travel Stress Free!',
-    tagline: 'Sail through crystal-clear turquoise waters, towering limestone cliffs & world-famous lagoons with VIP island speedboat tours.'
-  },
-  {
-    id: 'white_temple',
-    name: 'Wat Rong Khun (White Temple)',
-    shortName: 'Wat Rong Khun',
-    region: 'Chiang Rai, Northern Thailand',
-    image: '/destinations/white_temple.jpg',
-    tab: 'sightseeing',
-    eyebrow: 'Northern Masterpiece • Chiang Rai',
-    headlinePrefix: STATIC_WHITE_PREFIX,
-    highlightText: 'Journey Stress Free!',
-    tagline: 'Experience the world-renowned silver-white architecture of Northern Thailand with private chauffeur transfers & verified local guides.'
-  },
-  {
-    id: 'railay_beach',
-    name: 'Railay Beach & Limestone Karsts',
-    shortName: 'Railay Beach',
-    region: 'Krabi Peninsula',
-    image: '/destinations/railay_beach.jpg',
+    id: 'pattaya',
+    name: 'Pattaya',
+    fullName: 'Pattaya Coastal Getaway',
+    region: 'Gulf of Thailand',
+    bgImage: 'https://images.unsplash.com/photo-1506665531195-3566af2b4dfa?auto=format&fit=crop&w=1920&q=85',
+    thumb: 'https://images.unsplash.com/photo-1506665531195-3566af2b4dfa?auto=format&fit=crop&w=300&q=80',
     tab: 'cabs',
+    eyebrow: 'Vibrant Coastal Resort • Pattaya',
+    highlightWord: 'Pattaya',
+    tagline: 'Explore the Sanctuary of Truth, speedboats to Coral Island, luxury beach clubs, and panoramic Gulf of Thailand views.'
+  },
+  {
+    id: 'krabi',
+    name: 'Krabi',
+    fullName: 'Krabi & Railay Beach',
+    region: 'Andaman Coast',
+    bgImage: '/destinations/railay_beach.jpg',
+    thumb: '/destinations/railay_beach.jpg',
+    tab: 'sightseeing',
     eyebrow: 'Dramatic Coastline • Krabi',
-    headlinePrefix: STATIC_WHITE_PREFIX,
-    highlightText: 'Unwind Stress Free!',
+    highlightWord: 'Krabi',
     tagline: 'Relax on secluded white sand shores surrounded by emerald lagoons, dramatic rock-climbing karsts & prompt airport chauffeur pickups.'
+  },
+  {
+    id: 'phuket',
+    name: 'Phuket',
+    fullName: 'Phuket Tropical Paradise',
+    region: 'Andaman Coast',
+    bgImage: 'https://images.unsplash.com/photo-1589394815804-964ed0be2eb5?auto=format&fit=crop&w=1920&q=85',
+    thumb: 'https://images.unsplash.com/photo-1589394815804-964ed0be2eb5?auto=format&fit=crop&w=300&q=80',
+    tab: 'hotels',
+    eyebrow: 'Pearl of the Andaman • Phuket',
+    highlightWord: 'Phuket',
+    tagline: 'Sun-drenched beaches, private pool villas, vibrant night markets and secluded island-hopping catamarans.'
+  },
+  {
+    id: 'chiang_rai',
+    name: 'Chiang Rai',
+    fullName: 'Chiang Rai White Temple & Golden Triangle',
+    region: 'Northern Thailand',
+    bgImage: '/destinations/white_temple.jpg',
+    thumb: '/destinations/white_temple.jpg',
+    tab: 'sightseeing',
+    eyebrow: 'Lanna Heritage & White Temple • Chiang Rai',
+    highlightWord: 'Chiang Rai',
+    tagline: 'Experience the breathtaking intricate artistry of Wat Rong Khun (White Temple), lush tea plantations & the mystical Golden Triangle.'
+  },
+  {
+    id: 'chiang_mai',
+    name: 'Chiang Mai',
+    fullName: 'Chiang Mai Cultural Capital & Mountains',
+    region: 'Northern Highlands',
+    bgImage: 'https://images.unsplash.com/photo-1528181304800-259b08848526?auto=format&fit=crop&w=1920&q=85',
+    thumb: 'https://images.unsplash.com/photo-1528181304800-259b08848526?auto=format&fit=crop&w=300&q=80',
+    tab: 'hotels',
+    eyebrow: 'Ancient Temples & Mountain Peaks • Chiang Mai',
+    highlightWord: 'Chiang Mai',
+    tagline: 'Discover sacred mountain temples at Wat Phra That Doi Suthep, ethical elephant sanctuaries, and vibrant evening artisan bazaars.'
+  },
+  {
+    id: 'ayutthaya',
+    name: 'Phra Nakhon Si Ayutthaya',
+    fullName: 'Phra Nakhon Si Ayutthaya UNESCO World Heritage',
+    region: 'Central Thailand',
+    bgImage: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=1920&q=85',
+    thumb: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=300&q=80',
+    tab: 'sightseeing',
+    eyebrow: 'UNESCO Ancient Capital • Ayutthaya',
+    highlightWord: 'Ayutthaya',
+    tagline: 'Step back in time through majestic Siamese temples, giant brick stupas, and legendary stone Buddha statues framed by sacred banyan trees.'
   }
 ];
 
-// High-precision RAF letter-by-letter typewriter engine (butter-smooth, zero jitter, zero timer drift)
-function TypewriterHighlight({ text, onCycleComplete, prefersReducedMotion }) {
+// Words to cycle through in typewriter if letting it freely loop
+const TYPEWRITER_WORDS = [
+  'Bangkok',
+  'Pattaya',
+  'Krabi',
+  'Phuket',
+  'Chiang Rai',
+  'Chiang Mai',
+  'Ayutthaya'
+];
+
+// ─── HIGH-PRECISION TYPEWRITER ENGINE ─────────────────────────────────────────
+// "text going to front adding one one alphabet and coming back"
+function TypewriterWord({ targetWord, onWordDone }) {
   const [displayed, setDisplayed] = useState('');
   const [phase, setPhase] = useState('typing'); // 'typing' | 'paused' | 'deleting' | 'done'
 
   useEffect(() => {
-    if (prefersReducedMotion) {
-      setDisplayed(text);
-      const timer = setTimeout(() => {
-        onCycleComplete();
-      }, 5500);
-      return () => clearTimeout(timer);
-    }
-
     let charCount = 0;
     let currentPhase = 'typing';
     let lastTime = performance.now();
@@ -79,16 +123,16 @@ function TypewriterHighlight({ text, onCycleComplete, prefersReducedMotion }) {
 
     const tick = (now) => {
       if (currentPhase === 'typing') {
-        // High-precision 40ms interval per letter (consistent, rhythmic, buttery smooth)
-        if (now - lastTime >= 40) {
+        // Adding letter-by-letter (approx 65ms per alphabet)
+        if (now - lastTime >= 65) {
           charCount++;
-          setDisplayed(text.slice(0, charCount));
+          setDisplayed(targetWord.slice(0, charCount));
           lastTime = now;
 
-          if (charCount >= text.length) {
+          if (charCount >= targetWord.length) {
             currentPhase = 'paused';
             setPhase('paused');
-            pauseEndTime = now + 2600; // 2.6s comfortable reading pause
+            pauseEndTime = now + 2400; // 2.4s comfortable pause to read
           }
         }
       } else if (currentPhase === 'paused') {
@@ -98,18 +142,18 @@ function TypewriterHighlight({ text, onCycleComplete, prefersReducedMotion }) {
           lastTime = now;
         }
       } else if (currentPhase === 'deleting') {
-        // Clean, snappy 18ms backspace delete
-        if (now - lastTime >= 18) {
+        // Deleting letter-by-letter ("coming back") (approx 35ms per alphabet)
+        if (now - lastTime >= 35) {
           charCount--;
-          setDisplayed(text.slice(0, charCount));
+          setDisplayed(targetWord.slice(0, charCount));
           lastTime = now;
 
           if (charCount <= 0) {
             currentPhase = 'done';
             setPhase('done');
             setTimeout(() => {
-              onCycleComplete();
-            }, 220);
+              if (onWordDone) onWordDone();
+            }, 180);
             return;
           }
         }
@@ -125,464 +169,1181 @@ function TypewriterHighlight({ text, onCycleComplete, prefersReducedMotion }) {
     return () => {
       if (animId) cancelAnimationFrame(animId);
     };
-  }, [text, prefersReducedMotion, onCycleComplete]);
+  }, [targetWord, onWordDone]);
 
   const isTypingOrDeleting = phase === 'typing' || phase === 'deleting';
 
   return (
-    <>
-      <span 
-        className="hero-highlight-phrase"
-        style={{ 
-          background: 'linear-gradient(135deg, #FFE066 0%, #FF9F1C 45%, #FF5A1F 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          display: 'inline-block',
-          fontWeight: 950,
-          letterSpacing: '-0.5px',
-          textShadow: 'none',
-          filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.85))',
-          transform: 'translateZ(0)',
-          backfaceVisibility: 'hidden',
-          willChange: 'contents'
-        }}
-      >
-        {displayed}
-      </span>
-      {!prefersReducedMotion && (
-        <span 
-          className={`hero-typewriter-cursor ${isTypingOrDeleting ? 'active-typing' : 'blinking'}`} 
-          aria-hidden="true" 
-        />
-      )}
-    </>
+    <span className="hero-typewriter-wrapper">
+      <span className="hero-typewriter-text">{displayed}</span>
+      <span className={`hero-typewriter-cursor ${isTypingOrDeleting ? 'typing' : 'blinking'}`} />
+    </span>
   );
 }
 
-export default function Hero({ config, onNavigateTab, activeTab }) {
-  const [currentDestIdx, setCurrentDestIdx] = useState(0);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const prevDestIdxRef = useRef(null);
+// ─── MAIN LUXURY HERO COMPONENT ──────────────────────────────────────────────
+export default function Hero({
+  onNavigateTab,
+  activeTab = 'hotels',
+  pickupLoc = '',
+  setPickupLoc,
+  dropLoc = '',
+  setDropLoc,
+  pickupDate = '',
+  setPickupDate,
+  dropDate = '',
+  setDropDate,
+  hotelAdults = 2,
+  setHotelAdults,
+  hotelRooms = 1,
+  setHotelRooms,
+  handleSearchSubmit
+}) {
+  const [destIdx, setDestIdx] = useState(0);
+  const [wordIdx, setWordIdx] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
 
-  const whitePrefix = (config && config.headlinePrefix) ? config.headlinePrefix : STATIC_WHITE_PREFIX;
+  // Search Widget Internal State
+  const [searchTab, setSearchTab] = useState('hotels'); // 'hotels' | 'sightseeing' | 'transfers'
+  const [localDestination, setLocalDestination] = useState('Phuket, Thailand');
+  const [localCheckIn, setLocalCheckIn] = useState(() => pickupDate || getTodayDateStr());
+  const [localCheckOut, setLocalCheckOut] = useState(() => dropDate || getNextDayDateStr(3));
+  const [localGuests, setLocalGuests] = useState(2);
+  const [showGuestPicker, setShowGuestPicker] = useState(false);
 
-  // Respect prefers-reduced-motion for accessibility
+  // Transfer specific
+  const [transferPickup, setTransferPickup] = useState(pickupLoc || 'Suvarnabhumi Airport (BKK)');
+  const [transferDropoff, setTransferDropoff] = useState(dropLoc || 'Bangkok City (Sukhumvit / Silom)');
+
+  // Synchronize internal search card tab with activeTab prop
   useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
-    const handler = (e) => setPrefersReducedMotion(e.matches);
-    mediaQuery.addEventListener?.('change', handler);
-    return () => mediaQuery.removeEventListener?.('change', handler);
+    if (activeTab === 'sightseeing' || activeTab === 'activities') {
+      setSearchTab('sightseeing');
+    } else if (activeTab === 'cabs' || activeTab === 'cars') {
+      setSearchTab('transfers');
+    } else if (activeTab === 'hotels' || activeTab === 'packages') {
+      setSearchTab('hotels');
+    }
+  }, [activeTab]);
+
+  const videoRef = useRef(null);
+  const activeDest = FAMOUS_DESTINATIONS[destIdx] || FAMOUS_DESTINATIONS[0];
+
+  // Video playback sync
+  useEffect(() => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.play().catch(() => {});
+      } else {
+        videoRef.current.pause();
+      }
+    }
+  }, [isPlaying]);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = isMuted;
+    }
+  }, [isMuted]);
+
+  // Handle word cycle complete
+  const handleWordDone = useCallback(() => {
+    setWordIdx((prev) => {
+      const nextWord = (prev + 1) % TYPEWRITER_WORDS.length;
+      // also sync destination card if matching
+      const target = TYPEWRITER_WORDS[nextWord].toLowerCase();
+      const foundIdx = FAMOUS_DESTINATIONS.findIndex(
+        (d) => d.name.toLowerCase() === target ||
+               d.highlightWord?.toLowerCase() === target ||
+               d.name.toLowerCase().includes(target)
+      );
+      if (foundIdx !== -1) {
+        setDestIdx(foundIdx);
+      }
+      return nextWord;
+    });
   }, []);
 
-  const handleCycleComplete = useCallback(() => {
-    prevDestIdxRef.current = currentDestIdx;
-    setCurrentDestIdx(prev => (prev + 1) % FAMOUS_DESTINATIONS.length);
-  }, [currentDestIdx]);
-
-  if (config && !config.visible) return null;
-
-  const jumpToDestination = (idx) => {
-    if (idx === currentDestIdx) return;
-    prevDestIdxRef.current = currentDestIdx;
-    setCurrentDestIdx(idx);
+  const handleSelectDest = (idx) => {
+    setDestIdx(idx);
+    const dest = FAMOUS_DESTINATIONS[idx];
+    const word = dest?.highlightWord || dest?.name || 'Bangkok';
+    const foundWordIdx = TYPEWRITER_WORDS.findIndex(
+      (w) => w.toLowerCase() === word.toLowerCase() ||
+             w.toLowerCase() === dest?.name.toLowerCase() ||
+             dest?.name.toLowerCase().includes(w.toLowerCase())
+    );
+    if (foundWordIdx !== -1) {
+      setWordIdx(foundWordIdx);
+    }
   };
 
-  const activeDest = FAMOUS_DESTINATIONS[currentDestIdx] || FAMOUS_DESTINATIONS[0];
-  const fullHeadlineText = `${whitePrefix} ${activeDest.highlightText}`;
+  const handleSearchClick = (e) => {
+    if (e) e.preventDefault();
+    if (searchTab === 'transfers') {
+      if (onNavigateTab) onNavigateTab('cabs');
+      return;
+    }
+    if (searchTab === 'sightseeing') {
+      if (handleSearchSubmit) {
+        handleSearchSubmit('sightseeing');
+      } else if (onNavigateTab) {
+        onNavigateTab('sightseeing');
+      }
+      return;
+    }
+    // Hotels
+    if (handleSearchSubmit) {
+      handleSearchSubmit('hotels');
+    } else if (onNavigateTab) {
+      onNavigateTab('hotels');
+    }
+  };
+
+  const currentWord = TYPEWRITER_WORDS[wordIdx] || 'Thailand';
 
   return (
-    <header 
-      className="hero-section" 
-      id="hero-banner" 
-      style={{ 
-        position: 'relative', 
-        overflow: 'hidden', 
-        background: '#070f1e', 
-        minHeight: '740px',
-        padding: '145px 0 220px',
-        color: '#ffffff'
-      }}
-    >
+    <div className="wow-luxury-hero-container" id="hero-banner">
       <style>{`
-        @keyframes pulseDot {
-          0%, 100% { transform: scale(1); opacity: 1; }
-          50% { transform: scale(1.35); opacity: 0.6; }
+        /* ─── FONTS & BASE LAYOUT ───────────────────────────────── */
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,400;1,600;1,700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+        .wow-luxury-hero-container {
+          position: relative;
+          width: 100%;
+          min-height: 100vh;
+          height: 100vh;
+          overflow: hidden;
+          background: #06101E;
+          color: #ffffff;
+          font-family: 'Outfit', sans-serif;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 85px 0 18px;
+          max-height: 100vh;
+          box-sizing: border-box;
         }
 
-        /* Base slide styles */
-        .hero-bg-slide {
+        @media (max-width: 991px) {
+          .wow-luxury-hero-container {
+            height: auto;
+            min-height: 100vh;
+            padding: 95px 0 40px;
+          }
+        }
+
+        /* ─── VIDEO & IMAGE BACKGROUND LAYERS ───────────────────── */
+        .hero-media-wrapper {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          z-index: 1;
+          overflow: hidden;
+          pointer-events: none;
+        }
+
+        .hero-video-bg {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          opacity: 0.85;
+          transition: opacity 1.2s ease;
+        }
+
+        .hero-bg-photo {
           position: absolute;
           inset: 0;
           width: 100%;
           height: 100%;
           background-size: cover;
           background-position: center;
-          will-change: opacity, transform, filter;
-          pointer-events: none;
-        }
-
-        /* ─── CINEMATIC KEN BURNS (Continuous slow zoom & soft 1.4s dissolve) ─── */
-        .hero-bg-slide {
           opacity: 0;
           transform: scale(1.0);
-          transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1), transform 8s cubic-bezier(0.1, 0, 0.2, 1);
+          transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1), transform 10s cubic-bezier(0.1, 0, 0.2, 1);
+          z-index: 1;
         }
-        .hero-bg-slide.active {
+
+        .hero-bg-photo.active {
           opacity: 1;
           transform: scale(1.06);
           z-index: 2;
         }
-        .hero-bg-slide.prev-slide {
-          opacity: 0;
-          transform: scale(1.06);
-          z-index: 1;
+
+        /* Cinema Vigenette & Gradient Overlays */
+        .hero-vignette-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg, 
+            rgba(0, 0, 0, 0.08) 0%, 
+            rgba(0, 0, 0, 0.0) 30%, 
+            rgba(0, 0, 0, 0.10) 65%, 
+            rgba(6, 16, 30, 0.50) 100%
+          );
+          z-index: 3;
+          pointer-events: none;
         }
 
-        /* Seamless Kinetic Text Animation */
-        @keyframes heroMessageFade {
-          0% {
-            opacity: 0;
-            transform: translateY(10px);
+        .hero-radial-vignette {
+          display: none;
+        }
+
+        /* ─── CONTENT GRID ──────────────────────────────────────── */
+        .hero-inner-container {
+          position: relative;
+          z-index: 10;
+          width: 100%;
+          max-width: 1440px;
+          margin: 0 auto;
+          padding: 0 40px;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+        }
+
+        @media (max-width: 768px) {
+          .hero-inner-container {
+            padding: 0 20px;
           }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
+        }
+
+        .hero-main-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          width: 100%;
+          margin-top: 30px;
+          gap: 30px;
+        }
+
+        @media (max-width: 991px) {
+          .hero-main-row {
+            flex-direction: column;
+            align-items: stretch;
+            margin-top: 15px;
           }
         }
 
-        .hero-dynamic-block {
-          animation: heroMessageFade 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        /* ─── LEFT: TYPOGRAPHY & HEADING ────────────────────────── */
+        .hero-left-column {
+          max-width: 680px;
         }
 
-        .hero-title-white {
+        .hero-title-group {
+          margin-bottom: 20px;
+        }
+
+        .hero-serif-discover {
+          font-family: 'Playfair Display', serif;
+          font-style: italic;
+          font-weight: 700;
+          font-size: clamp(48px, 6vw, 84px);
+          line-height: 1.05;
+          letter-spacing: -1.5px;
           color: #ffffff;
-          text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95), 0 4px 25px rgba(0, 0, 0, 0.85);
+          display: block;
+          text-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
         }
 
-        /* Flawless, Crisp Gradient Text without murky shadow bug */
-        .hero-highlight-phrase {
-          background: linear-gradient(135deg, #FFE066 0%, #FF9F1C 45%, #FF5A1F 100%);
+        .hero-serif-thailand {
+          font-family: 'Playfair Display', serif;
+          font-weight: 900;
+          font-size: clamp(52px, 6.5vw, 92px);
+          line-height: 1.05;
+          letter-spacing: -1px;
+          display: block;
+          background: linear-gradient(135deg, #FFF0B3 0%, #F5C518 40%, #E5A826 80%, #FF9F1C 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
-          display: inline-block;
-          font-weight: 950;
-          text-shadow: none !important;
-          filter: drop-shadow(0 2px 12px rgba(0, 0, 0, 0.85));
-          letter-spacing: -0.5px;
+          filter: drop-shadow(0 4px 24px rgba(229, 168, 38, 0.45));
         }
 
-        /* ─── HERO TYPEWRITER SOLID WHILE MOVING, BREATHING BLINK WHEN PAUSED ─── */
+        /* Typewriter text styling */
+        .hero-typewriter-wrapper {
+          display: inline-flex;
+          align-items: baseline;
+          position: relative;
+        }
+
+        .hero-typewriter-text {
+          background: linear-gradient(135deg, #FFF0B3 0%, #F5C518 40%, #E5A826 80%, #FF9F1C 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+
         .hero-typewriter-cursor {
           display: inline-block;
-          width: 3.5px;
-          height: 0.84em;
-          background: #FF9F1C;
-          margin-left: 5px;
+          width: 4px;
+          height: 0.82em;
+          background: #F5C518;
+          margin-left: 6px;
           vertical-align: -0.05em;
           border-radius: 2px;
-          box-shadow: 0 0 10px rgba(255, 159, 28, 0.95), 0 0 20px rgba(255, 107, 53, 0.6);
-          will-change: opacity;
+          box-shadow: 0 0 12px #F5C518;
         }
 
-        .hero-typewriter-cursor.active-typing {
+        .hero-typewriter-cursor.blinking {
+          animation: cursorBlink 0.9s infinite;
+        }
+
+        .hero-typewriter-cursor.typing {
           opacity: 1 !important;
           animation: none !important;
         }
 
-        .hero-typewriter-cursor.blinking {
-          animation: heroCursorBlink 0.85s infinite;
-        }
-
-        @keyframes heroCursorBlink {
+        @keyframes cursorBlink {
           0%, 100% { opacity: 1; }
           50% { opacity: 0; }
         }
 
-        @media (max-width: 768px) {
-          .hero-typewriter-cursor {
-            width: 2.5px;
-            margin-left: 3px;
-          }
+        .hero-subtitle {
+          font-size: clamp(15px, 1.3vw, 17px);
+          line-height: 1.6;
+          color: rgba(255, 255, 255, 0.9);
+          max-width: 540px;
+          margin-bottom: 28px;
+          font-weight: 400;
+          text-transform: none !important;
+          letter-spacing: normal;
+          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
         }
 
-        @media (prefers-reduced-motion: reduce) {
-          .hero-typewriter-cursor {
-            display: none !important;
-            animation: none !important;
-          }
-        }
-
-        .hero-dynamic-message {
-          font-size: 17px;
-          line-height: 1.68;
-          font-weight: 500;
+        /* Watch destination preview pill */
+        .hero-preview-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 14px;
+          background: rgba(15, 23, 42, 0.65);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 100px;
+          padding: 8px 24px 8px 8px;
           color: #ffffff;
-          maxWidth: 680px;
-          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95), 0 4px 16px rgba(0, 0, 0, 0.9), 0 0 24px rgba(0, 0, 0, 0.85);
-        }
-
-        .hero-place-btn {
-          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          font-size: 14px;
+          font-weight: 600;
           cursor: pointer;
-          user-select: none;
-        }
-        .hero-place-btn:hover {
-          transform: translateY(-2px);
-          background: rgba(255, 159, 28, 0.25) !important;
-          border-color: rgba(255, 159, 28, 0.75) !important;
-          box-shadow: 0 6px 18px rgba(255, 107, 53, 0.35);
-        }
-        .hero-place-btn.active {
-          background: linear-gradient(135deg, #FF6B35, #FF9F1C) !important;
-          border-color: rgba(255, 255, 255, 0.6) !important;
-          color: #ffffff !important;
-          box-shadow: 0 8px 24px rgba(255, 107, 53, 0.55);
-          transform: translateY(-2px) scale(1.05);
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
         }
 
-        @media (max-width: 768px) {
-          .hero-section {
-            min-height: 600px !important;
-            padding: 100px 0 160px !important;
+        .hero-preview-btn:hover {
+          background: rgba(255, 255, 255, 0.15);
+          border-color: rgba(245, 197, 24, 0.8);
+          transform: translateY(-2px);
+          box-shadow: 0 12px 35px rgba(245, 197, 24, 0.25);
+        }
+
+        .hero-play-icon-circle {
+          width: 38px;
+          height: 38px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #F5C518, #E5A826);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #06101E;
+          box-shadow: 0 4px 14px rgba(245, 197, 24, 0.5);
+          transition: transform 0.3s ease;
+        }
+
+        .hero-preview-btn:hover .hero-play-icon-circle {
+          transform: scale(1.1);
+        }
+
+        /* ─── RIGHT: DESTINATION CARDS VERTICAL STACK ───────────── */
+        .hero-right-column {
+          display: flex;
+          flex-direction: column;
+          gap: 7px;
+          z-index: 5;
+        }
+
+        @media (max-width: 991px) {
+          .hero-right-column {
+            flex-direction: row;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            width: 100%;
           }
+        }
+
+        .dest-card-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          background: rgba(15, 23, 42, 0.72);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 10px;
+          padding: 4px 12px 4px 5px;
+          cursor: pointer;
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          user-select: none;
+          min-width: 180px;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+        }
+
+        .dest-card-item:hover {
+          background: rgba(255, 255, 255, 0.15);
+          border-color: rgba(245, 197, 24, 0.6);
+          transform: translateX(-4px);
+        }
+
+        .dest-card-item.active {
+          background: rgba(15, 23, 42, 0.92);
+          border: 1.5px solid #F5C518;
+          box-shadow: 0 8px 24px rgba(245, 197, 24, 0.35);
+          transform: translateX(-6px);
+        }
+
+        @media (max-width: 991px) {
+          .dest-card-item:hover, .dest-card-item.active {
+            transform: translateY(-2px);
+          }
+        }
+
+        .dest-card-thumb {
+          width: 38px;
+          height: 32px;
+          border-radius: 6px;
+          object-fit: cover;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+          flex-shrink: 0;
+        }
+
+        .dest-card-name {
+          font-size: 12.5px;
+          font-weight: 700;
+          color: #ffffff;
+          white-space: nowrap;
+          letter-spacing: 0.2px;
+        }
+
+        .dest-card-item.active .dest-card-name {
+          color: #F5C518;
+        }
+
+        /* ─── CENTER BOTTOM: FLOATING FROSTED SEARCH CARD ───────── */
+        .hero-search-wrapper {
+          width: 100%;
+          max-width: 1120px;
+          margin: 0 auto 12px;
+          z-index: 12;
+        }
+
+        .hero-search-glass-card {
+          background: rgba(10, 20, 38, 0.78);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          border-radius: 22px;
+          padding: 8px 12px 14px;
+          box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65), 0 0 1px rgba(255, 255, 255, 0.2) inset;
+        }
+
+        /* Tabs on top of the search bar */
+        .hero-search-tabs {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 8px 10px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          margin-bottom: 12px;
+        }
+
+        .hero-tab-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: transparent;
+          border: none;
+          color: rgba(255, 255, 255, 0.75);
+          font-size: 13px;
+          font-weight: 600;
+          padding: 8px 18px;
+          border-radius: 100px;
+          cursor: pointer;
+          transition: all 0.22s ease;
+        }
+
+        .hero-tab-btn:hover {
+          color: #ffffff;
+          background: rgba(255, 255, 255, 0.08);
+        }
+
+        .hero-tab-btn.active {
+          background: linear-gradient(135deg, #F5C518, #E5A826);
+          color: #06101E;
+          font-weight: 800;
+          box-shadow: 0 4px 16px rgba(245, 197, 24, 0.4);
+        }
+
+        /* Fields Row */
+        .hero-search-fields-grid {
+          display: grid;
+          grid-template-columns: 2fr 1.3fr 1.3fr 1.4fr auto;
+          align-items: center;
+          gap: 10px;
+        }
+
+        @media (max-width: 991px) {
+          .hero-search-fields-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+          }
+          .hero-search-cta-col {
+            grid-column: span 2;
+          }
+        }
+
+        @media (max-width: 576px) {
+          .hero-search-fields-grid {
+            grid-template-columns: 1fr;
+          }
+          .hero-search-cta-col {
+            grid-column: span 1;
+          }
+        }
+
+        .search-field-box {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 8px 14px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 14px;
+          transition: all 0.2s ease;
+          position: relative;
+        }
+
+        .search-field-box:hover, .search-field-box:focus-within {
+          background: rgba(255, 255, 255, 0.1);
+          border-color: rgba(245, 197, 24, 0.5);
+        }
+
+        .search-field-icon {
+          color: #F5C518;
+          flex-shrink: 0;
+        }
+
+        .search-field-content {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .search-field-label {
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.6px;
+          font-weight: 700;
+          color: rgba(255, 255, 255, 0.55);
+          margin-bottom: 1px;
+          display: block;
+        }
+
+        .search-field-input {
+          background: transparent;
+          border: none;
+          outline: none;
+          color: #ffffff;
+          font-size: 13.5px;
+          font-weight: 600;
+          width: 100%;
+          padding: 0;
+          font-family: inherit;
+        }
+
+        .search-field-input::placeholder {
+          color: rgba(255, 255, 255, 0.65);
+        }
+
+        .search-field-input[type="date"]::-webkit-calendar-picker-indicator {
+          filter: invert(1);
+          cursor: pointer;
+        }
+
+        /* Gold CTA button */
+        .hero-search-submit-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          background: linear-gradient(135deg, #F5C518 0%, #E5A826 100%);
+          color: #06101E;
+          border: none;
+          border-radius: 14px;
+          padding: 14px 28px;
+          font-size: 14.5px;
+          font-weight: 800;
+          cursor: pointer;
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          white-space: nowrap;
+          box-shadow: 0 6px 20px rgba(245, 197, 24, 0.45);
+          height: 100%;
+        }
+
+        .hero-search-submit-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 28px rgba(245, 197, 24, 0.65);
+          background: linear-gradient(135deg, #FFE066 0%, #F5C518 100%);
+        }
+
+        /* ─── BOTTOM CONTROLS ROW ────────────────────────────────── */
+        .hero-bottom-controls-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          width: 100%;
+          padding-top: 10px;
+        }
+
+        /* Slide indicators dashes */
+        .hero-slide-indicators {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .hero-indicator-dash {
+          width: 28px;
+          height: 3.5px;
+          border-radius: 4px;
+          background: rgba(255, 255, 255, 0.25);
+          transition: all 0.3s ease;
+          cursor: pointer;
+        }
+
+        .hero-indicator-dash.active {
+          width: 44px;
+          background: #F5C518;
+          box-shadow: 0 0 10px rgba(245, 197, 24, 0.8);
+        }
+
+        /* Scroll to explore center */
+        .hero-scroll-indicator {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+          color: rgba(255, 255, 255, 0.7);
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.8px;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: opacity 0.2s ease;
+        }
+
+        .hero-scroll-indicator:hover {
+          color: #ffffff;
+        }
+
+        .hero-mouse-icon {
+          width: 18px;
+          height: 28px;
+          border: 2px solid rgba(255, 255, 255, 0.7);
+          border-radius: 12px;
+          position: relative;
+        }
+
+        .hero-mouse-wheel {
+          width: 3px;
+          height: 6px;
+          background: #F5C518;
+          border-radius: 2px;
+          position: absolute;
+          top: 5px;
+          left: 50%;
+          transform: translateX(-50%);
+          animation: mouseWheelScroll 1.6s infinite;
+        }
+
+        @keyframes mouseWheelScroll {
+          0% { top: 5px; opacity: 1; }
+          100% { top: 14px; opacity: 0; }
+        }
+
+        /* Media controls (pause/play & mute) */
+        .hero-media-buttons {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .hero-media-icon-btn {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: rgba(15, 23, 42, 0.65);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: #ffffff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .hero-media-icon-btn:hover {
+          background: rgba(255, 255, 255, 0.2);
+          border-color: #F5C518;
+          color: #F5C518;
+        }
+
+        /* ─── VIDEO PREVIEW MODAL ────────────────────────────────── */
+        .video-preview-modal-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.88);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          z-index: 99999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+        }
+
+        .video-preview-modal-dialog {
+          position: relative;
+          width: 100%;
+          max-width: 960px;
+          background: #0B132B;
+          border: 1px solid rgba(245, 197, 24, 0.4);
+          border-radius: 20px;
+          overflow: hidden;
+          box-shadow: 0 25px 70px rgba(0, 0, 0, 0.8);
+        }
+
+        .video-modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px 24px;
+          background: rgba(255, 255, 255, 0.04);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
       `}</style>
 
-      {/* ─── FULL-BLEED SLIDESHOW WITH SWITCHABLE DEMO ANIMATION STYLES ─── */}
-      <div 
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          overflow: 'hidden',
-          zIndex: 1
-        }}
-      >
+      {/* ─── 1. BACKGROUND LAYERS: VIDEO + KEN BURNS PHOTOGRAPHY ─── */}
+      <div className="hero-media-wrapper">
+        {/* Background MP4 Video Loop */}
+        <video
+          ref={videoRef}
+          className="hero-video-bg"
+          src="/thailand_destinations.mp4"
+          autoPlay
+          muted={isMuted}
+          loop
+          playsInline
+          onLoadedData={() => setVideoLoaded(true)}
+        />
+
+        {/* Dynamic Ken Burns Destination Photos as fallback / switch */}
         {FAMOUS_DESTINATIONS.map((dest, idx) => {
-          const isActive = currentDestIdx === idx;
-          const isPrev = prevDestIdxRef.current === idx;
-          const stateClass = isActive ? 'active' : (isPrev ? 'prev-slide' : '');
+          const isActive = destIdx === idx;
           return (
             <div
               key={dest.id}
-              className={`hero-bg-slide ${stateClass}`}
+              className={`hero-bg-photo ${isActive ? 'active' : ''}`}
               style={{
-                backgroundImage: `url(${dest.image})`
+                backgroundImage: `url(${dest.bgImage})`
               }}
             />
           );
         })}
 
-        {/* Soft Vignette Overlay for maximum text contrast and legibility */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            background: 'linear-gradient(180deg, rgba(7, 15, 30, 0.42) 0%, rgba(7, 15, 30, 0.12) 45%, rgba(7, 15, 30, 0.68) 100%)',
-            pointerEvents: 'none',
-            zIndex: 2
-          }}
-        />
+        {/* Cinematic Lighting & Vignette Overlays */}
+        <div className="hero-vignette-overlay" />
+        <div className="hero-radial-vignette" />
       </div>
 
-
-
-      {/* ─── MAIN HERO CONTENT (CLEAN, EXPANSIVE, LUXURY TYPOGRAPHY) ─── */}
-      <div className="container" style={{ position: 'relative', zIndex: 3 }}>
-        <div className="row align-items-center">
+      {/* ─── 2. MAIN INNER HERO CONTENT ──────────────────────────── */}
+      <div className="hero-inner-container">
+        
+        {/* Top Split: Title (Left) + Destination Cards (Right) */}
+        <div className="hero-main-row">
           
-          <div className="col-12 col-lg-10 col-xl-9 text-start">
-            
-            <div className="text-start">
-              
-              {/* Dynamic Synchronized Destination Block */}
-              <div className="hero-dynamic-block">
-                
-                {/* Eyebrow Badge */}
-                <div 
-                  className="d-inline-flex align-items-center gap-2 px-3.5 py-1.5 rounded-pill mb-3"
-                  style={{
-                    background: 'rgba(15, 23, 42, 0.65)',
-                    border: '1px solid rgba(255, 159, 28, 0.6)',
-                    backdropFilter: 'blur(10px)',
-                    WebkitBackdropFilter: 'blur(10px)',
-                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)'
-                  }}
-                >
-                  <span 
-                    style={{
-                      display: 'inline-block',
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      background: '#FF9F1C',
-                      boxShadow: '0 0 10px #FF9F1C',
-                      animation: 'pulseDot 1.8s infinite'
-                    }}
-                  />
-                  <span 
-                    style={{
-                      color: '#FFB84D',
-                      fontWeight: 800,
-                      fontSize: '11.5px',
-                      letterSpacing: '1.2px',
-                      textTransform: 'uppercase',
-                      textShadow: '0 1px 3px rgba(0, 0, 0, 0.9)'
-                    }}
-                  >
-                    Official WOW THAILAND Platform • {activeDest.eyebrow}
-                  </span>
-                </div>
-
-                {/* Headline with Typewriter Animation & CLS Phantom Sizer */}
-                <h1
-                  className="hero-title mb-3"
-                  aria-label={fullHeadlineText}
-                  style={{
-                    fontSize: 'clamp(34px, 4.4vw, 56px)',
-                    fontWeight: 950,
-                    marginBottom: '16px',
-                    lineHeight: 1.14,
-                    letterSpacing: '-1.2px',
-                    display: 'grid',
-                    gridTemplateAreas: '"stack"',
-                    position: 'relative',
-                    whiteSpace: 'pre-wrap'
-                  }}
-                >
-                  {/* Phantom Sizer: invisibly reserves exact space for longest headline across all viewport sizes */}
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      gridArea: 'stack',
-                      visibility: 'hidden',
-                      pointerEvents: 'none',
-                      userSelect: 'none',
-                      opacity: 0
-                    }}
-                  >
-                    <span className="hero-title-white d-block mb-1">
-                      {whitePrefix}
-                    </span>
-                    <span className="hero-highlight-phrase">
-                      Explore Stress Free!
-                    </span>
-                  </span>
-
-                  {/* Visible Typewriter Headline */}
-                  <span style={{ gridArea: 'stack' }}>
-                    <span 
-                      className="hero-title-white d-block mb-1"
-                      style={{
-                        color: '#ffffff',
-                        textShadow: '0 2px 10px rgba(0, 0, 0, 0.95), 0 4px 25px rgba(0, 0, 0, 0.85)'
-                      }}
-                    >
-                      {whitePrefix}
-                    </span>
-                    <TypewriterHighlight 
-                      key={activeDest.id}
-                      text={activeDest.highlightText}
-                      onCycleComplete={handleCycleComplete}
-                      prefersReducedMotion={prefersReducedMotion}
-                    />
-                  </span>
-                </h1>
-
-                {/* Dynamic Destination Subtitle */}
-                <p
-                  className="hero-dynamic-message mb-4"
-                  style={{
-                    fontSize: '17px',
-                    lineHeight: '1.68',
-                    fontWeight: 500,
-                    color: '#ffffff',
-                    maxWidth: '680px',
-                    textShadow: '0 2px 4px rgba(0, 0, 0, 0.95), 0 4px 16px rgba(0, 0, 0, 0.9), 0 0 24px rgba(0, 0, 0, 0.85)'
-                  }}
-                >
-                  {activeDest.tagline}
-                </p>
-
-              </div>
-
-              {/* Featured Iconic Places Quick Interactive Seek Pills */}
-              <div className="mb-2">
-                <div className="d-flex align-items-center gap-2 mb-2">
-                  <span 
-                    className="text-uppercase fw-bold" 
-                    style={{ 
-                      letterSpacing: '1.2px', 
-                      fontSize: '11px', 
-                      color: 'rgba(255, 255, 255, 0.9)',
-                      textShadow: '0 1px 3px rgba(0, 0, 0, 0.95)'
-                    }}
-                  >
-                    Featured Iconic Places in Thailand
-                  </span>
-                  <span className="text-white-50" style={{ fontSize: '11px' }}>• Click to explore</span>
-                </div>
-                <div className="d-flex flex-wrap gap-2.5 align-items-center">
-                  {FAMOUS_DESTINATIONS.map((dest, idx) => {
-                    const isActive = currentDestIdx === idx;
-                    return (
-                      <button
-                        key={dest.id}
-                        type="button"
-                        onClick={() => jumpToDestination(idx)}
-                        className={`btn btn-sm hero-place-btn d-inline-flex align-items-center gap-2 px-3.5 py-2 rounded-pill text-white fw-bold ${isActive ? 'active' : ''}`}
-                        style={{
-                          background: isActive 
-                            ? 'linear-gradient(135deg, #FF6B35 0%, #FF9F1C 100%)' 
-                            : 'rgba(15, 23, 42, 0.65)',
-                          border: isActive 
-                            ? '1.5px solid rgba(255, 255, 255, 0.6)' 
-                            : '1px solid rgba(255, 255, 255, 0.25)',
-                          backdropFilter: 'blur(10px)',
-                          WebkitBackdropFilter: 'blur(10px)',
-                          fontSize: '12.5px',
-                          boxShadow: isActive 
-                            ? '0 8px 24px rgba(255, 107, 53, 0.55)' 
-                            : '0 4px 12px rgba(0, 0, 0, 0.35)',
-                          textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)',
-                          transform: isActive ? 'scale(1.05)' : 'scale(1.0)'
-                        }}
-                      >
-                        <MapPin size={12} style={{ color: isActive ? '#ffffff' : '#FF9F1C' }} />
-                        <span>{dest.shortName}</span>
-                        {isActive && (
-                          <span 
-                            style={{ 
-                              display: 'inline-block',
-                              width: '6px', 
-                              height: '6px', 
-                              borderRadius: '50%',
-                              background: '#ffffff', 
-                              boxShadow: '0 0 8px #ffffff' 
-                            }} 
-                          />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
+          {/* Left Column: Heading + Typewriter + Preview button */}
+          <div className="hero-left-column">
+            <div className="hero-title-group">
+              <span className="hero-serif-discover">Discover</span>
+              <span className="hero-serif-thailand">
+                <TypewriterWord 
+                  targetWord={currentWord}
+                  onWordDone={handleWordDone}
+                />
+              </span>
             </div>
 
+            <p className="hero-subtitle">
+              Luxury stays, exciting activities &amp; seamless transfers across Thailand's top destinations.
+            </p>
+
+            <button 
+              type="button" 
+              className="hero-preview-btn"
+              onClick={() => setShowVideoModal(true)}
+            >
+              <div className="hero-play-icon-circle">
+                <Play size={16} fill="#06101E" style={{ marginLeft: '2px' }} />
+              </div>
+              <span>Watch Destination Preview</span>
+            </button>
+          </div>
+
+          {/* Right Column: Destination Vertical Cards */}
+          <div className="hero-right-column">
+            {FAMOUS_DESTINATIONS.map((dest, idx) => {
+              const isSelected = destIdx === idx;
+              return (
+                <div
+                  key={dest.id}
+                  className={`dest-card-item ${isSelected ? 'active' : ''}`}
+                  onClick={() => handleSelectDest(idx)}
+                >
+                  <img 
+                    src={dest.thumb} 
+                    alt={dest.name} 
+                    className="dest-card-thumb" 
+                  />
+                  <span className="dest-card-name">{dest.name}</span>
+                </div>
+              );
+            })}
           </div>
 
         </div>
+
+        {/* Center Bottom: Floating Frosted-Glass Search Card */}
+        <div className="hero-search-wrapper">
+          <div className="hero-search-glass-card">
+            
+            {/* Service Tabs on Top */}
+            <div className="hero-search-tabs">
+              <button
+                type="button"
+                className={`hero-tab-btn ${searchTab === 'hotels' ? 'active' : ''}`}
+                onClick={() => {
+                  setSearchTab('hotels');
+                  if (onNavigateTab) onNavigateTab('hotels');
+                }}
+              >
+                <Hotel size={15} />
+                <span>Hotels</span>
+              </button>
+
+              <button
+                type="button"
+                className={`hero-tab-btn ${searchTab === 'sightseeing' ? 'active' : ''}`}
+                onClick={() => {
+                  if (onNavigateTab) onNavigateTab('sightseeing');
+                  else setSearchTab('sightseeing');
+                }}
+              >
+                <Compass size={15} />
+                <span>Sightseeing &amp; Activities</span>
+              </button>
+
+              <button
+                type="button"
+                className={`hero-tab-btn ${searchTab === 'transfers' ? 'active' : ''}`}
+                onClick={() => {
+                  if (onNavigateTab) onNavigateTab('cabs');
+                }}
+              >
+                <Car size={15} />
+                <span>Transfers</span>
+              </button>
+            </div>
+
+            {/* Dynamic Search Fields based on Selected Tab */}
+            <form onSubmit={handleSearchClick} className="hero-search-fields-grid">
+              
+              {searchTab === 'hotels' && (
+                <>
+                  {/* Field 1: Where to stay? */}
+                  <div className="search-field-box">
+                    <MapPin size={18} className="search-field-icon" />
+                    <div className="search-field-content">
+                      <span className="search-field-label">Where to stay?</span>
+                      <input 
+                        type="text"
+                        className="search-field-input"
+                        placeholder="e.g. Phuket, Bangkok"
+                        value={localDestination}
+                        onChange={(e) => setLocalDestination(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Field 2: Check-in */}
+                  <div className="search-field-box">
+                    <Calendar size={18} className="search-field-icon" />
+                    <div className="search-field-content">
+                      <span className="search-field-label">Check-in</span>
+                      <input 
+                        type="date"
+                        className="search-field-input"
+                        value={localCheckIn}
+                        onChange={(e) => setLocalCheckIn(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Field 3: Check-out */}
+                  <div className="search-field-box">
+                    <Calendar size={18} className="search-field-icon" />
+                    <div className="search-field-content">
+                      <span className="search-field-label">Check-out</span>
+                      <input 
+                        type="date"
+                        className="search-field-input"
+                        value={localCheckOut}
+                        onChange={(e) => setLocalCheckOut(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Field 4: Guests */}
+                  <div className="search-field-box" onClick={() => setShowGuestPicker(!showGuestPicker)} style={{ cursor: 'pointer' }}>
+                    <Users size={18} className="search-field-icon" />
+                    <div className="search-field-content">
+                      <span className="search-field-label">Guests</span>
+                      <div className="search-field-input" style={{ paddingTop: '2px' }}>
+                        {localGuests} Adults • {hotelRooms} Room
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Search Button */}
+                  <div className="hero-search-cta-col">
+                    <button type="submit" className="hero-search-submit-btn">
+                      <Search size={16} />
+                      <span>Search Hotels</span>
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {searchTab === 'sightseeing' && (
+                <>
+                  {/* Field 1: Where to explore? */}
+                  <div className="search-field-box">
+                    <Compass size={18} className="search-field-icon" />
+                    <div className="search-field-content">
+                      <span className="search-field-label">Where to explore?</span>
+                      <input 
+                        type="text"
+                        className="search-field-input"
+                        placeholder="e.g. Phi Phi Islands, Wat Arun, Coral Island"
+                        defaultValue="Maya Bay & Phi Phi Speedboat"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Field 2: Tour Date */}
+                  <div className="search-field-box">
+                    <Calendar size={18} className="search-field-icon" />
+                    <div className="search-field-content">
+                      <span className="search-field-label">Tour Date</span>
+                      <input 
+                        type="date"
+                        className="search-field-input"
+                        value={localCheckIn}
+                        onChange={(e) => setLocalCheckIn(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Field 3: Travelers */}
+                  <div className="search-field-box">
+                    <Users size={18} className="search-field-icon" />
+                    <div className="search-field-content">
+                      <span className="search-field-label">Travelers</span>
+                      <div className="search-field-input" style={{ paddingTop: '2px' }}>
+                        {localGuests} Travelers
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Field 4: Category */}
+                  <div className="search-field-box">
+                    <Sparkles size={18} className="search-field-icon" />
+                    <div className="search-field-content">
+                      <span className="search-field-label">Experience</span>
+                      <div className="search-field-input" style={{ paddingTop: '2px' }}>
+                        Island Speedboat &amp; Cruise
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Search Button */}
+                  <div className="hero-search-cta-col">
+                    <button type="submit" className="hero-search-submit-btn">
+                      <Search size={16} />
+                      <span>Search Activities</span>
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {searchTab === 'transfers' && (
+                <>
+                  {/* Field 1: Pickup Location */}
+                  <div className="search-field-box">
+                    <MapPin size={18} className="search-field-icon" />
+                    <div className="search-field-content">
+                      <span className="search-field-label">Pickup Location</span>
+                      <input 
+                        type="text"
+                        className="search-field-input"
+                        placeholder="e.g. Suvarnabhumi Airport (BKK)"
+                        value={transferPickup}
+                        onChange={(e) => setTransferPickup(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Field 2: Drop-off Destination */}
+                  <div className="search-field-box">
+                    <Navigation size={18} className="search-field-icon" />
+                    <div className="search-field-content">
+                      <span className="search-field-label">Drop-off Destination</span>
+                      <input 
+                        type="text"
+                        className="search-field-input"
+                        placeholder="e.g. Bangkok Hotel / Pattaya"
+                        value={transferDropoff}
+                        onChange={(e) => setTransferDropoff(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Field 3: Transfer Date */}
+                  <div className="search-field-box">
+                    <Calendar size={18} className="search-field-icon" />
+                    <div className="search-field-content">
+                      <span className="search-field-label">Pickup Date</span>
+                      <input 
+                        type="date"
+                        className="search-field-input"
+                        value={localCheckIn}
+                        onChange={(e) => setLocalCheckIn(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Field 4: Vehicle Preference */}
+                  <div className="search-field-box">
+                    <Car size={18} className="search-field-icon" />
+                    <div className="search-field-content">
+                      <span className="search-field-label">Service Type</span>
+                      <div className="search-field-input" style={{ paddingTop: '2px' }}>
+                        Chauffeur Transfer
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Search Button */}
+                  <div className="hero-search-cta-col">
+                    <button type="submit" className="hero-search-submit-btn">
+                      <Car size={16} />
+                      <span>Search Transfers</span>
+                    </button>
+                  </div>
+                </>
+              )}
+
+            </form>
+
+          </div>
+        </div>
+
+        {/* ─── 3. BOTTOM CONTROLS: DASHES, SCROLL MOUSE, MEDIA BUTTONS ─── */}
+        <div className="hero-bottom-controls-row">
+          
+          {/* Progress Indicators (Left) */}
+          <div className="hero-slide-indicators">
+            {FAMOUS_DESTINATIONS.map((_, i) => (
+              <div 
+                key={i} 
+                className={`hero-indicator-dash ${destIdx === i ? 'active' : ''}`}
+                onClick={() => handleSelectDest(i)}
+              />
+            ))}
+          </div>
+
+          {/* Mouse Scroll Indicator (Center) */}
+          <div 
+            className="hero-scroll-indicator"
+            onClick={() => {
+              document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+          >
+            <div className="hero-mouse-icon">
+              <div className="hero-mouse-wheel" />
+            </div>
+            <span>Scroll to Explore</span>
+          </div>
+
+          {/* Spacer to keep center scroll indicator balanced */}
+          <div style={{ width: '44px' }} />
+
+        </div>
+
       </div>
 
+      {/* ─── 4. VIDEO PREVIEW MODAL ──────────────────────────────── */}
+      {showVideoModal && (
+        <div 
+          className="video-preview-modal-backdrop"
+          onClick={() => setShowVideoModal(false)}
+        >
+          <div 
+            className="video-preview-modal-dialog"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="video-modal-header">
+              <div className="d-flex align-items-center gap-2">
+                <Sparkles size={18} style={{ color: '#F5C518' }} />
+                <span className="fw-bold text-white" style={{ fontSize: '15px' }}>
+                  WOW THAILAND • Destination Cinema Preview
+                </span>
+              </div>
+              <button 
+                type="button"
+                className="btn btn-sm btn-dark rounded-circle p-1"
+                onClick={() => setShowVideoModal(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden' }}>
+              <video 
+                src="/thailand_destinations.mp4" 
+                controls 
+                autoPlay 
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
-    </header>
+    </div>
   );
 }

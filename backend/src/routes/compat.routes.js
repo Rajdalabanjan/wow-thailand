@@ -197,6 +197,16 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
   const resource = req.query.resource || req.body?.resource || '';
   const action = req.query.action || req.body?.action || '';
 
+  const roles = requiredRoles(req, resource, action);
+  if (roles) {
+    if (!req.user) {
+      return res.status(401).json({ success: false, error: 'Authentication required.' });
+    }
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ success: false, error: 'Forbidden: Insufficient privileges.' });
+    }
+  }
+
   try {
     // -------------------------------------------------------------
     // FILE UPLOAD (Images, Documents, Photos)
@@ -406,9 +416,24 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       const payload = req.body || {};
       const identifier = (payload.identifier || req.query.identifier || '').trim();
       const newPassword = (payload.new_password || '').trim();
+      const resetCode = (payload.code || payload.reset_code || payload.otp || payload.reset_token || '').trim();
+
       if (!identifier || !newPassword) {
         return res.status(400).json({ success: false, error: 'Identifier and new password required.' });
       }
+
+      if (!resetCode) {
+        return res.status(400).json({ success: false, error: 'A valid reset code or verification token is required.' });
+      }
+
+      const stored = resetOtpStore.get(identifier.toLowerCase());
+      const isValid = stored && (stored.resetToken === resetCode || (stored.otpHash && stored.otpHash === hashResetCode(identifier, resetCode))) && Date.now() <= stored.expiresAt;
+      if (!isValid) {
+        return res.status(400).json({ success: false, error: 'Invalid or expired password reset code.' });
+      }
+
+      // Invalidate single-use reset code
+      resetOtpStore.delete(identifier.toLowerCase());
       const passwordHash = await bcrypt.hash(newPassword, 10);
       await query('UPDATE users SET password_hash = ? WHERE username = ? OR email = ? OR phone = ?', [passwordHash, identifier, identifier, identifier]);
       return res.json({ success: true, message: 'Password updated successfully.' });
@@ -1954,13 +1979,24 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     }
 
     if (resource === 'vendors') {
+      const isAdmin = req.user && ADMIN_ROLES.includes(req.user.role);
       const vendors = await query(`
         SELECT v.*, u.username, u.email, u.role, u.phone AS user_phone, u.status AS user_status
         FROM vendors v
         LEFT JOIN users u ON v.user_id = u.id
         ORDER BY v.created_at DESC
       `);
-      return res.json(vendors);
+
+      if (isAdmin) {
+        return res.json(vendors);
+      }
+
+      // Anonymous / public: hide contact details
+      const sanitized = vendors.map(v => {
+        const { email, contact_phone, user_phone, ...rest } = v;
+        return rest;
+      });
+      return res.json(sanitized);
     }
 
     // -------------------------------------------------------------

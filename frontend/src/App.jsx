@@ -7,7 +7,6 @@ import { unlockAudio } from './utils/notificationSound';
 // Import Components
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
-import SearchWidget from './components/SearchWidget';
 import Footer from './components/Footer';
 import LoginModal from './components/LoginModal';
 import BookingModal from './components/BookingModal';
@@ -2317,59 +2316,40 @@ export default function App() {
   // ─── MAIN PUBLIC STOREFRONT VIEW ──────────────────────────────────────────
   return (
     <div className="d-flex flex-column min-vh-100 bg-white">
-      {/* Public Navbar */}
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={handleTabChange}
-        currentUser={currentUser}
-        triggerOpenLogin={() => setShowLoginModal(true)}
-        onOpenLogin={() => setShowLoginModal(true)}
-        onLogout={handleLogout}
-        isOverHero={!isDetailPage}
-      />
+      {/* Public Navbar - Hidden on dedicated full-screen Cabs page to prevent overlapping collision */}
+      {activeTab !== 'cabs' && activeTab !== 'cars' && (
+        <Navbar
+          activeTab={activeTab}
+          setActiveTab={handleTabChange}
+          currentUser={currentUser}
+          triggerOpenLogin={() => setShowLoginModal(true)}
+          onOpenLogin={() => setShowLoginModal(true)}
+          onLogout={handleLogout}
+          isOverHero={!isDetailPage && activeTab === 'hotels'}
+        />
+      )}
 
       {/* Hero, Search Widget and Categories Slider - Hidden on dedicated details pages */}
-      {!isDetailPage && (
+      {!isDetailPage && activeTab !== "cabs" && (
         <>
-          <Hero onNavigateTab={handleTabChange} activeTab={activeTab} />
-          <SearchWidget
+          <Hero
+            onNavigateTab={handleTabChange}
             activeTab={activeTab}
-            setActiveTab={handleTabChange}
-            pickupLoc={pickupLoc} 
-            setPickupLoc={setPickupLoc} 
-            dropLoc={dropLoc} 
-            setDropLoc={setDropLoc} 
-            pickupDate={pickupDate} 
-            setPickupDate={setPickupDate} 
+            pickupLoc={pickupLoc}
+            setPickupLoc={setPickupLoc}
+            dropLoc={dropLoc}
+            setDropLoc={setDropLoc}
+            pickupDate={pickupDate}
+            setPickupDate={setPickupDate}
             dropDate={dropDate}
             setDropDate={setDropDate}
-            pickupTime={pickupTime} 
-            setPickupTime={setPickupTime} 
-            dropTime={dropTime} 
-            setDropTime={setDropTime} 
-            handleSearchSubmit={handleSearchSubmit} 
-            setSearchTriggered={setSearchTriggered}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            hotelRooms={hotelRooms}
-            setHotelRooms={setHotelRooms}
             hotelAdults={hotelAdults}
             setHotelAdults={setHotelAdults}
-            hotelChildren={hotelChildren}
-            setHotelChildren={setHotelChildren}
-            hotelPriceRange={hotelPriceRange}
-            setHotelPriceRange={setHotelPriceRange}
-            flightAdults={flightAdults}
-            setFlightAdults={setFlightAdults}
-            flightChildren={flightChildren}
-            setFlightChildren={setFlightChildren}
-            flightInfants={flightInfants}
-            setFlightInfants={setFlightInfants}
-            flightClass={flightClass}
-            setFlightClass={setFlightClass}
-            appliedFilters={appliedFilters}
-            setAppliedFilters={setAppliedFilters}
+            hotelRooms={hotelRooms}
+            setHotelRooms={setHotelRooms}
+            handleSearchSubmit={handleSearchSubmit}
           />
+          
 
           {/* Interactive Service Categories Slider - Option 3 Bright & Radiant Highlights */}
           <ServiceCategoriesSlider
@@ -2385,8 +2365,8 @@ export default function App() {
         id="results-section" 
         style={{ scrollMarginTop: '0px', minHeight: isDetailPage ? '100vh' : '80vh' }}
       >
-        <div className={isDetailPage ? "w-100 p-0 m-0" : "container"}>
-          <div className={isDetailPage ? "w-100" : "tab-slide-enter"}>
+        <div className={isDetailPage || activeTab === "cabs" ? "w-100 p-0 m-0" : "container"}>
+          <div className={isDetailPage || activeTab === "cabs" ? "w-100" : "tab-slide-enter"}>
           
           {activeTab === 'packages' && (
             <HotelsPage
@@ -2407,6 +2387,7 @@ export default function App() {
               markups={markups}
               appliedFilters={appliedFilters}
               setAppliedFilters={setAppliedFilters}
+              currentUser={currentUser}
             />
           )}
 
@@ -2458,23 +2439,12 @@ export default function App() {
 
           {(activeTab === 'cabs' || activeTab === 'cars') && (
             <CarsPage
-              carCategoryFilter={carCategoryFilter}
-              setCarCategoryFilter={setCarCategoryFilter}
-              carFilterFuel={carFilterFuel}
-              setCarFilterFuel={setCarFilterFuel}
-              carFilterTrans={carFilterTrans}
-              setCarFilterTrans={setCarFilterTrans}
-              handleOpenBooking={handleOpenBooking}
-              onViewDetails={(item) => handleOpenDetails(item, 'car', 'cars')}
-              onBack={() => handleTabChange('hotels')}
-              cars={cars}
+              currentUser={currentUser}
+              pickupLoc={pickupLoc}
+              dropLoc={dropLoc}
               pickupDate={pickupDate}
-              dropDate={dropDate}
-              searchQuery={searchQuery}
-              onClearSearch={() => setSearchQuery('')}
-              markups={markups}
-              appliedFilters={appliedFilters}
-              setAppliedFilters={setAppliedFilters}
+              pickupTime={pickupTime}
+              onBack={() => handleTabChange('hotels')}
             />
           )}
 

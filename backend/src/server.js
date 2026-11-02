@@ -73,6 +73,7 @@ export function broadcastEvent(room, event, data) {
 
 // 3. Mount Routes
 app.use('/api/v1', apiRouter);
+app.use('/api', apiRouter);
 app.use('/', compatRouter); // Handles /api.php queries from existing frontend
 
 // 4. Error Handling

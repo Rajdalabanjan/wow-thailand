@@ -47,7 +47,8 @@ async function runSmokeTests() {
 
     // 3. Hotel Details & Room Types
     console.log('\n3. Testing Hotel Details:');
-    const hotelId = hotels.data[0].id;
+    const phuketHotel = hotels.data.find(h => h.id === 'th-htl-01') || hotels.data[0];
+    const hotelId = phuketHotel.id;
     const hotelDetailRes = await fetch(`${baseUrl}/api/v1/hotels/${hotelId}`);
     const hotelDetail = await hotelDetailRes.json();
     assert(hotelDetail.success === true, 'Hotel details query successful');

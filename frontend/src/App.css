@@ -6,22 +6,32 @@
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 10px 0;
+  padding: 14px 0;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 1050;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
 }
 
-.premium-navbar.over-hero {
-  margin-bottom: -68px; /* Seamlessly pulls the hero video full-bleed behind navbar */
+.premium-navbar.over-hero:not(.scrolled) {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  margin-bottom: 0 !important;
 }
 
 .premium-navbar.scrolled {
-  background: rgba(10, 20, 36, 0.92);
+  background: rgba(10, 20, 36, 0.94);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
 }
 
 @media (max-width: 991.98px) {

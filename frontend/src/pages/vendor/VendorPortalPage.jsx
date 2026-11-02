@@ -15,6 +15,8 @@ import VendorWallet from '../../components/vendor/VendorWallet';
 import PMSPaymentSettings from './pms/PMSPaymentSettings';
 import VehicleReports from './vehicle-pms/VehicleReports';
 import VehicleVendorProfileSettings from './vehicle-pms/VehicleVendorProfileSettings';
+import VendorChauffeurRoster from './vehicle-pms/VendorChauffeurRoster';
+import VendorTransferDispatches from './vehicle-pms/VendorTransferDispatches';
 import VendorDashboard from './VendorDashboard';
 import VendorNotificationBell from '../../components/vendor/VendorNotificationBell';
 import VendorCancellationPolicyManager from '../../components/vendor/VendorCancellationPolicyManager';
@@ -28,9 +30,11 @@ const SIDEBAR_GROUPS = [
     items: [{ id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={15} /> }]
   },
   {
-    label: 'Fleet',
+    label: 'Fleet & Chauffeurs',
     items: [
       { id: 'fleet', label: 'Fleet Management', icon: <Car size={15} /> },
+      { id: 'chauffeurs', label: 'Chauffeur Roster', icon: <Users size={15} /> },
+      { id: 'transfers', label: 'Transfer Dispatches', icon: <Compass size={15} /> },
       { id: 'calendar', label: 'Fleet Calendar', icon: <Calendar size={15} /> },
       { id: 'pricing', label: 'Pricing', icon: <DollarSign size={15} /> },
     ]
@@ -138,7 +142,8 @@ export default function VendorPortalPage({
     setTabParams(params || {});
   };
 
-  if (!currentUser || currentUser.role !== 'vendor') {
+  const isVendorRole = currentUser && ['vendor', 'cab_vendor', 'transfer_vendor', 'vehicle_vendor', 'admin', 'superadmin'].includes(currentUser.role);
+  if (!isVendorRole) {
     return (
       <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#0D1B2E 0%,#1a3050 100%)' }}>
         <div className="text-center p-5">
@@ -182,6 +187,10 @@ export default function VendorPortalPage({
     switch (activeTab) {
       case 'dashboard':
         return <VehiclePMSDashboard currentUser={currentUser} cars={vendorCars} bikes={vendorBikes} bookings={bookings} onNavigate={handleNavigate} />;
+      case 'chauffeurs':
+        return <VendorChauffeurRoster currentUser={currentUser} />;
+      case 'transfers':
+        return <VendorTransferDispatches currentUser={currentUser} />;
       case 'fleet':
         return (
           <VehicleFleetManagement

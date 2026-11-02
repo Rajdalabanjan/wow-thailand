@@ -12,6 +12,11 @@ import * as pmsController from '../controllers/pmsController.js';
 import * as driverController from '../controllers/driverController.js';
 import * as b2bController from '../controllers/b2bController.js';
 import * as walletController from '../controllers/walletController.js';
+import * as cabBookingController from '../controllers/cabBookingController.js';
+import * as cabTrackingController from '../controllers/cabTrackingController.js';
+import * as driverTripController from '../controllers/driverTripController.js';
+import * as cabDispatchController from '../controllers/cabDispatchController.js';
+import * as cabPaymentController from '../controllers/cabPaymentController.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const router = Router();
@@ -62,5 +67,42 @@ router.get('/b2b/dashboard', requireAuth, requireRole(['b2b_agent', 'admin', 'su
 // Wallets
 router.get('/wallets/:vendorId', requireAuth, requireRole(['hotel_vendor', 'transfer_vendor', 'b2b_agent', 'admin', 'superadmin']), walletController.getVendorWallet);
 router.post('/wallets/top-up', requireAuth, requireRole(['admin', 'superadmin']), walletController.topUpWallet);
+
+// ========================================================================
+// Premium Cab & Airport Transfer System Endpoints
+// ========================================================================
+
+// Customer Cab & Transfer Endpoints
+router.post('/cabs/estimate', cabBookingController.estimateFare);
+router.post('/cabs/book', cabBookingController.createCabBooking);
+router.get('/cabs/track/:id', cabTrackingController.getTrackingDetails);
+router.get('/cabs/history', requireAuth, cabBookingController.getCabHistory);
+router.post('/cabs/cancel', requireAuth, cabBookingController.cancelCabBooking);
+
+// Driver Chauffeur Companion Endpoints
+router.get('/driver/active-duty', requireAuth, requireRole(['driver', 'admin', 'superadmin']), driverTripController.getActiveDuty);
+router.get('/driver/duty-offers', requireAuth, requireRole(['driver', 'admin', 'superadmin']), driverTripController.getDutyOffers);
+router.post('/driver/accept-duty', requireAuth, requireRole(['driver', 'admin', 'superadmin']), driverTripController.acceptDuty);
+router.post('/driver/reject-duty', requireAuth, requireRole(['driver', 'admin', 'superadmin']), driverTripController.rejectDuty);
+router.post('/driver/update-status', requireAuth, requireRole(['driver', 'admin', 'superadmin']), driverTripController.updateDutyStatus);
+router.post('/driver/location', requireAuth, requireRole(['driver', 'admin', 'superadmin']), driverTripController.updateDriverLocation);
+router.post('/driver/toggle-status', requireAuth, requireRole(['driver', 'admin', 'superadmin']), driverTripController.toggleDutyStatus);
+router.get('/driver/summary', requireAuth, requireRole(['driver', 'admin', 'superadmin']), driverTripController.getDriverSummary);
+router.get('/driver/trips', requireAuth, requireRole(['driver', 'admin', 'superadmin']), driverTripController.getDriverTripHistory);
+
+// Admin & Vendor Dispatch Management Endpoints
+router.get('/admin/cab-dispatches', requireAuth, requireRole(['admin', 'superadmin', 'transfer_vendor', 'vendor', 'cab_vendor', 'vehicle_vendor']), cabDispatchController.getAdminDispatches);
+router.post('/admin/cab-assign-driver', requireAuth, requireRole(['admin', 'superadmin', 'transfer_vendor', 'vendor', 'cab_vendor', 'vehicle_vendor']), cabDispatchController.assignDriver);
+router.put('/admin/cab-pricing', requireAuth, requireRole(['admin', 'superadmin']), cabDispatchController.updateCabPricing);
+
+// Vendor Chauffeur Fleet Management Endpoints
+router.get('/vendor/drivers', requireAuth, requireRole(['admin', 'superadmin', 'transfer_vendor', 'vendor', 'cab_vendor', 'vehicle_vendor']), driverController.getVendorDrivers);
+router.post('/vendor/drivers', requireAuth, requireRole(['admin', 'superadmin', 'transfer_vendor', 'vendor', 'cab_vendor', 'vehicle_vendor']), driverController.createVendorDriver);
+router.put('/vendor/drivers/:id', requireAuth, requireRole(['admin', 'superadmin', 'transfer_vendor', 'vendor', 'cab_vendor', 'vehicle_vendor']), driverController.updateVendorDriver);
+router.delete('/vendor/drivers/:id', requireAuth, requireRole(['admin', 'superadmin', 'transfer_vendor', 'vendor', 'cab_vendor', 'vehicle_vendor']), driverController.deleteVendorDriver);
+
+// Transfer Payment Endpoints
+router.post('/cabs/payment/record-cash', requireAuth, requireRole(['driver', 'admin', 'superadmin']), cabPaymentController.recordCashPayment);
+router.post('/cabs/payment/verify-gateway', cabPaymentController.verifyGatewayPayment);
 
 export default router;

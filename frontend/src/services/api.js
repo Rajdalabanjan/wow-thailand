@@ -4352,3 +4352,282 @@ export async function updateStorefrontLead(leadId, notes) {
     return { success: false, error: err.message };
   }
 }
+
+
+// ========================================================================
+// Cab & Airport Transfer System APIs (Phase 2 & 3)
+// ========================================================================
+
+export async function estimateCabFare(payload) {
+  try {
+    const res = await apiFetch('/api/v1/cabs/estimate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return res.json();
+  } catch (err) {
+    console.error('[API] estimateCabFare error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function bookCabTransfer(payload) {
+  try {
+    const res = await apiFetch('/api/v1/cabs/book', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return res.json();
+  } catch (err) {
+    console.error('[API] bookCabTransfer error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function trackCabRide(dispatchOrBookingId) {
+  try {
+    const res = await apiFetch(`/api/v1/cabs/track/${encodeURIComponent(dispatchOrBookingId)}`);
+    return res.json();
+  } catch (err) {
+    console.error('[API] trackCabRide error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function getCabRideHistory(params = {}) {
+  try {
+    const qs = new URLSearchParams(params).toString();
+    const res = await apiFetch(`/api/v1/cabs/history${qs ? `?${qs}` : ''}`);
+    return res.json();
+  } catch (err) {
+    console.error('[API] getCabRideHistory error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function cancelCabRide(payload) {
+  try {
+    const res = await apiFetch('/api/v1/cabs/cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return res.json();
+  } catch (err) {
+    console.error('[API] cancelCabRide error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+// ========================================================
+// Phase 4: Driver Chauffeur Companion API Integrations
+// ========================================================
+
+export async function fetchDriverSummary() {
+  try {
+    const res = await apiFetch('/api/v1/driver/summary');
+    return res.json();
+  } catch (err) {
+    console.error('[API] fetchDriverSummary error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function fetchDriverActiveDuty() {
+  try {
+    const res = await apiFetch('/api/v1/driver/active-duty');
+    return res.json();
+  } catch (err) {
+    console.error('[API] fetchDriverActiveDuty error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function fetchDriverDutyOffers() {
+  try {
+    const res = await apiFetch('/api/v1/driver/duty-offers');
+    return res.json();
+  } catch (err) {
+    console.error('[API] fetchDriverDutyOffers error:', err);
+    return { success: false, error: err.message, data: [] };
+  }
+}
+
+export async function acceptDriverDuty(dispatchId) {
+  const res = await apiFetch('/api/v1/driver/accept-duty', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dispatch_id: dispatchId })
+  });
+  return res.json();
+}
+
+export async function rejectDriverDuty(dispatchId, reason = 'Chauffeur unavailable') {
+  const res = await apiFetch('/api/v1/driver/reject-duty', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dispatch_id: dispatchId, reason })
+  });
+  return res.json();
+}
+
+export async function updateDriverDutyStatus(payload) {
+  const res = await apiFetch('/api/v1/driver/update-status', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  return res.json();
+}
+
+export async function sendDriverLocationPing(payload) {
+  try {
+    const res = await apiFetch('/api/v1/driver/location', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return res.json();
+  } catch (err) {
+    console.error('[API] sendDriverLocationPing error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function toggleDriverDutyOnline(status) {
+  const res = await apiFetch('/api/v1/driver/toggle-status', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status })
+  });
+  return res.json();
+}
+
+export async function fetchDriverTrips() {
+  try {
+    const res = await apiFetch('/api/v1/driver/trips');
+    return res.json();
+  } catch (err) {
+    console.error('[API] fetchDriverTrips error:', err);
+    return { success: false, error: err.message, data: [] };
+  }
+}
+
+export async function recordDriverCashPayment(dispatchId, amountThb) {
+  const res = await apiFetch('/api/v1/cabs/payment/record-cash', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dispatch_id: dispatchId, amount_collected_thb: amountThb })
+  });
+  return res.json();
+}
+
+// ========================================================
+// Phase 5: Cab Dispatch & Vendor Fleet API Methods
+// ========================================================
+
+export async function fetchCabDispatches(filters = {}) {
+  try {
+    const params = new URLSearchParams();
+    if (filters.status) params.append('status', filters.status);
+    if (filters.driver_id) params.append('driver_id', filters.driver_id);
+    if (filters.vendor_id) params.append('vendor_id', filters.vendor_id);
+    if (filters.date) params.append('date', filters.date);
+
+    const qs = params.toString();
+    const url = qs ? `/api/v1/admin/cab-dispatches?${qs}` : '/api/v1/admin/cab-dispatches';
+    const res = await apiFetch(url);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      return { success: false, error: err.error || 'Failed to fetch transfer dispatches', data: [] };
+    }
+    return res.json();
+  } catch (err) {
+    console.error('[API] fetchCabDispatches error:', err);
+    return { success: false, error: err.message, data: [] };
+  }
+}
+
+export async function assignCabDriver(dispatchId, driverId) {
+  try {
+    const res = await apiFetch('/api/v1/admin/cab-assign-driver', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dispatch_id: dispatchId, driver_id: driverId })
+    });
+    return res.json();
+  } catch (err) {
+    console.error('[API] assignCabDriver error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function updateCabPricing(payload) {
+  try {
+    const res = await apiFetch('/api/v1/admin/cab-pricing', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return res.json();
+  } catch (err) {
+    console.error('[API] updateCabPricing error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function fetchVendorDrivers() {
+  try {
+    const res = await apiFetch('/api/v1/vendor/drivers');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      return { success: false, error: err.error || 'Failed to fetch vendor drivers', data: [] };
+    }
+    return res.json();
+  } catch (err) {
+    console.error('[API] fetchVendorDrivers error:', err);
+    return { success: false, error: err.message, data: [] };
+  }
+}
+
+export async function createVendorDriver(payload) {
+  try {
+    const res = await apiFetch('/api/v1/vendor/drivers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return res.json();
+  } catch (err) {
+    console.error('[API] createVendorDriver error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function updateVendorDriver(driverId, payload) {
+  try {
+    const res = await apiFetch(`/api/v1/vendor/drivers/${encodeURIComponent(driverId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return res.json();
+  } catch (err) {
+    console.error('[API] updateVendorDriver error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function deleteVendorDriver(driverId) {
+  try {
+    const res = await apiFetch(`/api/v1/vendor/drivers/${encodeURIComponent(driverId)}`, {
+      method: 'DELETE'
+    });
+    return res.json();
+  } catch (err) {
+    console.error('[API] deleteVendorDriver error:', err);
+    return { success: false, error: err.message };
+  }
+}

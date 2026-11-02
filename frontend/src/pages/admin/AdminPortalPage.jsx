@@ -3,7 +3,7 @@ import {
   Compass, LogOut, Box, Building, MessageSquare, CreditCard, Calendar,
   Plane, Hotel, Shield, LayoutDashboard, Globe, Users, Tag, BarChart2,
   ChevronDown, ChevronRight, Menu, Bell, Layers, FileText, Star, PlusCircle, Settings, X, UserPlus,
-  Briefcase, Gift, Clock, AlertCircle, Wallet, CheckCircle2, Map as MapIcon, DollarSign, Sparkles
+  Briefcase, Gift, Clock, AlertCircle, Wallet, CheckCircle2, Map as MapIcon, DollarSign, Sparkles, Car
 } from 'lucide-react';
 import * as api from '../../services/api';
 import SuperAdminAmenitiesManager from '../../components/superadmin/SuperAdminAmenitiesManager';
@@ -33,6 +33,7 @@ import AdminEnquiryCRM from './AdminEnquiryCRM';
 import LeadManagement from '../../components/shared/LeadManagement';
 import AdminSubscriptionPanel from '../../components/admin/AdminSubscriptionPanel';
 import AdminDriverManagement from './AdminDriverManagement';
+import AdminCabDispatchMonitor from './AdminCabDispatchMonitor';
 import AdminReviewsManagement from './AdminReviewsManagement';
 import TripPackagesManagementView from '../../components/admin/TripPackagesManagementView';
 import NotificationSoundToggle from '../../components/common/NotificationSoundToggle';
@@ -76,8 +77,9 @@ const SIDEBAR_GROUPS = [
     ]
   },
   {
-    label: 'Partners',
+    label: 'Partners & Dispatches',
     items: [
+      { id: 'cab_dispatch', label: 'Cab Dispatch Monitor', icon: <Car size={15} /> },
       { id: 'drivers', label: 'Driver Management', icon: <Users size={15} /> },
       { id: 'vendors', label: 'Vendor Management', icon: <Building size={15} /> },
       { id: 'wallets', label: 'Vendor Wallets', icon: <Wallet size={15} /> },
@@ -762,6 +764,8 @@ export default function AdminPortalPage({
       case 'b2b_settings':
         return <AdminB2BPortal activeSubTab={adminActiveTab} onNavigateSubTab={(sub) => setAdminActiveTab(sub)} />;
 
+      case 'cab_dispatch':
+        return <AdminCabDispatchMonitor currentUser={currentUser} />;
       case 'drivers':
         return <AdminDriverManagement currentUser={currentUser} bookings={liveBookings} onRefresh={loadAllAdminData} />;
 

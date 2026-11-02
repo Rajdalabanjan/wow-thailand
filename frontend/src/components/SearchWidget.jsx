@@ -1277,89 +1277,45 @@ export default function SearchWidget({
                 )}
               </div>
 
-              {/* Self-Drive Field 4: Return Date & Time */}
+              {/* Transfer Field 4: Vehicle Class Category */}
               <div 
-                className="input-block position-relative" 
-                onClick={() => setActiveDropdown(activeDropdown === 'sd-return-date' ? null : 'sd-return-date')}
+                className="input-block position-relative"
+                onClick={onWidgetFormSubmit}
+                style={{ cursor: 'pointer' }}
               >
                 <span className="input-block-label d-flex align-items-center justify-content-between">
-                  <span className="d-flex align-items-center gap-1"><CalendarIcon size={13} className="text-primary" /> Return Date</span>
-                  <ChevronDown size={14} />
+                  <span className="d-flex align-items-center gap-1"><Car size={13} className="text-warning" /> Vehicle Class</span>
+                  <span className="badge bg-warning text-dark text-xs px-1.5 py-0.5 rounded-pill" style={{ fontSize: '10px' }}>3 Tiers</span>
                 </span>
                 <div className="d-flex align-items-baseline gap-1 mt-1">
-                  <span className="fw-black text-dark" style={{ fontSize: '26px', lineHeight: '1' }}>{displayDropDay}</span>
-                  <span className="text-dark fw-bold" style={{ fontSize: '15px' }}>{displayDropMonthYear}</span>
-                </div>
-                <span className="input-block-sub">{displayDropWeekday} · <span className="fw-semibold text-primary">{dropTime || '10:00 AM'}</span></span>
-
-                {activeDropdown === 'sd-return-date' && (
-                  <div className="tg-popover-card shadow-xl p-3" onClick={e => e.stopPropagation()}>
-                    <CalendarPickerView
-                      title="Select Return Date"
-                      selectedDate={dropDate}
-                      minDate={pickupDate || todayStr}
-                      onSelect={(d) => {
-                        setDropDate(d);
-                      }}
-                      onClose={() => setActiveDropdown(null)}
-                    />
-                    <div className="mt-3 pt-2 border-top">
-                      <div className="text-muted small fw-bold mb-2">Return Time</div>
-                      <div className="d-flex flex-wrap gap-1">
-                        {['08:00 AM', '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM', '06:00 PM', '07:00 PM', '08:00 PM'].map(t => (
-                          <button
-                            key={t}
-                            type="button"
-                            className={`btn btn-sm ${dropTime === t ? 'btn-primary text-white' : 'btn-light'} py-1 px-2`}
-                            style={{ fontSize: '11px' }}
-                            onClick={() => {
-                              if (setDropTime) setDropTime(t);
-                              setActiveDropdown(null);
-                            }}
-                          >
-                            {t}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Self-Drive Field 5: Filters */}
-              <div 
-                className="input-block position-relative" 
-                onClick={() => setActiveDropdown(activeDropdown === 'filters' ? null : 'filters')}
-              >
-                <span className="input-block-label d-flex align-items-center justify-content-between">
-                  <span>Filters</span>
-                  <ChevronDown size={14} />
-                </span>
-                <div className="d-flex align-items-baseline gap-1 mt-1">
-                  <span className="fw-bold text-dark" style={{ fontSize: '16px', lineHeight: '1.2' }}>
-                    {activeTabFiltersCount > 0 ? (
-                      <span className="text-warning fw-black">{activeTabFiltersCount} Applied</span>
-                    ) : (
-                      'Select Filters'
-                    )}
+                  <span className="fw-bold text-dark text-truncate" style={{ fontSize: '15px', lineHeight: '1.2' }}>
+                    Sedan, SUV or VIP Van
                   </span>
                 </div>
-                <span className="input-block-sub mt-1">
-                  {activeTabFiltersCount > 0 ? 'Click to edit' : '(Optional)'}
+                <span className="input-block-sub mt-1 text-success fw-bold">
+                  Guaranteed Category · or similar
                 </span>
-
-                {activeDropdown === 'filters' && (
-                  <UnifiedFilterPopover
-                    activeTab={activeTab}
-                    localFilters={localFilters}
-                    setLocalFilters={setLocalFilters}
-                    onApply={handleApplyFilters}
-                    onClearAll={handleClearAllForTab}
-                    onClose={() => setActiveDropdown(null)}
-                  />
-                )}
               </div>
 
+              {/* Transfer Field 5: Chauffeur Service Standard */}
+              <div 
+                className="input-block position-relative"
+                onClick={onWidgetFormSubmit}
+                style={{ cursor: 'pointer' }}
+              >
+                <span className="input-block-label d-flex align-items-center justify-content-between">
+                  <span className="d-flex align-items-center gap-1"><Sparkles size={13} className="text-warning" /> Inclusions</span>
+                  <span className="badge bg-success text-white text-xs px-1.5 py-0.5 rounded-pill" style={{ fontSize: '10px' }}>VIP</span>
+                </span>
+                <div className="d-flex align-items-baseline gap-1 mt-1">
+                  <span className="fw-bold text-dark text-truncate" style={{ fontSize: '15px', lineHeight: '1.2' }}>
+                    Meet &amp; Greet + AC
+                  </span>
+                </div>
+                <span className="input-block-sub mt-1 text-primary fw-medium">
+                  Flight Tracking · Tolls Included
+                </span>
+              </div>
             </div>
           ) : (activeTab === 'activities' || activeTab === 'sightseeing') ? (
             /* ──────────────────────────────────────────────────────────────────

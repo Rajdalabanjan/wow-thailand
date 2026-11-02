@@ -49,6 +49,30 @@ async function main() {
     process.exit(1);
   }
 
+  const cabSuccess = await runTest('cab_transfer_tests.js');
+  if (!cabSuccess) {
+    console.error('❌ Cab & Transfer tests failed!');
+    process.exit(1);
+  }
+
+  const driverSuccess = await runTest('driver_companion_tests.js');
+  if (!driverSuccess) {
+    console.error('❌ Driver Companion tests failed!');
+    process.exit(1);
+  }
+
+  const phase5Success = await runTest('vendor_dispatch_phase5_tests.js');
+  if (!phase5Success) {
+    console.error('❌ Cab Vendor & Admin Dispatch (Phase 5) tests failed!');
+    process.exit(1);
+  }
+
+  const uxVerificationSuccess = await runTest('transfer_ux_verification_tests.js');
+  if (!uxVerificationSuccess) {
+    console.error('❌ Customer Transfer UX Verification tests failed!');
+    process.exit(1);
+  }
+
   console.log(`\n============================================================`);
   console.log(`🎉 ALL WOW THAILAND TEST SUITES PASSED SUCCESSFULLY!`);
   console.log(`============================================================\n`);
