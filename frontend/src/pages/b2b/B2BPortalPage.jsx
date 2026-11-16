@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import HoverGlider, { useEnterAnimation } from '../../components/common/HoverGlider';
 import { 
   Building2, LayoutDashboard, Gift, Tag, Hotel, Car, Compass, 
   FileText, Users, TrendingUp, User, LogOut, Globe, Menu, X, ArrowLeft,
@@ -29,6 +30,17 @@ const TAB_TITLES = {
   profile: 'Partner Profile & Modes'
 };
 
+// The user id inside the signed-in session token ('' when signed out)
+function sessionUserId() {
+  try {
+    const part = (localStorage.getItem('auth_token') || '').split('.')[1];
+    if (!part) return '';
+    return JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/'))).id || '';
+  } catch (e) {
+    return '';
+  }
+}
+
 export default function B2BPortalPage({
   onNavigateHome,
   activities = [],
@@ -42,8 +54,10 @@ export default function B2BPortalPage({
     try {
       const stored = localStorage.getItem('b2b_partner_user');
       const parsed = stored ? JSON.parse(stored) : null;
-      if (parsed && parsed.status !== 'active') {
+      // Reopen a saved partner only if the signed-in session belongs to that same partner
+      if (parsed && (parsed.status !== 'active' || sessionUserId() !== parsed.id)) {
         localStorage.removeItem('b2b_partner_user');
+        localStorage.removeItem('b2b_partner_token');
         return null;
       }
       return parsed;
@@ -63,6 +77,9 @@ export default function B2BPortalPage({
   });
 
   const [activeTab, setActiveTab] = useState('dashboard');
+  // Page content glides in smoothly whenever another tab / menu item is chosen
+  const contentRef = React.useRef(null);
+  useEnterAnimation(contentRef, activeTab);
   const [activeServiceTab, setActiveServiceTab] = useState('hotels');
   const [dashboardData, setDashboardData] = useState(null);
   const [loadingDashboard, setLoadingDashboard] = useState(false);
@@ -84,16 +101,26 @@ export default function B2BPortalPage({
     setPartnerUser(user);
     try {
       localStorage.setItem('b2b_partner_user', JSON.stringify(user));
-      if (user?.id) localStorage.setItem('b2b_partner_token', user.id);
+      localStorage.setItem('b2b_partner_token', localStorage.getItem('auth_token') || '');
     } catch (e) {}
   };
 
-  const handleLogout = () => {
-    setPartnerUser(null);
+  // Ends the partner session completely (also the sign-in token shared with the main site)
+  const clearPartnerSession = () => {
     try {
       localStorage.removeItem('b2b_partner_user');
       localStorage.removeItem('b2b_partner_token');
+      if (sessionUserId() === partnerUser?.id) localStorage.removeItem('auth_token');
+      const current = JSON.parse(localStorage.getItem('currentUser') || 'null');
+      if (current && current.id === partnerUser?.id) localStorage.removeItem('currentUser');
     } catch (e) {}
+    setPartnerUser(null);
+  };
+
+  const handleLogout = () => {
+    clearPartnerSession();
+    // Reload so the main site also forgets the signed-in partner
+    window.location.assign('/b2b');
   };
 
   const handleWalletUpdated = useCallback((newBal) => {
@@ -120,6 +147,8 @@ export default function B2BPortalPage({
       }
     } catch (err) {
       console.warn('Failed to load B2B dashboard:', err);
+      // Session expired, or the account was suspended: back to the sign-in page
+      if (err?.status === 401 || err?.status === 403) clearPartnerSession();
     } finally {
       setLoadingDashboard(false);
     }
@@ -130,6 +159,15 @@ export default function B2BPortalPage({
       loadDashboard();
     }
   }, [partnerUser?.id]);
+
+  // Bookings pay from the wallet: keep the balance in the sidebar and header current
+  useEffect(() => {
+    const onWalletChanged = (e) => {
+      if (e?.detail?.balance !== undefined) handleWalletUpdated(e.detail.balance);
+    };
+    window.addEventListener('b2b-wallet-changed', onWalletChanged);
+    return () => window.removeEventListener('b2b-wallet-changed', onWalletChanged);
+  }, [handleWalletUpdated]);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -252,11 +290,13 @@ export default function B2BPortalPage({
         </div>
 
         {/* Scrollable Navigation List */}
-        <div className="p-3 overflow-y-auto flex-grow-1 custom-sidebar-scroll">
+        <HoverGlider className="p-3 overflow-y-auto flex-grow-1 custom-sidebar-scroll light-glide" gliderClassName="hover-glider--light">
           {/* Dashboard Link */}
           <nav className="nav flex-column gap-1.5 mb-3">
             <button
               onClick={() => { setActiveTab('dashboard'); setSidebarOpen(false); }}
+              data-glide
+              data-glide-active={activeTab === 'dashboard' ? 'true' : 'false'}
               className={`nav-link text-start rounded-3 px-3 py-2.5 text-xs fw-semibold border-0 d-flex align-items-center gap-2.5 ${
                 activeTab === 'dashboard' ? 'bg-dark text-white fw-bold shadow-xs' : 'text-muted bg-transparent hover-bg-light'
               }`}
@@ -276,6 +316,8 @@ export default function B2BPortalPage({
               <nav className="nav flex-column gap-1.5">
                 <button
                   onClick={() => { setActiveTab('commission_services'); setSidebarOpen(false); }}
+                  data-glide
+                  data-glide-active={activeTab === 'commission_services' ? 'true' : 'false'}
                   className={`nav-link text-start rounded-3 px-3 py-2.5 text-xs fw-semibold border-0 d-flex align-items-center gap-2.5 ${
                     activeTab === 'commission_services' ? 'bg-warning text-dark fw-bold shadow-xs' : 'text-muted bg-transparent hover-bg-light'
                   }`}
@@ -285,6 +327,8 @@ export default function B2BPortalPage({
                 </button>
                 <button
                   onClick={() => { setActiveTab('commission_bookings'); setSidebarOpen(false); }}
+                  data-glide
+                  data-glide-active={activeTab === 'commission_bookings' ? 'true' : 'false'}
                   className={`nav-link text-start rounded-3 px-3 py-2.5 text-xs fw-semibold border-0 d-flex align-items-center gap-2.5 ${
                     activeTab === 'commission_bookings' ? 'bg-warning text-dark fw-bold shadow-xs' : 'text-muted bg-transparent hover-bg-light'
                   }`}
@@ -294,6 +338,8 @@ export default function B2BPortalPage({
                 </button>
                 <button
                   onClick={() => { setActiveTab('commission_reports'); setSidebarOpen(false); }}
+                  data-glide
+                  data-glide-active={activeTab === 'commission_reports' ? 'true' : 'false'}
                   className={`nav-link text-start rounded-3 px-3 py-2.5 text-xs fw-semibold border-0 d-flex align-items-center gap-2.5 ${
                     activeTab === 'commission_reports' ? 'bg-warning text-dark fw-bold shadow-xs' : 'text-muted bg-transparent hover-bg-light'
                   }`}
@@ -315,6 +361,8 @@ export default function B2BPortalPage({
               <nav className="nav flex-column gap-1.5">
                 <button
                   onClick={() => { setActiveTab('non_commission_services'); setSidebarOpen(false); }}
+                  data-glide
+                  data-glide-active={activeTab === 'non_commission_services' ? 'true' : 'false'}
                   className={`nav-link text-start rounded-3 px-3 py-2.5 text-xs fw-semibold border-0 d-flex align-items-center gap-2.5 ${
                     activeTab === 'non_commission_services' ? 'bg-primary text-white fw-bold shadow-xs' : 'text-muted bg-transparent hover-bg-light'
                   }`}
@@ -324,6 +372,8 @@ export default function B2BPortalPage({
                 </button>
                 <button
                   onClick={() => { setActiveTab('non_commission_bookings'); setSidebarOpen(false); }}
+                  data-glide
+                  data-glide-active={activeTab === 'non_commission_bookings' ? 'true' : 'false'}
                   className={`nav-link text-start rounded-3 px-3 py-2.5 text-xs fw-semibold border-0 d-flex align-items-center gap-2.5 ${
                     activeTab === 'non_commission_bookings' ? 'bg-primary text-white fw-bold shadow-xs' : 'text-muted bg-transparent hover-bg-light'
                   }`}
@@ -343,6 +393,8 @@ export default function B2BPortalPage({
               </div>
               <button
                 onClick={() => { setActiveTab('profile'); setSidebarOpen(false); }}
+                data-glide
+                data-glide-active={activeTab === 'profile' ? 'true' : 'false'}
                 className="nav-link text-start rounded-3 px-3 py-2.5 text-xs text-muted border border-dashed border-warning bg-warning bg-opacity-10 d-flex align-items-center gap-2 w-100"
                 title="Non-Commission Mode is pending admin review"
               >
@@ -359,6 +411,8 @@ export default function B2BPortalPage({
               </div>
               <button
                 onClick={() => { setActiveTab('profile'); setSidebarOpen(false); }}
+                data-glide
+                data-glide-active={activeTab === 'profile' ? 'true' : 'false'}
                 className="nav-link text-start rounded-3 px-3 py-2.5 text-xs text-muted border border-dashed border-warning bg-warning bg-opacity-10 d-flex align-items-center gap-2 w-100"
                 title="Commission Mode is pending admin review"
               >
@@ -373,6 +427,8 @@ export default function B2BPortalPage({
           <nav className="nav flex-column gap-1.5">
             <button
               onClick={() => { setActiveTab('customers'); setSidebarOpen(false); }}
+              data-glide
+              data-glide-active={activeTab === 'customers' ? 'true' : 'false'}
               className={`nav-link text-start rounded-3 px-3 py-2.5 text-xs fw-semibold border-0 d-flex align-items-center gap-2.5 ${
                 activeTab === 'customers' ? 'bg-dark text-white fw-bold shadow-xs' : 'text-muted bg-transparent hover-bg-light'
               }`}
@@ -382,6 +438,8 @@ export default function B2BPortalPage({
             </button>
             <button
               onClick={() => { setActiveTab('wallet'); setSidebarOpen(false); }}
+              data-glide
+              data-glide-active={activeTab === 'wallet' ? 'true' : 'false'}
               className={`nav-link text-start rounded-3 px-3 py-2.5 text-xs fw-semibold border-0 d-flex align-items-center justify-content-between ${
                 activeTab === 'wallet' ? 'bg-dark text-white fw-bold shadow-xs' : 'text-muted bg-transparent hover-bg-light'
               }`}
@@ -396,6 +454,8 @@ export default function B2BPortalPage({
             </button>
             <button
               onClick={() => { setActiveTab('profile'); setSidebarOpen(false); }}
+              data-glide
+              data-glide-active={activeTab === 'profile' ? 'true' : 'false'}
               className={`nav-link text-start rounded-3 px-3 py-2.5 text-xs fw-semibold border-0 d-flex align-items-center gap-2.5 ${
                 activeTab === 'profile' ? 'bg-dark text-white fw-bold shadow-xs' : 'text-muted bg-transparent hover-bg-light'
               }`}
@@ -404,7 +464,7 @@ export default function B2BPortalPage({
               <span>Partner Profile &amp; Modes</span>
             </button>
           </nav>
-        </div>
+        </HoverGlider>
 
         {/* Sidebar Footer */}
         <div className="p-3 border-top flex-shrink-0 bg-light bg-opacity-50">
@@ -550,7 +610,7 @@ export default function B2BPortalPage({
         </header>
 
         {/* Main Content Workspace */}
-        <main className="b2b-main-content p-3 p-lg-4">
+        <main ref={contentRef} className="b2b-main-content p-3 p-lg-4">
           {activeTab === 'dashboard' && (
             <B2BDashboardTab 
               dashboardData={dashboardData}

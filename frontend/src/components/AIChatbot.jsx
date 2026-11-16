@@ -389,16 +389,48 @@ export default function AIChatbot() {
       return;
     }
 
-    let animId;
+    let frameHandle = 0;
+    let looping = false;
+    let cancelled = false;
+    const supportsVideoFrames = typeof video.requestVideoFrameCallback === 'function';
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    if (ctx) {
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'medium';
-    }
+    if (!ctx) return;
 
-    // Full HD Native 1280x720 video processing resolution for crystal clear clarity
-    const TARGET_WIDTH = 1280;
-    const TARGET_HEIGHT = 720;
+    // Process frames at the size the avatar is shown (1.5x for smooth edges), not full HD.
+    // The avatar is 325 px wide, so 1280x720 meant up to 15x more pixels per frame than needed,
+    // which kept the whole page busy (and made the opening intro and its Skip button stutter).
+    let size = null;
+    const measureSize = () => {
+      const cssWidth = canvas.clientWidth || 325;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const width = Math.min(1280, Math.round(cssWidth * dpr * 1.5));
+      const aspect = video.videoWidth && video.videoHeight ? video.videoHeight / video.videoWidth : 9 / 16;
+      size = [width, Math.round(width * aspect)];
+    };
+
+    // Per-column and per-row positions, worked out once per size instead of for every pixel
+    let lookups = null;
+    const buildLookups = (cw, ch) => {
+      const colNormX = new Float64Array(cw);
+      const colFace = new Float64Array(cw);
+      const colHead = new Float64Array(cw);
+      for (let x = 0; x < cw; x++) {
+        const nx = x / cw;
+        colNormX[x] = nx;
+        colFace[x] = ((nx - 0.47) / 0.14) ** 2;
+        colHead[x] = ((nx - 0.47) / 0.19) ** 2;
+      }
+      const rowNormY = new Float64Array(ch);
+      const rowFace = new Float64Array(ch);
+      const rowHead = new Float64Array(ch);
+      for (let y = 0; y < ch; y++) {
+        const ny = y / ch;
+        rowNormY[y] = ny;
+        rowFace[y] = ((ny - 0.35) / 0.16) ** 2;
+        rowHead[y] = ((ny - 0.27) / 0.23) ** 2;
+      }
+      return { cw, ch, colNormX, colFace, colHead, rowNormY, rowFace, rowHead };
+    };
 
     // Adaptive loop timestamps based on current video duration
     const LOOP_START_SEC = 0.04;
@@ -419,17 +451,20 @@ export default function AIChatbot() {
           return; // Keep holding previous clean frame on canvas until seek completes
         }
 
-        if (canvas.width !== TARGET_WIDTH || canvas.height !== TARGET_HEIGHT) {
-          canvas.width = TARGET_WIDTH;
-          canvas.height = TARGET_HEIGHT;
+        if (!size) measureSize();
+        const [cw, ch] = size;
+        if (canvas.width !== cw || canvas.height !== ch) {
+          canvas.width = cw;
+          canvas.height = ch;
+          // Resizing a canvas resets its drawing settings
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'medium';
         }
+        if (!lookups || lookups.cw !== cw || lookups.ch !== ch) lookups = buildLookups(cw, ch);
 
-        ctx.drawImage(video, 0, 0, TARGET_WIDTH, TARGET_HEIGHT);
-        const frame = ctx.getImageData(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+        ctx.drawImage(video, 0, 0, cw, ch);
+        const frame = ctx.getImageData(0, 0, cw, ch);
         const data = frame.data;
-        const l = data.length / 4;
-        const cw = TARGET_WIDTH;
-        const ch = TARGET_HEIGHT;
 
         // Quick brightness check at center zone to guard against any temporary decoding blackout
         let sampleSum = 0;
@@ -447,89 +482,102 @@ export default function AIChatbot() {
           return;
         }
 
-        const invCw = 1 / cw;
-        const invCh = 1 / ch;
-        let px = 0;
-        let py = 0;
+        const { colNormX, colFace, colHead, rowNormY, rowFace, rowHead } = lookups;
+        let idx = 0;
 
-        for (let i = 0; i < l; i++) {
-          const idx = i << 2;
-          const r = data[idx];
-          const g = data[idx + 1];
-          const b = data[idx + 2];
+        for (let y = 0; y < ch; y++) {
+          const normY = rowNormY[y];
+          const faceY = rowFace[y];
+          const headY = rowHead[y];
+          const edgeRow = normY < 0.02;
+          const watermarkRow = normY > 0.74;
+          const skyRow = normY < 0.05;
 
-          const normX = px * invCw;
-          const normY = py * invCh;
+          for (let x = 0; x < cw; x++, idx += 4) {
+            const normX = colNormX[x];
 
-          px++;
-          if (px === cw) {
-            px = 0;
-            py++;
-          }
+            // 1. Extreme edge borders and bottom-right corner watermark
+            if (edgeRow || normX < 0.02 || normX > 0.98 || (watermarkRow && normX > 0.84)) {
+              data[idx + 3] = 0;
+              continue;
+            }
 
-          // 1. Extreme edge borders and bottom-right corner watermark
-          if (normX < 0.02 || normX > 0.98 || normY < 0.02 || (normX > 0.84 && normY > 0.74)) {
-            data[idx + 3] = 0;
-            continue;
-          }
+            const r = data[idx];
+            const g = data[idx + 1];
+            const b = data[idx + 2];
+            const maxChannel = r > g ? (r > b ? r : b) : (g > b ? g : b);
 
-          const maxChannel = r > g ? (r > b ? r : b) : (g > b ? g : b);
+            // 2. Ambient outer space (top sky and far sides) - zero tolerance for background haze
+            if ((skyRow || normX < 0.16 || normX > 0.90) && maxChannel <= 50) {
+              data[idx + 3] = 0;
+              continue;
+            }
 
-          // 2. Ambient outer space (top sky and far sides) - zero tolerance for background haze
-          if ((normY < 0.05 || normX < 0.16 || normX > 0.90) && maxChannel <= 50) {
-            data[idx + 3] = 0;
-            continue;
-          }
+            // Distance squared to background center (R=11, G=18, B=26)
+            const dr = r - 11;
+            const dg = g - 18;
+            const db = b - 26;
+            const distSq = dr * dr + dg * dg + db * db;
 
-          // Distance squared to background center (R=11, G=18, B=26)
-          const dr = r - 11;
-          const dg = g - 18;
-          const db = b - 26;
-          const distSq = dr * dr + dg * dg + db * db;
-
-          // 3. Dynamic sway-aware face protection (covers eyes, dark pupils, nose, mouth)
-          const dxFace = (normX - 0.47) / 0.14;
-          const dyFace = (normY - 0.35) / 0.16;
-          if (dxFace * dxFace + dyFace * dyFace <= 1.0 && (r >= b - 2 || maxChannel > 38) && distSq > 110) {
-            data[idx + 3] = 255;
-            continue;
-          }
-
-          // 4. Head & Hair zone: protect warm brown hair across crown, bangs, and side curls
-          const dxHead = (normX - 0.47) / 0.19;
-          const dyHead = (normY - 0.27) / 0.23;
-          if (dxHead * dxHead + dyHead * dyHead <= 1.0) {
-            if ((r >= b - 2 && (r > 20 || maxChannel > 34)) && distSq > 110) {
+            // 3. Dynamic sway-aware face protection (covers eyes, dark pupils, nose, mouth)
+            if (colFace[x] + faceY <= 1.0 && (r >= b - 2 || maxChannel > 38) && distSq > 110) {
               data[idx + 3] = 255;
               continue;
             }
-          }
 
-          // 5. Pure background removal:
-          // Key out cold navy background, compression noise, and dark artifacts anywhere in the frame
-          if (
-            distSq <= 110 ||
-            (maxChannel <= 38 && b >= r + 2 && r <= 22) ||
-            (maxChannel <= 32 && b >= r)
-          ) {
-            data[idx + 3] = 0;
-            continue;
-          }
+            // 4. Head & Hair zone: protect warm brown hair across crown, bangs, and side curls
+            if (colHead[x] + headY <= 1.0 && (r >= b - 2 && (r > 20 || maxChannel > 34)) && distSq > 110) {
+              data[idx + 3] = 255;
+              continue;
+            }
 
-          // 6. Character body, clothes, collar, waving hand, and floating hearts
-          data[idx + 3] = 255;
+            // 5. Pure background removal:
+            // Key out cold navy background, compression noise, and dark artifacts anywhere in the frame
+            if (
+              distSq <= 110 ||
+              (maxChannel <= 38 && b >= r + 2 && r <= 22) ||
+              (maxChannel <= 32 && b >= r)
+            ) {
+              data[idx + 3] = 0;
+              continue;
+            }
+
+            // 6. Character body, clothes, collar, waving hand, and floating hearts
+            data[idx + 3] = 255;
+          }
         }
         ctx.putImageData(frame, 0, 0);
       }
     };
 
-    const drawFrame = () => {
+    // Process each new video frame once (~30 fps), not on every screen refresh (60-144 Hz)
+    let lastDraw = 0;
+    const onVideoFrame = () => {
+      if (cancelled) return;
       renderCurrentFrame();
-      animId = requestAnimationFrame(drawFrame);
+      frameHandle = video.requestVideoFrameCallback(onVideoFrame);
+    };
+    const onAnimationFrame = (now) => {
+      if (cancelled) return;
+      if (now - lastDraw >= 32) {
+        lastDraw = now;
+        renderCurrentFrame();
+      }
+      frameHandle = requestAnimationFrame(onAnimationFrame);
+    };
+
+    const startLoop = () => {
+      if (cancelled || looping) return;
+      looping = true;
+      measureSize();
+      frameHandle = supportsVideoFrames
+        ? video.requestVideoFrameCallback(onVideoFrame)
+        : requestAnimationFrame(onAnimationFrame);
+      renderCurrentFrame();
     };
 
     const handleImmediateRedraw = () => {
-      renderCurrentFrame();
+      if (looping) renderCurrentFrame();
     };
 
     const handleLoopCheck = () => {
@@ -551,11 +599,25 @@ export default function AIChatbot() {
     video.addEventListener('ended', handleEnded);
     video.addEventListener('loadeddata', handleImmediateRedraw);
 
+    window.addEventListener('resize', measureSize);
+
     video.play().catch(() => { });
-    animId = requestAnimationFrame(drawFrame);
+    // While the opening intro covers the page the avatar is hidden behind it, so frame
+    // processing starts only when the curtains begin to open (keeps the intro smooth)
+    if (window.__wowIntroShowing === true) {
+      window.addEventListener('wow:intro-revealing', startLoop, { once: true });
+    } else {
+      startLoop();
+    }
 
     return () => {
-      cancelAnimationFrame(animId);
+      cancelled = true;
+      if (looping) {
+        if (supportsVideoFrames) video.cancelVideoFrameCallback?.(frameHandle);
+        else cancelAnimationFrame(frameHandle);
+      }
+      window.removeEventListener('wow:intro-revealing', startLoop);
+      window.removeEventListener('resize', measureSize);
       video.removeEventListener('play', handleImmediateRedraw);
       video.removeEventListener('seeking', handleImmediateRedraw);
       video.removeEventListener('seeked', handleImmediateRedraw);

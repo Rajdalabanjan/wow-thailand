@@ -157,7 +157,9 @@ export default function BookingConfirmationCard({
     const bId = String(bookingId || '').replace(/^#/, '');
 
     const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
-    const voucherUrl = `${origin}/voucher?id=${encodeURIComponent(bId)}`;
+    // vk lets the person who receives the link open the voucher without signing in
+    const vk = booking?.voucher_access_key ? `&vk=${encodeURIComponent(booking.voucher_access_key)}` : '';
+    const voucherUrl = `${origin}/voucher?id=${encodeURIComponent(bId)}${vk}`;
 
     const lines = [
       '🇹🇭 *WOW THAILAND — BOOKING CONFIRMATION VOUCHER*',

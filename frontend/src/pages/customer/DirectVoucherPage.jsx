@@ -19,6 +19,12 @@ export default function DirectVoucherPage({ onBackHome }) {
     return params.get('id') || params.get('pnr') || params.get('booking_id') || '';
   });
 
+  // Key from the confirmation email / WhatsApp link; lets the voucher open without signing in
+  const [voucherKey, setVoucherKey] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(window.location.search).get('vk') || '';
+  });
+
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -42,7 +48,7 @@ export default function DirectVoucherPage({ onBackHome }) {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchBookingById(idToFetch);
+      const data = await fetchBookingById(idToFetch, voucherKey);
       if (data) {
         setBooking(data);
       } else {
@@ -52,7 +58,7 @@ export default function DirectVoucherPage({ onBackHome }) {
         if (match) {
           setBooking(match);
         } else {
-          setError(`No confirmed booking found for reference "${idToFetch}".`);
+          setError(`We couldn't open booking "${idToFetch}". Use the voucher link from your confirmation email or WhatsApp, or sign in to the Customer Portal to see your bookings.`);
         }
       }
     } catch (err) {
@@ -72,6 +78,7 @@ export default function DirectVoucherPage({ onBackHome }) {
     const clean = searchInput.trim().replace(/^#/, '');
     if (clean) {
       window.history.replaceState(null, '', `/voucher?id=${encodeURIComponent(clean)}`);
+      setVoucherKey(''); // a typed reference has no link key
       setBookingId(clean);
     }
   };

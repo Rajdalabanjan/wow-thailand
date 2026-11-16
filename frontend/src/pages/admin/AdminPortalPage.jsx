@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import HoverGlider, { useEnterAnimation } from '../../components/common/HoverGlider';
 import {
   Compass, LogOut, Box, Building, MessageSquare, CreditCard, Calendar,
   Plane, Hotel, Shield, LayoutDashboard, Globe, Users, Tag, BarChart2,
@@ -236,12 +237,15 @@ function SidebarGroup({ group, activeTab, onSelect, defaultOpen }) {
               onDrop={(e) => handleDrop(e, item.id)}
               onDragEnd={handleDragEnd}
               onClick={() => onSelect(item.id)}
+              data-glide
+              data-glide-active={activeTab === item.id ? 'true' : 'false'}
               className="btn w-100 text-start d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3 mb-1"
               style={{
                 fontSize: '0.83rem',
-                background: activeTab === item.id ? 'linear-gradient(90deg,#FF6333,#FF8A00)' : (dragOverItemId === item.id ? 'rgba(255,255,255,0.08)' : 'transparent'),
+                // the selected orange bar is drawn by HoverGlider and glides to the clicked item
+                background: activeTab === item.id ? 'transparent' : (dragOverItemId === item.id ? 'rgba(255,255,255,0.08)' : 'transparent'),
                 color: activeTab === item.id ? '#fff' : 'rgba(255,255,255,0.65)',
-                boxShadow: activeTab === item.id ? '0 4px 12px rgba(255,99,51,0.3)' : 'none',
+                boxShadow: 'none',
                 fontWeight: activeTab === item.id ? 700 : 400,
                 opacity: draggedItemId === item.id ? 0.4 : 1,
                 cursor: 'grab',
@@ -356,6 +360,9 @@ export default function AdminPortalPage({
     }
     return saved || 'overview';
   });
+  // Main content glides in when another menu item is clicked (B2B sub-tabs animate their own content)
+  const contentRef = useRef(null);
+  useEnterAnimation(contentRef, adminActiveTab, (before, next) => String(before).startsWith('b2b_') && String(next).startsWith('b2b_'));
 
   const handleTabChange = (tabId) => {
     const targetTab = tabId === 'payment' ? 'wallets' : tabId;
@@ -976,11 +983,11 @@ export default function AdminPortalPage({
               <div className="fw-bold text-uppercase" style={{ fontSize: '0.55rem', letterSpacing: '2px', color: '#00B8D9' }}>Admin Panel</div>
             </div>
           </div>
-          <div className="flex-grow-1 py-2">
+          <HoverGlider className="flex-grow-1 py-2 sidebar-glide" gliderClassName="hover-glider--sidebar" activeGliderClassName="hover-glider--sidebar-active">
             {SIDEBAR_GROUPS.map((group, idx) => (
               <SidebarGroup key={group.label} group={group} activeTab={adminActiveTab} onSelect={handleTabChange} defaultOpen={idx < 3} />
             ))}
-          </div>
+          </HoverGlider>
           <div className="p-3 flex-shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             <button onClick={onLogout} className="btn w-100 d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3" style={{ background: 'rgba(255,99,51,0.1)', color: '#FF6333', fontSize: '0.85rem', fontWeight: 600 }}>
               <LogOut size={15} /> Sign Out
@@ -1213,7 +1220,7 @@ export default function AdminPortalPage({
         </header>
 
         {/* Content */}
-        <div className="flex-grow-1 overflow-auto" style={{ minWidth: 0, width: '100%' }}>
+        <div ref={contentRef} className="flex-grow-1 overflow-auto" style={{ minWidth: 0, width: '100%' }}>
           {renderContent()}
         </div>
       </div>

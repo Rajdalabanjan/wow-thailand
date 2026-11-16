@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Compass, LogOut, User, Search, Briefcase, Hotel, Car } from 'lucide-react';
+import { Compass, LogOut, User, Briefcase, Hotel, Car, CircleUser } from 'lucide-react';
 import { useSiteConfig } from '../context/SiteConfigContext';
+import { isCabVendorRole, isB2BRole } from '../utils/vendorRoles';
 
 export default function Navbar({ activeTab, setActiveTab, currentUser, triggerOpenLogin, onOpenLogin, onLogout, isOverHero = true }) {
   const { liveConfig } = useSiteConfig();
@@ -189,18 +190,21 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, triggerOp
               </a>
             </li>
 
-            {/* Quick Search Icon Button */}
-            <li className="nav-item ms-lg-2">
-              <button 
-                type="button" 
-                className="btn btn-sm btn-link text-white-50 p-2"
-                onClick={() => {
-                  document.getElementById('hero-banner')?.scrollIntoView({ behavior: 'smooth' });
+            {/* Customer Portal Button: bookings, ride tracking, wallet & profile (signs in by OTP if needed) */}
+            <li className="nav-item">
+              <a
+                className="btn-b2b-glass"
+                href="/customer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setActiveTab('customer');
+                  window.history.pushState(null, '', '/customer');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
                 }}
-                title="Search Destinations"
               >
-                <Search size={17} style={{ color: '#ffffff' }} />
-              </button>
+                <CircleUser size={14} />
+                <span>Customer Portal</span>
+              </a>
             </li>
 
             {/* B2B Portal Button */}
@@ -284,7 +288,7 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, triggerOp
                       </li>
                     </>
                   )}
-                  {currentUser.role === 'b2b' && (
+                  {isB2BRole(currentUser.role) && (
                     <li>
                       <a 
                         className="dropdown-item d-flex align-items-center gap-2 py-2 fw-bold text-primary" 
@@ -335,7 +339,7 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, triggerOp
                       </a>
                     </li>
                   )}
-                  {currentUser.role === 'vendor' && (
+                  {isCabVendorRole(currentUser.role) && (
                     <li>
                       <a 
                         className="dropdown-item d-flex align-items-center gap-2 py-2 fw-bold text-dark" 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Wallet, CreditCard, ArrowUpRight, ArrowDownLeft, RefreshCw, Plus,
   CheckCircle, Clock, AlertTriangle, TrendingUp, Receipt, ShieldCheck,
-  Search, Filter, ExternalLink, ArrowRight, Info, Zap
+  Search, Filter, ExternalLink, ArrowRight, Info
 } from 'lucide-react';
 import { fetchB2BWallet, rechargeB2BWallet } from '../../services/api';
 import B2BModalPortal from '../../components/b2b/B2BModalPortal';
@@ -54,47 +54,16 @@ export default function B2BWalletTab({ partnerUser, onWalletUpdated }) {
     loadWallet();
   }, [partnerUser?.id]);
 
-  const handleQuickAddTestFunds = async () => {
-    if (!partnerUser?.id) return;
-    setRefreshing(true);
-    try {
-      const idempotencyKey = `quick_test_${partnerUser.id}_${Date.now()}`;
-      const payload = {
-        partner_id: partnerUser.id,
-        b2b_partner_id: partnerUser.id,
-        amount: 50000,
-        payment_method: 'Admin Test Credit',
-        payment_gateway_ref: `TEST-${Date.now().toString().slice(-6)}`,
-        idempotency_key: idempotencyKey
-      };
-      const res = await rechargeB2BWallet(payload);
-      if (res && res.success) {
-        if (res.wallet_balance !== undefined) {
-          setWalletData(prev => ({
-            ...(prev || {}),
-            wallet_balance: parseFloat(res.wallet_balance)
-          }));
-          if (onWalletUpdatedRef.current) {
-            onWalletUpdatedRef.current(parseFloat(res.wallet_balance));
-          }
-        }
-        await loadWallet(true);
-      } else {
-        alert(res?.error || 'Failed to add test funds. Please check server.');
-      }
-    } catch (err) {
-      console.warn('Quick recharge error:', err);
-      alert('Error adding test funds: ' + (err.message || 'Server error'));
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
+  // Top-ups are requests: the agent pays WOW THAILAND, then an admin confirms and the balance updates
   const handleRechargeSubmit = async (e) => {
     e.preventDefault();
     const amountNum = parseFloat(rechargeAmount);
-    if (!amountNum || amountNum <= 0) {
-      setRechargeMessage({ type: 'danger', text: 'Please enter a valid recharge amount greater than ฿0.' });
+    if (!amountNum || amountNum < 100) {
+      setRechargeMessage({ type: 'danger', text: 'Please enter an amount of at least ฿100.' });
+      return;
+    }
+    if (!referenceId.trim()) {
+      setRechargeMessage({ type: 'danger', text: 'Please enter the payment reference (transfer ID / UTR) so WOW THAILAND can match your payment.' });
       return;
     }
 
@@ -109,19 +78,19 @@ export default function B2BWalletTab({ partnerUser, onWalletUpdated }) {
         b2b_partner_id: partnerUser.id,
         amount: amountNum,
         payment_method: rechargeMethod,
-        payment_gateway_ref: referenceId || `TXN-${Date.now().toString().slice(-6)}`,
+        payment_gateway_ref: referenceId.trim(),
         idempotency_key: idempotencyKey
       };
 
       const res = await rechargeB2BWallet(payload);
       if (res && res.success) {
-        setRechargeMessage({ type: 'success', text: res.message || 'Wallet recharged successfully!' });
+        setRechargeMessage({ type: 'success', text: res.message || 'Top-up request sent. Your balance updates once WOW THAILAND confirms the payment.' });
+        loadWallet(true);
         setTimeout(() => {
           setIsRechargeModalOpen(false);
           setRechargeMessage({ type: '', text: '' });
           setReferenceId('');
-          loadWallet(true);
-        }, 1200);
+        }, 3500);
       } else {
         setRechargeMessage({ type: 'danger', text: res?.error || 'Failed to process recharge. Please try again.' });
       }
@@ -132,8 +101,9 @@ export default function B2BWalletTab({ partnerUser, onWalletUpdated }) {
     }
   };
 
-  const balance = walletData ? walletData.wallet_balance : parseFloat(partnerUser?.wallet_balance || 0);
-  const creditLimit = walletData ? walletData.credit_limit : parseFloat(partnerUser?.credit_limit || 0);
+  // Never undefined, whatever the server sends (a missing field used to crash this page)
+  const balance = parseFloat(walletData?.wallet_balance ?? walletData?.balance ?? partnerUser?.wallet_balance ?? 0) || 0;
+  const creditLimit = parseFloat(walletData?.credit_limit ?? partnerUser?.credit_limit ?? 0) || 0;
   const transactions = walletData?.transactions || [];
   const stats = walletData?.stats || { total_credited: 0, total_debited: 0, total_refunded: 0 };
 
@@ -166,21 +136,11 @@ export default function B2BWalletTab({ partnerUser, onWalletUpdated }) {
           </div>
           <h4 className="fw-bold mb-1 font-heading text-dark">Agent Prepaid Wallet</h4>
           <p className="text-muted text-xs mb-0">
-            Instant booking debit, verified gateway recharge, automated refund credits & audited transaction ledger.
+            Bookings are paid from this wallet. Top-ups are added once WOW THAILAND confirms your payment; cancellations are refunded here and commission is credited when a trip is completed.
           </p>
         </div>
 
         <div className="d-flex align-items-center gap-2">
-          <button
-            onClick={handleQuickAddTestFunds}
-            disabled={refreshing}
-            className="btn btn-sm btn-outline-warning text-dark rounded-pill px-3 d-flex align-items-center gap-1.5 text-xs fw-bold shadow-xs"
-            title="Instant +฿50,000 Test Balance Top-up"
-            style={{ backgroundColor: '#fffbeb', borderColor: '#fde68a' }}
-          >
-            <Zap size={13} className="text-warning fill-warning" />
-            <span>+฿50,000 Test Funds</span>
-          </button>
           <button
             onClick={() => loadWallet(true)}
             disabled={refreshing}
@@ -218,6 +178,11 @@ export default function B2BWalletTab({ partnerUser, onWalletUpdated }) {
               <h2 className="fw-bold mb-2 font-heading text-warning">
                 ฿{balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </h2>
+              {walletData?.pending_topups > 0 && (
+                <div className="text-xs mb-2" style={{ color: '#fde68a' }}>
+                  ⏳ ฿{(walletData.pending_topup_amount || 0).toLocaleString('en-US')} in {walletData.pending_topups} top-up{walletData.pending_topups > 1 ? 's' : ''} waiting for confirmation
+                </div>
+              )}
               <div className="d-flex align-items-center justify-content-between pt-2 border-top border-white border-opacity-10 text-xs">
                 <span className="text-white-50">Agency:</span>
                 <span className="fw-semibold text-white">{partnerUser?.company_name || partnerUser?.name}</span>
@@ -271,7 +236,7 @@ export default function B2BWalletTab({ partnerUser, onWalletUpdated }) {
             <div className="space-y-2">
               <div className="d-flex align-items-center justify-content-between p-2 rounded-3 bg-light text-xs mb-1.5">
                 <span className="d-flex align-items-center gap-1.5 text-muted">
-                  <ArrowUpRight size={14} className="text-success" /> Total Recharged
+                  <ArrowUpRight size={14} className="text-success" /> Top-ups &amp; Commission
                 </span>
                 <strong className="text-success">+฿{(stats.total_credited || 0).toLocaleString('en-US')}</strong>
               </div>
@@ -340,6 +305,7 @@ export default function B2BWalletTab({ partnerUser, onWalletUpdated }) {
               <option value="RECHARGE">Recharges</option>
               <option value="BOOKING_DEBIT">Bookings</option>
               <option value="REFUND_CREDIT">Refunds</option>
+              <option value="COMMISSION_CREDIT">Commission</option>
               <option value="ADMIN_ADJUSTMENT">Adjustments</option>
             </select>
           </div>
@@ -421,16 +387,27 @@ export default function B2BWalletTab({ partnerUser, onWalletUpdated }) {
                         {isCredit ? '+' : '-'}฿{parseFloat(tx.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                       </td>
                       <td className="text-end text-nowrap text-muted text-xxs">
-                        <span>฿{parseFloat(tx.balance_before || 0).toLocaleString('en-US')}</span>
-                        <ArrowRight size={10} className="mx-1 text-muted opacity-50" />
-                        <strong className="text-dark">฿{parseFloat(tx.balance_after || 0).toLocaleString('en-US')}</strong>
+                        {tx.balance_after === null || tx.balance_after === undefined ? (
+                          <span>{tx.status === 'PENDING' ? 'Not added yet' : '—'}</span>
+                        ) : (
+                          <>
+                            <span>฿{parseFloat(tx.balance_before || 0).toLocaleString('en-US')}</span>
+                            <ArrowRight size={10} className="mx-1 text-muted opacity-50" />
+                            <strong className="text-dark">฿{parseFloat(tx.balance_after || 0).toLocaleString('en-US')}</strong>
+                          </>
+                        )}
                       </td>
                       <td className="text-center pe-4">
-                        <span 
+                        <span
                           className="badge text-xs px-2.5 py-1 rounded-pill fw-bold"
-                          style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0' }}
+                          style={tx.status === 'PENDING'
+                            ? { background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' }
+                            : tx.status === 'REJECTED'
+                              ? { background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' }
+                              : { background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0' }}
+                          title={tx.status === 'PENDING' ? 'Waiting for WOW THAILAND to confirm the payment' : (tx.review_note || '')}
                         >
-                          {tx.status || 'COMPLETED'}
+                          {tx.status === 'PENDING' ? 'AWAITING CONFIRMATION' : (tx.status || 'COMPLETED')}
                         </span>
                       </td>
                     </tr>
@@ -457,8 +434,8 @@ export default function B2BWalletTab({ partnerUser, onWalletUpdated }) {
                     <Plus size={16} />
                   </span>
                   <div>
-                    <h6 className="modal-title fw-bold text-dark font-heading text-sm mb-0">Recharge Agent Wallet</h6>
-                    <p className="text-secondary text-xs mb-0">Direct instant wallet top-up for agency bookings</p>
+                    <h6 className="modal-title fw-bold text-dark font-heading text-sm mb-0">Add Funds to Agent Wallet</h6>
+                    <p className="text-secondary text-xs mb-0">Pay WOW THAILAND, then tell us the amount and reference. Your balance updates once the payment is confirmed.</p>
                   </div>
                 </div>
                 <button
@@ -484,7 +461,7 @@ export default function B2BWalletTab({ partnerUser, onWalletUpdated }) {
                       <strong className="text-dark fs-5 font-heading">฿{balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong>
                     </div>
                     <span className="badge bg-warning text-dark text-xs fw-bold px-2.5 py-1 rounded-pill">
-                      Instant Credit
+                      Added after confirmation
                     </span>
                   </div>
 
@@ -537,8 +514,8 @@ export default function B2BWalletTab({ partnerUser, onWalletUpdated }) {
                       Select Payment Gateway / Method
                     </label>
                     <div className="row g-2">
-                      <div className="col-4">
-                        <div 
+                      <div className="col-6">
+                        <div
                           onClick={() => setRechargeMethod('UPI')}
                           className="p-2.5 rounded-3 border text-center cursor-pointer transition-all"
                           style={rechargeMethod === 'UPI' 
@@ -546,12 +523,12 @@ export default function B2BWalletTab({ partnerUser, onWalletUpdated }) {
                             : { background: '#F8FAFC', borderColor: '#E2E8F0', color: '#475569' }
                           }
                         >
-                          <span className="d-block text-xs" style={{ color: rechargeMethod === 'UPI' ? '#1D4ED8' : '#0F172A', fontWeight: 700 }}>UPI Instant</span>
+                          <span className="d-block text-xs" style={{ color: rechargeMethod === 'UPI' ? '#1D4ED8' : '#0F172A', fontWeight: 700 }}>UPI</span>
                           <span className="text-3xs" style={{ color: rechargeMethod === 'UPI' ? '#2563EB' : '#64748B' }}>GPay / PhonePe</span>
                         </div>
                       </div>
-                      <div className="col-4">
-                        <div 
+                      <div className="col-6">
+                        <div
                           onClick={() => setRechargeMethod('Bank Transfer')}
                           className="p-2.5 rounded-3 border text-center cursor-pointer transition-all"
                           style={rechargeMethod === 'Bank Transfer' 
@@ -563,19 +540,7 @@ export default function B2BWalletTab({ partnerUser, onWalletUpdated }) {
                           <span className="text-3xs" style={{ color: rechargeMethod === 'Bank Transfer' ? '#2563EB' : '#64748B' }}>NEFT / RTGS</span>
                         </div>
                       </div>
-                      <div className="col-4">
-                        <div 
-                          onClick={() => setRechargeMethod('Razorpay')}
-                          className="p-2.5 rounded-3 border text-center cursor-pointer transition-all"
-                          style={rechargeMethod === 'Razorpay' 
-                            ? { background: '#EFF6FF', borderColor: '#3B82F6', color: '#1D4ED8', fontWeight: 'bold' } 
-                            : { background: '#F8FAFC', borderColor: '#E2E8F0', color: '#475569' }
-                          }
-                        >
-                          <span className="d-block text-xs" style={{ color: rechargeMethod === 'Razorpay' ? '#1D4ED8' : '#0F172A', fontWeight: 700 }}>Card / NetBanking</span>
-                          <span className="text-3xs" style={{ color: rechargeMethod === 'Razorpay' ? '#2563EB' : '#64748B' }}>Razorpay Gateway</span>
-                        </div>
-                      </div>
+                      {/* Card / net-banking returns here once an online payment gateway is connected */}
                     </div>
                   </div>
 
@@ -594,17 +559,10 @@ export default function B2BWalletTab({ partnerUser, onWalletUpdated }) {
                     </div>
                   )}
 
-                  {rechargeMethod === 'Razorpay' && (
-                    <div className="p-3 rounded-3 border mb-3 text-xs" style={{ background: '#F8FAFC', borderColor: '#E2E8F0' }}>
-                      <strong className="d-block text-dark mb-0.5">Online Payment Gateway</strong>
-                      <span className="text-secondary text-xs d-block">Instant automated credit via Credit/Debit Cards, NetBanking, or UPI.</span>
-                    </div>
-                  )}
-
-                  {/* UTR / Reference ID */}
+                  {/* UTR / Reference ID: needed so WOW THAILAND can match the payment */}
                   <div className="mb-2">
                     <label className="form-label text-xs fw-bold text-uppercase mb-1" style={{ color: '#334155', letterSpacing: '0.4px' }}>
-                      UTR / Payment Reference ID (Optional)
+                      Payment Reference / Transfer ID *
                     </label>
                     <input
                       type="text"
@@ -634,12 +592,12 @@ export default function B2BWalletTab({ partnerUser, onWalletUpdated }) {
                     {rechargeLoading ? (
                       <>
                         <span className="spinner-border spinner-border-sm" />
-                        <span>Processing Top-Up...</span>
+                        <span>Sending...</span>
                       </>
                     ) : (
                       <>
                         <Plus size={14} />
-                        <span>Credit ฿{parseFloat(rechargeAmount || 0).toLocaleString('en-US')}</span>
+                        <span>I have paid ฿{parseFloat(rechargeAmount || 0).toLocaleString('en-US')}</span>
                       </>
                     )}
                   </button>

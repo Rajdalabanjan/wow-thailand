@@ -16,6 +16,11 @@ export default function VendorNotificationBell({
   const [toasts, setToasts] = useState([]);
   const dropdownRef = useRef(null);
   const isInitialLoadRef = useRef(true);
+  // While the portal is loading, the booking list changes several times (placeholder data first,
+  // then the real bookings). Anything that shows up in that time already existed, so it is marked
+  // as seen instead of popping up as "new".
+  const LOADING_WINDOW_MS = 30000;
+  const mountedAtRef = useRef(Date.now());
   const bcNotifsRef = useRef(null);
 
   const storagePrefix = `vendor_notifs_${vendorType}_${currentUser?.id || 'vendor'}`;
@@ -81,13 +86,13 @@ export default function VendorNotificationBell({
 
       const recentBookings = portalBookings.slice(0, 8).map(b => {
         const isHotel = vendorType === 'hotel';
-        const typeLabel = isHotel ? 'Hotel Booking' : 'Vehicle Rental';
+        const typeLabel = isHotel ? 'Hotel Booking' : 'Vehicle Booking';
         const bId = b.booking_id || b.id || (isHotel ? 'BK-1000' : 'TG-1000');
         const code = String(bId).startsWith('#') ? bId : `#${bId}`;
-        const price = b.total_price || b.amount || b.price || 0;
+        const price = b.total_price || b.amount || b.price || b.total_amount || b.base_amount_thb || b.customer_total_amount || 0;
         const cust = b.customer_name || b.guest_name || b.name || 'Customer';
-        const item = b.item_name || b.hotel_name || b.vehicle_name || (isHotel ? 'Deluxe Room' : 'Car/Bike');
-        const status = b.status || 'Confirmed';
+        const item = b.item_name || b.hotel_name || b.vehicle_name || (isHotel ? 'Deluxe Room' : '');
+        const status = b.status || b.booking_status || 'Confirmed';
         const rawId = `bk-${b.id || b.booking_id}`;
 
         const isMarkedRead = readNotifIdsRef.current.includes(rawId) || (b.status === 'Completed');
@@ -98,7 +103,7 @@ export default function VendorNotificationBell({
           bookingData: b,
           type: vendorType,
           title: `${typeLabel} ${code}`,
-          message: `${cust} — ${item} (${status} • ฿${Number(price).toLocaleString('en-IN')})`,
+          message: `${cust}${item ? ` — ${item}` : ''} (${status} • ฿${Number(price).toLocaleString('en-IN')})`,
           is_read: isMarkedRead ? 1 : 0,
           created_at: b.created_at || 'Recent'
         };
@@ -182,6 +187,9 @@ export default function VendorNotificationBell({
       setUnreadCount(prev => prev === unread ? prev : unread);
 
       // Trigger notification sound only for genuinely new unread notifications
+      if (Date.now() - mountedAtRef.current < LOADING_WINDOW_MS) {
+        registerSeenNotifications(portalBookings.map(b => ({ id: `bk-${b.id || b.booking_id}` })));
+      }
       if (isInitialLoadRef.current) {
         registerSeenNotifications(normalizedItems);
         isInitialLoadRef.current = false;

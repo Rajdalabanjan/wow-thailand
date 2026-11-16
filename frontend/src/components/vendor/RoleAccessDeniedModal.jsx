@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShieldAlert, ArrowRight, LogOut, Home } from 'lucide-react';
+import { isCabVendorRole, isB2BRole } from '../../utils/vendorRoles';
 
 export default function RoleAccessDeniedModal({ 
   currentUser, 
@@ -11,8 +12,8 @@ export default function RoleAccessDeniedModal({
     const role = (currentUser?.role || '').toLowerCase();
     if (role === 'hotel_vendor') return { path: '/hotel-vendor', label: 'Hotel Vendor Portal' };
     if (role === 'flight_vendor') return { path: '/flight-vendor', label: 'Flight Vendor Portal' };
-    if (role === 'vendor' || role === 'vehicle_vendor') return { path: '/vendor', label: 'Vehicle Vendor Portal' };
-    if (role === 'b2b' || role === 'agent') return { path: '/b2b', label: 'B2B Partner Portal' };
+    if (isCabVendorRole(role)) return { path: '/vendor', label: 'Vehicle Vendor Portal' };
+    if (isB2BRole(role)) return { path: '/b2b', label: 'B2B Partner Portal' };
     if (role === 'admin' || role === 'superadmin') return { path: '/admin', label: 'Admin Portal' };
     return { path: '/', label: 'Home Page' };
   };

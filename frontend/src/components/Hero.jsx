@@ -200,6 +200,16 @@ export default function Hero({
   handleSearchSubmit
 }) {
   const [destIdx, setDestIdx] = useState(0);
+  // The photo that is gliding away while the next one glides in
+  const [leavingIdx, setLeavingIdx] = useState(-1);
+  const prevDestIdxRef = useRef(0);
+  useEffect(() => {
+    if (prevDestIdxRef.current === destIdx) return undefined;
+    setLeavingIdx(prevDestIdxRef.current);
+    prevDestIdxRef.current = destIdx;
+    const timer = setTimeout(() => setLeavingIdx(-1), 1800);
+    return () => clearTimeout(timer);
+  }, [destIdx]);
   const [wordIdx, setWordIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
@@ -208,7 +218,7 @@ export default function Hero({
 
   // Search Widget Internal State
   const [searchTab, setSearchTab] = useState('hotels'); // 'hotels' | 'sightseeing' | 'transfers'
-  const [localDestination, setLocalDestination] = useState('Phuket, Thailand');
+  const [localDestination, setLocalDestination] = useState('Bangkok, Thailand');
   const [localCheckIn, setLocalCheckIn] = useState(() => pickupDate || getTodayDateStr());
   const [localCheckOut, setLocalCheckOut] = useState(() => dropDate || getNextDayDateStr(3));
   const [localGuests, setLocalGuests] = useState(2);
@@ -262,6 +272,7 @@ export default function Hero({
       );
       if (foundIdx !== -1) {
         setDestIdx(foundIdx);
+        setLocalDestination(`${FAMOUS_DESTINATIONS[foundIdx].name}, Thailand`);
       }
       return nextWord;
     });
@@ -270,6 +281,9 @@ export default function Hero({
   const handleSelectDest = (idx) => {
     setDestIdx(idx);
     const dest = FAMOUS_DESTINATIONS[idx];
+    if (dest) {
+      setLocalDestination(`${dest.name}, Thailand`);
+    }
     const word = dest?.highlightWord || dest?.name || 'Bangkok';
     const foundWordIdx = TYPEWRITER_WORDS.findIndex(
       (w) => w.toLowerCase() === word.toLowerCase() ||
@@ -357,23 +371,69 @@ export default function Hero({
           transition: opacity 1.2s ease;
         }
 
+        /* Slide change = a slow "camera glide" (like a drone moving over the scene): the next
+           photo glides up from below and covers the old one, which drifts up more slowly behind
+           it. Photos stay solid (no see-through double image); the incoming photo's top edge is
+           feathered, and that feather sits in the hidden overflow once the photo has settled.
+           The outer layer glides; the inner layer keeps the slow Ken Burns zoom. */
         .hero-bg-photo {
           position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-          background-size: cover;
-          background-position: center;
-          opacity: 0;
-          transform: scale(1.0);
-          transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1), transform 10s cubic-bezier(0.1, 0, 0.2, 1);
+          left: 0;
+          right: 0;
+          top: -12%;
+          bottom: -12%;
+          transform: translate3d(0, 100%, 0);   /* waiting below the banner */
+          transition: none;
           z-index: 1;
+          -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 9%);
+          mask-image: linear-gradient(180deg, transparent 0%, #000 9%);
+          will-change: transform;
         }
 
         .hero-bg-photo.active {
-          opacity: 1;
-          transform: scale(1.06);
+          transform: translate3d(0, 0, 0);
+          transition: transform 1.7s cubic-bezier(0.65, 0, 0.2, 1);
+          z-index: 3;
+        }
+
+        .hero-bg-photo.leaving {
+          transform: translate3d(0, -26%, 0);
+          transition: transform 1.7s cubic-bezier(0.65, 0, 0.2, 1);
           z-index: 2;
+        }
+
+        /* The photo being covered dims slightly, for depth */
+        .hero-bg-photo::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: #06101e;
+          opacity: 0;
+          transition: opacity 1.7s ease;
+        }
+
+        .hero-bg-photo.leaving::after { opacity: 0.45; }
+
+        .hero-bg-photo-img {
+          position: absolute;
+          inset: 0;
+          background-size: cover;
+          background-position: center;
+          transform: scale(1);
+          transition: transform 10s cubic-bezier(0.1, 0, 0.2, 1);
+        }
+
+        .hero-bg-photo.active .hero-bg-photo-img {
+          transform: scale(1.06);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .hero-bg-photo,
+          .hero-bg-photo.active,
+          .hero-bg-photo.leaving { transform: none; transition: opacity 0.8s ease; opacity: 0; }
+          .hero-bg-photo.active { opacity: 1; }
+          .hero-bg-photo-img,
+          .hero-bg-photo.active .hero-bg-photo-img { transform: none; transition: none; }
         }
 
         /* Cinema Vigenette & Gradient Overlays */
@@ -470,6 +530,8 @@ export default function Hero({
           display: inline-flex;
           align-items: baseline;
           position: relative;
+          min-width: clamp(280px, 24vw, 480px);
+          white-space: nowrap;
         }
 
         .hero-typewriter-text {
@@ -954,14 +1016,14 @@ export default function Hero({
         {/* Dynamic Ken Burns Destination Photos as fallback / switch */}
         {FAMOUS_DESTINATIONS.map((dest, idx) => {
           const isActive = destIdx === idx;
+          const isLeaving = leavingIdx === idx && !isActive;
           return (
             <div
               key={dest.id}
-              className={`hero-bg-photo ${isActive ? 'active' : ''}`}
-              style={{
-                backgroundImage: `url(${dest.bgImage})`
-              }}
-            />
+              className={`hero-bg-photo ${isActive ? 'active' : ''} ${isLeaving ? 'leaving' : ''}`}
+            >
+              <div className="hero-bg-photo-img" style={{ backgroundImage: `url(${dest.bgImage})` }} />
+            </div>
           );
         })}
 
@@ -991,38 +1053,6 @@ export default function Hero({
             <p className="hero-subtitle">
               Luxury stays, exciting activities &amp; seamless transfers across Thailand's top destinations.
             </p>
-
-            <button 
-              type="button" 
-              className="hero-preview-btn"
-              onClick={() => setShowVideoModal(true)}
-            >
-              <div className="hero-play-icon-circle">
-                <Play size={16} fill="#06101E" style={{ marginLeft: '2px' }} />
-              </div>
-              <span>Watch Destination Preview</span>
-            </button>
-          </div>
-
-          {/* Right Column: Destination Vertical Cards */}
-          <div className="hero-right-column">
-            {FAMOUS_DESTINATIONS.map((dest, idx) => {
-              const isSelected = destIdx === idx;
-              return (
-                <div
-                  key={dest.id}
-                  className={`dest-card-item ${isSelected ? 'active' : ''}`}
-                  onClick={() => handleSelectDest(idx)}
-                >
-                  <img 
-                    src={dest.thumb} 
-                    alt={dest.name} 
-                    className="dest-card-thumb" 
-                  />
-                  <span className="dest-card-name">{dest.name}</span>
-                </div>
-              );
-            })}
           </div>
 
         </div>
@@ -1334,7 +1364,7 @@ export default function Hero({
             
             <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden' }}>
               <video 
-                src="/thailand_destinations.mp4" 
+                src="/beach.mp4" 
                 controls 
                 autoPlay 
                 style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}

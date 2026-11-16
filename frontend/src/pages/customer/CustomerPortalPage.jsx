@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import HoverGlider, { useEnterAnimation } from '../../components/common/HoverGlider';
 import {
   Compass, LayoutDashboard, Calendar, Car, Users, Wallet,
   Gift, CreditCard, Bell, User, HelpCircle, LogOut, Menu,
@@ -84,6 +85,9 @@ export default function CustomerPortalPage({
   onViewDetails
 }) {
   const [activeTab, setActiveTab] = useState('overview');
+  // Page content glides in smoothly whenever another tab / menu item is chosen
+  const contentRef = React.useRef(null);
+  useEnterAnimation(contentRef, activeTab);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedBookingDetails, setSelectedBookingDetails] = useState(null);
 
@@ -1066,13 +1070,15 @@ export default function CustomerPortalPage({
 
             {/* ── CENTER: Desktop Top Navigation Links (lg and up) ── */}
             {customerUser && (
-              <nav className="d-none d-lg-flex align-items-center gap-1 gap-xl-1.5 flex-nowrap">
+              <HoverGlider className="d-none d-lg-flex align-items-center gap-1 gap-xl-1.5 flex-nowrap light-glide" gliderClassName="hover-glider--pill-light" activeGliderClassName="hover-glider--gold-active">
                 {TOP_NAV_ITEMS.map((item) => {
                   const isActive = (activeTab === item.id) || (item.id === 'explore' && activeTab === 'overview-explore');
                   return (
                     <button
                       key={item.id}
                       type="button"
+                      data-glide
+                      data-glide-active={isActive ? 'true' : 'false'}
                       onClick={() => handleNavClick(item.id === 'explore' ? 'overview' : item.id, item.id === 'explore' ? 'explore' : 'all')}
                       className={`btn btn-sm rounded-pill px-2.5 px-xl-3 py-1.5 py-xl-2 text-xs fw-bold d-flex align-items-center gap-1.5 transition-all border-0 text-nowrap flex-shrink-0 ${
                         isActive
@@ -1080,7 +1086,7 @@ export default function CustomerPortalPage({
                           : 'btn-light text-secondary hover-text-dark bg-transparent'
                       }`}
                       style={{
-                        background: isActive ? '#FFC107' : 'transparent',
+                        background: 'transparent', // gold selected pill is drawn by HoverGlider and glides
                         color: isActive ? '#0f172a' : '#475569',
                         whiteSpace: 'nowrap',
                       }}
@@ -1095,7 +1101,7 @@ export default function CustomerPortalPage({
                     </button>
                   );
                 })}
-              </nav>
+              </HoverGlider>
             )}
 
             {/* ── RIGHT: Quick Actions, Notifications, Profile Dropdown & Mobile Hamburger ── */}
@@ -1495,7 +1501,7 @@ export default function CustomerPortalPage({
       <div className="flex-grow-1 d-flex flex-column w-100">
 
         {/* Tab Body Content */}
-        <main className="flex-grow-1 p-3 p-md-4 p-xl-5" style={{ background: '#F8FAFC' }}>
+        <main ref={contentRef} className="flex-grow-1 p-3 p-md-4 p-xl-5" style={{ background: '#F8FAFC' }}>
           <div className="container-fluid px-0" style={{ maxWidth: '1300px' }}>
             
             {!customerUser ? (

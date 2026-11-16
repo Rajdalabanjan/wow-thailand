@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import HoverGlider, { useEnterAnimation } from '../../components/common/HoverGlider';
 import {
   Compass, LogOut, LayoutDashboard, Plane, PlusCircle,
   BookOpen, BarChart2, Settings, UserCircle, Activity,
@@ -93,12 +94,14 @@ function SidebarGroup({ group, activeTab, onSelect, defaultOpen }) {
               <button
                 key={item.id}
                 onClick={() => onSelect(item.id)}
+                data-glide
+                data-glide-active={isActive ? 'true' : 'false'}
                 className="btn w-100 text-start d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3 mb-1"
                 style={{
                   fontSize: '0.83rem',
-                  background: isActive ? 'linear-gradient(90deg,#00B8D9,#0090b8)' : 'transparent',
+                  background: 'transparent', // selected bar is drawn by HoverGlider and glides
                   color: isActive ? '#fff' : 'rgba(255,255,255,0.7)',
-                  boxShadow: isActive ? '0 4px 12px rgba(0,184,217,0.3)' : 'none',
+                  boxShadow: 'none',
                   fontWeight: isActive ? 700 : 400,
                   transition: 'all 0.15s ease'
                 }}
@@ -1513,6 +1516,9 @@ export default function FlightVendorPortalPage({
   bookings = []
 }) {
   const [activeTab, setActiveTab] = useState('dashboard');
+  // Page content glides in smoothly whenever another tab / menu item is chosen
+  const contentRef = React.useRef(null);
+  useEnterAnimation(contentRef, activeTab);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [editingFlight, setEditingFlight] = useState(null);
   const [localFlights, setLocalFlights] = useState(flights || []);
@@ -1777,7 +1783,7 @@ export default function FlightVendorPortalPage({
         </div>
 
         {/* Groups */}
-        <div className="flex-grow-1 py-2">
+        <HoverGlider className="flex-grow-1 py-2 sidebar-glide" gliderClassName="hover-glider--sidebar-cyan" activeGliderClassName="hover-glider--sidebar-active-cyan">
           {SIDEBAR_GROUPS.map((group, idx) => (
             <SidebarGroup
               key={group.label}
@@ -1787,7 +1793,7 @@ export default function FlightVendorPortalPage({
               defaultOpen={idx < 2}
             />
           ))}
-        </div>
+        </HoverGlider>
 
         {/* Sign Out Button */}
         <div className="p-3 flex-shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
@@ -1902,7 +1908,7 @@ export default function FlightVendorPortalPage({
         </header>
 
         {/* Dynamic Page Content */}
-        <main className="flex-grow-1 overflow-auto min-w-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <main ref={contentRef} className="flex-grow-1 overflow-auto min-w-0" style={{ WebkitOverflowScrolling: 'touch' }}>
           {renderContent()}
         </main>
       </div>

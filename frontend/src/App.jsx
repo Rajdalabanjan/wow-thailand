@@ -23,6 +23,7 @@ import FeaturesGrid from './components/widgets/FeaturesGrid';
 import SelfDriveCategoryShowcase from './components/widgets/SelfDriveCategoryShowcase';
 import CustomerReviewsSection from './components/reviews/CustomerReviewsSection';
 import ServiceCategoriesSlider from './components/widgets/ServiceCategoriesSlider';
+import Concierge3DExperience from './components/Concierge3DExperience';
 
 // Code-split heavy portal workspaces via React.lazy for faster initial page load
 const AdminPortalPage = lazy(() => import('./pages/admin/AdminPortalPage'));
@@ -87,6 +88,7 @@ import {
 import * as api from './services/api';
 import { getTodayDateStr, addDays, validateBookingDates } from './utils/dateUtils';
 import { normalizeVehicleType } from './utils/vehicleHelper';
+import { isCabVendorRole, isB2BRole } from './utils/vendorRoles';
 
 export default function App() {
   const { liveConfig } = useSiteConfig();
@@ -891,7 +893,7 @@ export default function App() {
       'custom-trip': '/custom-trip',
       'customer': '/customer',
       'b2b': '/b2b',
-      'portal': currentUser?.role === 'hotel_vendor' ? '/hotel-vendor' : (currentUser?.role === 'flight_vendor' ? '/flight-vendor' : (currentUser?.role === 'vendor' ? '/vendor' : (currentUser?.role === 'superadmin' ? '/superadmin' : '/admin'))),
+      'portal': currentUser?.role === 'hotel_vendor' ? '/hotel-vendor' : (currentUser?.role === 'flight_vendor' ? '/flight-vendor' : (isCabVendorRole(currentUser?.role) ? '/vendor' : (currentUser?.role === 'superadmin' ? '/superadmin' : '/admin'))),
       'dashboard': '/dashboard'
     };
     const targetPath = pathMap[normalizedTab] || `/${normalizedTab}`;
@@ -1271,10 +1273,11 @@ export default function App() {
     if (user.role === 'driver') {
       targetTab = 'driver';
       targetPath = '/driver';
-    } else if (user.role === 'b2b' || user.role === 'agent') {
+    } else if (isB2BRole(user.role)) {
       try {
+        // The B2B portal reads the partner from here; the token is the signed-in session
         localStorage.setItem('b2b_partner_user', JSON.stringify(user));
-        localStorage.setItem('b2b_partner_token', user.id || 'b2b_partner_a');
+        localStorage.setItem('b2b_partner_token', localStorage.getItem('auth_token') || '');
       } catch (e) {}
       targetTab = 'b2b';
       targetPath = '/b2b';
@@ -1293,7 +1296,7 @@ export default function App() {
     } else if (user.role === 'flight_vendor') {
       targetTab = 'portal';
       targetPath = '/flight-vendor';
-    } else if (user.role === 'vendor') {
+    } else if (isCabVendorRole(user.role)) {
       targetTab = 'portal';
       targetPath = '/vendor';
     } else {
@@ -1323,25 +1326,10 @@ export default function App() {
 
     // If called with (username, password)
     try {
-      let user = null;
-      // Check if it's a B2B partner credential
-      try {
-        const b2bRes = await api.b2bLogin(usernameOrUser, password);
-        if (b2bRes && b2bRes.success && b2bRes.user) {
-          user = b2bRes.user;
-          try {
-            localStorage.setItem('b2b_partner_user', JSON.stringify(user));
-            localStorage.setItem('b2b_partner_token', b2bRes.token || user.id);
-          } catch (e) {}
-        }
-      } catch (b2bErr) {
-        // Fall back to standard login
-      }
-
-      if (!user) {
-        const res = await api.loginUser(usernameOrUser, password);
-        user = (res && res.user) ? res.user : res;
-      }
+      // One sign-in for every account type; B2B partners come back with their company
+      // profile and are sent to the B2B portal by resolveTargetRoute
+      const res = await api.loginUser(usernameOrUser, password);
+      const user = (res && res.user) ? res.user : res;
 
       if (user && (user.id || user.username || user.role)) {
         setCurrentUser(user);
@@ -1372,6 +1360,8 @@ export default function App() {
       }
     } catch (e) {
       console.error(e);
+      // The login window shows the server's reason (pending approval, suspended, too many attempts, …)
+      return e?.message || false;
     }
     return false;
   };
@@ -1961,7 +1951,7 @@ export default function App() {
   if (activeTab === 'portal' || path.startsWith('/admin') || path === '/portal' || path.startsWith('/sub-admin') || path.startsWith('/subadmin') || path.startsWith('/superadmin') || path.startsWith('/super-admin') || path === '/vendor' || path === '/hotel-vendor' || path === '/flight-vendor' || path === '/vehicle/login' || path === '/hotel/login' || path === '/flight/login' || ((currentUser?.role === 'subadmin' || currentUser?.role === 'sub_admin') && (path === '/portal' || activeTab === 'portal'))) {
     // ── Dedicated Vendor Login Routes ─────────────────────────────────────────
     if (path === '/vehicle/login') {
-      if (currentUser && (currentUser.role === 'vendor' || currentUser.role === 'vehicle_vendor')) {
+      if (currentUser && isCabVendorRole(currentUser.role)) {
         window.history.replaceState(null, '', '/vendor');
         setCurrentPath('/vendor');
       } else {
@@ -2120,7 +2110,7 @@ export default function App() {
       return null;
     }
     // Cab Vendor route guard (unified role: Cab Vendor)
-    if (path === '/vendor' || path === '/cab-vendor' || ((currentUser?.role === 'vendor' || currentUser?.role === 'cab_vendor' || currentUser?.role === 'transfer_vendor' || currentUser?.role === 'vehicle_vendor') && (path === '/portal' || path === '/vendor' || path === '/cab-vendor'))) {
+    if (path === '/vendor' || path === '/cab-vendor' || (isCabVendorRole(currentUser?.role) && (path === '/portal' || path === '/vendor' || path === '/cab-vendor'))) {
       if (!currentUser) {
         return (
           <VendorLoginPage
@@ -2135,7 +2125,7 @@ export default function App() {
           />
         );
       }
-      if (currentUser.role !== 'vendor' && currentUser.role !== 'cab_vendor' && currentUser.role !== 'transfer_vendor' && currentUser.role !== 'vehicle_vendor' && currentUser.role !== 'admin' && currentUser.role !== 'superadmin') {
+      if (!isCabVendorRole(currentUser.role) && currentUser.role !== 'admin' && currentUser.role !== 'superadmin') {
         return (
           <RoleAccessDeniedModal
             currentUser={currentUser}
@@ -2188,11 +2178,11 @@ export default function App() {
     if (!['admin', 'superadmin'].includes(currentUser.role)) {
       if (currentUser.role === 'customer' || currentUser.role === 'user') {
         handleTabChange('dashboard');
-      } else if (currentUser.role === 'vendor' || currentUser.role === 'hotel_vendor' || currentUser.role === 'flight_vendor') {
+      } else if (isCabVendorRole(currentUser.role) || currentUser.role === 'hotel_vendor' || currentUser.role === 'flight_vendor') {
         handleTabChange('portal');
       } else if (currentUser.role === 'driver') {
         handleTabChange('driver');
-      } else if (currentUser.role === 'b2b' || currentUser.role === 'agent') {
+      } else if (isB2BRole(currentUser.role)) {
         handleTabChange('b2b');
       } else {
         handleTabChange('hotels');
@@ -2325,7 +2315,7 @@ export default function App() {
           triggerOpenLogin={() => setShowLoginModal(true)}
           onOpenLogin={() => setShowLoginModal(true)}
           onLogout={handleLogout}
-          isOverHero={!isDetailPage && activeTab === 'hotels'}
+          isOverHero={!isDetailPage && activeTab !== 'cabs'}
         />
       )}
 
@@ -2361,9 +2351,9 @@ export default function App() {
 
       {/* Dynamic Results & Content Section */}
       <main 
-        className={isDetailPage ? "flex-grow-1 p-0 m-0 w-100" : (['cars', 'bikes'].includes(activeTab) ? "pt-1 pb-5" : "py-5")} 
+        className={isDetailPage || activeTab === 'cabs' || activeTab === 'cars' ? "flex-grow-1 p-0 m-0 w-100" : (activeTab === 'bikes' ? "pt-1 pb-5" : "py-5")} 
         id="results-section" 
-        style={{ scrollMarginTop: '0px', minHeight: isDetailPage ? '100vh' : '80vh' }}
+        style={{ scrollMarginTop: '0px', minHeight: (isDetailPage || activeTab === 'cabs' || activeTab === 'cars') ? '100vh' : '80vh' }}
       >
         <div className={isDetailPage || activeTab === "cabs" ? "w-100 p-0 m-0" : "container"}>
           <div className={isDetailPage || activeTab === "cabs" ? "w-100" : "tab-slide-enter"}>
@@ -2996,8 +2986,15 @@ export default function App() {
         </div>
       </main>
 
-      {/* Footer */}
-      <Footer setActiveTab={handleTabChange} />
+      {/* 3D Scroll-Driven Concierge Showcase */}
+      {!isDetailPage && activeTab !== 'cabs' && activeTab !== 'cars' && (
+        <Concierge3DExperience onNavigateTab={handleTabChange} />
+      )}
+
+      {/* Footer - Hidden on dedicated full-screen Cabs page */}
+      {activeTab !== 'cabs' && activeTab !== 'cars' && (
+        <Footer setActiveTab={handleTabChange} />
+      )}
 
       {/* Booking Checkout Modal */}
       {activeTab !== 'customize' && selectedBookingItem && (

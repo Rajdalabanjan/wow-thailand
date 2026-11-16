@@ -507,16 +507,16 @@ export default function HotelDetailsPage({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeLightboxImg, activeLightboxIdx, currentGalleryList, galleryOpen, mapModalOpen]);
 
-  // Lock body scroll when full gallery or lightbox is active to preserve viewport scroll position
+  // Lock body scroll when the full gallery, lightbox or map pop-up is open to preserve viewport scroll position
   useEffect(() => {
-    if (galleryOpen || activeLightboxImg) {
+    if (galleryOpen || activeLightboxImg || mapModalOpen) {
       const prevOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       return () => {
         document.body.style.overflow = prevOverflow;
       };
     }
-  }, [galleryOpen, activeLightboxImg]);
+  }, [galleryOpen, activeLightboxImg, mapModalOpen]);
 
   const starsCount = parseInt(hotel.stars || hotel.star_rating || 3, 10);
   const basePricePerNight = Math.round(parseFloat(hotel.price || 3500));
@@ -1534,7 +1534,7 @@ export default function HotelDetailsPage({
                 <h4 className="fw-bold text-dark mb-0 font-heading">Location &amp; Neighborhood</h4>
               </div>
               <span className="text-muted text-xs">
-                {hotel.address ? `${hotel.address}, ` : ''}{hotel.area || hotel.location || 'Thailand'}, India
+                {hotel.address ? `${hotel.address}, ` : ''}{hotel.area || hotel.location || 'Thailand'}
               </span>
             </div>
             <div className="d-flex align-items-center gap-2">
@@ -1904,38 +1904,58 @@ export default function HotelDetailsPage({
         </div>
       )}
 
-      {/* ─── 8. INTERACTIVE LOCATION & MAP MODAL ─── */}
-      {mapModalOpen && (
-        <div className="position-fixed inset-0 bg-dark bg-opacity-75 d-flex align-items-center justify-content-center p-3" style={{ zIndex: 1060, top: 0, left: 0, right: 0, bottom: 0 }}>
-          <div className="bg-white rounded-4 shadow-lg overflow-hidden w-100 max-w-4xl border" style={{ maxWidth: '900px', height: '85vh' }}>
-            <div className="d-flex justify-content-between align-items-center p-3 border-bottom bg-light">
-              <div className="d-flex align-items-center gap-2">
-                <MapPin size={20} className="text-warning" />
-                <div>
-                  <h5 className="fw-bold text-dark mb-0 font-heading">{hotel.name} Location</h5>
-                  <span className="text-muted text-xs">{hotel.address ? `${hotel.address}, ` : ''}{hotel.area || hotel.location || 'Thailand'}</span>
+      {/* ─── 8. INTERACTIVE LOCATION & MAP MODAL (RENDERED VIA PORTAL) ───
+          Rendered on <body>: the page wrapper's fade-in animation leaves a CSS transform on it,
+          which would pin a "fixed" pop-up to the top of the page instead of the screen. */}
+      {mapModalOpen && createPortal(
+        <div
+          className="position-fixed d-flex align-items-center justify-content-center p-2 p-md-3"
+          style={{ zIndex: 9999, top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.72)' }}
+          onClick={() => setMapModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${hotel.name} location map`}
+        >
+          <div
+            className="bg-white rounded-4 shadow-lg overflow-hidden w-100 border d-flex flex-column"
+            style={{ maxWidth: '1100px', height: 'min(85vh, 760px)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="d-flex justify-content-between align-items-center gap-2 px-3 py-2 py-md-3 border-bottom bg-light flex-shrink-0">
+              <div className="d-flex align-items-center gap-2" style={{ minWidth: 0 }}>
+                <MapPin size={20} className="text-warning flex-shrink-0" />
+                <div style={{ minWidth: 0 }}>
+                  <h5 className="fw-bold text-dark mb-0 font-heading text-truncate" style={{ fontSize: 'clamp(0.95rem, 2.4vw, 1.25rem)' }} title={hotel.name}>
+                    {hotel.name}
+                  </h5>
+                  <span className="text-muted text-xs d-block text-truncate" title={`${hotel.address ? `${hotel.address}, ` : ''}${hotel.area || hotel.location || 'Thailand'}`}>
+                    {hotel.address ? `${hotel.address}, ` : ''}{hotel.area || hotel.location || 'Thailand'}
+                  </span>
                 </div>
               </div>
-              <div className="d-flex align-items-center gap-2">
-                <a 
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapSearchQuery)}`} 
-                  target="_blank" 
+              <div className="d-flex align-items-center gap-2 flex-shrink-0">
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapSearchQuery)}`}
+                  target="_blank"
                   rel="noreferrer"
-                  className="btn btn-outline-dark btn-sm rounded-pill text-xs fw-bold d-flex align-items-center gap-1"
+                  className="btn btn-outline-dark btn-sm rounded-pill text-xs fw-bold d-flex align-items-center gap-1 text-nowrap"
+                  title="Open in Google Maps"
                 >
-                  <ExternalLink size={14} /> Open in Google Maps
+                  <ExternalLink size={14} /> <span className="d-none d-sm-inline">Open in Google Maps</span><span className="d-sm-none">Maps</span>
                 </a>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setMapModalOpen(false)}
                   className="btn btn-light rounded-circle p-2 border d-flex align-items-center justify-content-center"
+                  aria-label="Close map"
+                  title="Close (Esc)"
                 >
                   <X size={18} />
                 </button>
               </div>
             </div>
 
-            <div className="w-100 h-100 position-relative" style={{ height: 'calc(85vh - 70px)' }}>
+            <div className="w-100 position-relative flex-grow-1">
               <iframe
                 title="Hotel Map Location"
                 width="100%"
@@ -1944,11 +1964,13 @@ export default function HotelDetailsPage({
                 scrolling="no"
                 marginHeight="0"
                 marginWidth="0"
+                style={{ border: 0, display: 'block' }}
                 src={`https://maps.google.com/maps?q=${encodeURIComponent(mapSearchQuery)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
               />
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ─── 9. FULL PHOTO GALLERY & LIGHTBOX MODAL (RENDERED VIA PORTAL) ─── */}

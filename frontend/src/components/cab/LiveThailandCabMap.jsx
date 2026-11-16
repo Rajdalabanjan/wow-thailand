@@ -6,6 +6,11 @@
 
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Plus, Minus, LocateFixed, Layers, Navigation, ShieldCheck, Clock, Compass } from 'lucide-react';
+import { useNow, isGpsFresh, gpsAgeSec, formatAgo } from '../../utils/driverGps';
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
 
 // Comprehensive Thailand Coordinates for live interactive mapping
 export const THAILAND_COORDINATES = {
@@ -107,8 +112,13 @@ export default function LiveThailandCabMap({
   mode = 'booking',
   activeConfirmedRide = null,
   driverStatus = 'DISPATCHED',
-  vehiclePlate = '1กข 4589',
-  driverName = 'Somchai Prasert',
+  vehiclePlate = null,
+  driverName = null,
+  // Real driver position from the driver app: { lat, lng, receivedAt } (receivedAt = local ms timestamp)
+  driverLocation = null,
+  // Exact pickup / drop-off points when known: { lat, lng }; otherwise the address name is looked up
+  pickupPoint = null,
+  dropoffPoint = null,
   height = '100%'
 }) {
   const containerRef = useRef(null);
@@ -119,16 +129,78 @@ export default function LiveThailandCabMap({
     pickupMarker: null,
     dropoffMarker: null,
     cabMarkers: [],
-    driverMarker: null
+    driverMarker: null,
+    driverTrail: null
   });
+  // Where the driver has been while this map is open (drawn as a green trail)
+  const driverTrailRef = useRef([]);
+  const driverPosRef = useRef(null);
+  const fittedToDriverRef = useRef(false);
 
   const [mapReady, setMapReady] = useState(false);
   const [mapType, setMapType] = useState('street');
   const [distanceInfo, setDistanceInfo] = useState({ km: 30, mins: 45 });
-  const [driverProgress, setDriverProgress] = useState(0.15);
 
-  const pickupCoords = useMemo(() => resolveThaiCoords(pickupLocation), [pickupLocation]);
-  const dropoffCoords = useMemo(() => resolveThaiCoords(dropoffLocation), [dropoffLocation]);
+  const pickupCoords = useMemo(() => {
+    const named = resolveThaiCoords(pickupLocation);
+    return pickupPoint && Number.isFinite(pickupPoint.lat) && Number.isFinite(pickupPoint.lng)
+      ? { lat: pickupPoint.lat, lng: pickupPoint.lng, label: named.label }
+      : named;
+  }, [pickupLocation, pickupPoint?.lat, pickupPoint?.lng]);
+  const dropoffCoords = useMemo(() => {
+    const named = resolveThaiCoords(dropoffLocation);
+    return dropoffPoint && Number.isFinite(dropoffPoint.lat) && Number.isFinite(dropoffPoint.lng)
+      ? { lat: dropoffPoint.lat, lng: dropoffPoint.lng, label: named.label }
+      : named;
+  }, [dropoffLocation, dropoffPoint?.lat, dropoffPoint?.lng]);
+
+  const driverLat = driverLocation?.lat;
+  const driverLng = driverLocation?.lng;
+  const showDriver = mode === 'confirmed' && Number.isFinite(driverLat) && Number.isFinite(driverLng);
+  const now = useNow(mode === 'confirmed' && Boolean(driverName));
+  const driverFresh = showDriver && isGpsFresh(driverLocation?.receivedAt, now);
+  const driverAge = showDriver ? gpsAgeSec(driverLocation?.receivedAt, now) : null;
+
+  // Zoom to show pickup, drop-off and (when known) the driver
+  const fitToRide = () => {
+    const map = mapInstanceRef.current;
+    if (!map || !window.L) return;
+    try {
+      map.invalidateSize();   // the box may have changed size since the map was created
+      const points = [[pickupCoords.lat, pickupCoords.lng], [dropoffCoords.lat, dropoffCoords.lng]];
+      if (driverPosRef.current) points.push(driverPosRef.current);
+      // No animation: while a zoom animation runs, Leaflet ignores further zoom requests,
+      // which left the map stuck on an early, wrong frame
+      map.fitBounds(window.L.latLngBounds(points), { padding: [50, 50], maxZoom: 14, animate: false });
+    } catch (e) {}
+  };
+  const fitToRideRef = useRef(fitToRide);
+  fitToRideRef.current = fitToRide;
+  // Once the viewer drags or zooms the map themselves, stop re-framing it for them
+  const userMovedMapRef = useRef(false);
+
+  // Keep the map the right size when its box resizes (page layout settling, window resize)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!mapReady || !el || typeof ResizeObserver === 'undefined') return undefined;
+    const map = mapInstanceRef.current;
+    const markMoved = () => { userMovedMapRef.current = true; };
+    map?.on('dragstart', markMoved);
+    el.addEventListener('wheel', markMoved, { passive: true });
+    el.addEventListener('touchstart', markMoved, { passive: true });
+    const observer = new ResizeObserver(() => {
+      if (!mapInstanceRef.current) return;
+      if (userMovedMapRef.current) mapInstanceRef.current.invalidateSize();
+      else fitToRideRef.current();
+    });
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      map?.off('dragstart', markMoved);
+      el.removeEventListener('wheel', markMoved);
+      el.removeEventListener('touchstart', markMoved);
+    };
+  }, [mapReady]);
 
   useEffect(() => {
     const km = computeRoadDistanceKm(pickupCoords, dropoffCoords);
@@ -243,7 +315,6 @@ export default function LiveThailandCabMap({
     if (layers.routeBorder) map.removeLayer(layers.routeBorder);
     if (layers.pickupMarker) map.removeLayer(layers.pickupMarker);
     if (layers.dropoffMarker) map.removeLayer(layers.dropoffMarker);
-    if (layers.driverMarker) map.removeLayer(layers.driverMarker);
     layers.cabMarkers.forEach(m => map.removeLayer(m));
     layers.cabMarkers = [];
 
@@ -321,48 +392,81 @@ export default function LiveThailandCabMap({
       });
     }
 
-    // Live Chauffeur Marker in Confirmed Mode
-    if (mode === 'confirmed') {
-      const progressIdx = Math.min(
-        waypoints.length - 1,
-        Math.floor(driverProgress * waypoints.length)
-      );
-      const driverPos = waypoints[progressIdx] || waypoints[0];
+    // The driver's car is drawn separately (see below) from the real GPS position only
+    if (layers.driverTrail) layers.driverTrail.bringToFront();
 
-      const driverIcon = L.divIcon({
-        className: 'live-driver-pin',
-        html: `
-          <div style="display:flex; flex-direction:column; align-items:center; transform:translate(-50%, -50%);">
-            <div style="background:#0B132B; border:2px solid #D4AF37; color:#F1D78A; font-weight:800; font-size:10.5px; padding:3px 8px; border-radius:14px; box-shadow:0 4px 12px rgba(0,0,0,0.35); white-space:nowrap; display:flex; align-items:center; gap:4px;">
-              <span class="spinner-grow spinner-grow-sm text-success" style="width:6px; height:6px;"></span>
-              <span>${driverName} · ${vehiclePlate}</span>
-            </div>
-            <div style="background:#D4AF37; color:#0B132B; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(212,175,55,0.4); font-size:16px; margin-top:3px; border:2px solid #fff;">
-              🚗
-            </div>
-          </div>
-        `,
-        iconSize: [0, 0]
-      });
-
-      layers.driverMarker = L.marker(driverPos, { icon: driverIcon }).addTo(map);
-    }
-
-    // Fit bounds smoothly
-    try {
-      const bounds = L.latLngBounds([
-        [pickupCoords.lat, pickupCoords.lng],
-        [dropoffCoords.lat, dropoffCoords.lng]
-      ]);
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
-    } catch (e) {}
+    fitToRide();
   };
 
   useEffect(() => {
     if (mapReady) {
       renderRouteAndMarkers();
     }
-  }, [mapReady, pickupCoords, dropoffCoords, mode, driverProgress, driverStatus]);
+  }, [mapReady, pickupCoords, dropoffCoords, mode, driverStatus]);
+
+  // Live driver car: moves to each new GPS position from the driver app and leaves a trail
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!mapReady || !map || !window.L) return;
+    const L = window.L;
+    const layers = layersRef.current;
+
+    if (!showDriver) {
+      if (layers.driverMarker) { map.removeLayer(layers.driverMarker); layers.driverMarker = null; }
+      if (layers.driverTrail) { map.removeLayer(layers.driverTrail); layers.driverTrail = null; }
+      driverTrailRef.current = [];
+      driverPosRef.current = null;
+      fittedToDriverRef.current = false;
+      return;
+    }
+
+    const pos = [driverLat, driverLng];
+    driverPosRef.current = pos;
+    const trail = driverTrailRef.current;
+    const last = trail[trail.length - 1];
+    if (!last || last[0] !== pos[0] || last[1] !== pos[1]) {
+      trail.push(pos);
+      if (trail.length > 300) trail.shift();
+    }
+
+    const label = escapeHtml([driverName, vehiclePlate].filter(Boolean).join(' · ') || 'Your driver');
+    const icon = L.divIcon({
+      className: 'live-driver-pin',
+      html: `
+        <div style="position:relative; width:0; height:0; opacity:${driverFresh ? 1 : 0.65}; filter:${driverFresh ? 'none' : 'grayscale(1)'};">
+          <div style="position:absolute; left:0; bottom:20px; transform:translateX(-50%); background:#0B132B; border:2px solid #D4AF37; color:#F1D78A; font-weight:800; font-size:10.5px; padding:3px 8px; border-radius:14px; box-shadow:0 4px 12px rgba(0,0,0,0.35); white-space:nowrap; display:flex; align-items:center; gap:4px;">
+            ${driverFresh ? '<span class="spinner-grow spinner-grow-sm text-success" style="width:6px; height:6px;"></span>' : ''}
+            <span>${label}</span>
+          </div>
+          <div style="position:absolute; left:0; top:0; transform:translate(-50%, -50%); background:#D4AF37; color:#0B132B; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(212,175,55,0.4); font-size:16px; border:2px solid #fff;">🚗</div>
+        </div>
+      `,
+      iconSize: [0, 0]
+    });
+
+    if (layers.driverMarker) {
+      layers.driverMarker.setLatLng(pos);
+      layers.driverMarker.setIcon(icon);
+    } else {
+      layers.driverMarker = L.marker(pos, { icon, zIndexOffset: 1000 }).addTo(map);
+    }
+
+    if (trail.length > 1) {
+      if (layers.driverTrail) layers.driverTrail.setLatLngs(trail);
+      else layers.driverTrail = L.polyline(trail, { color: '#16a34a', weight: 4, opacity: 0.85, lineCap: 'round', lineJoin: 'round' }).addTo(map);
+    }
+
+    // Bring the car into view the first time it appears, and again whenever it drives off the
+    // edge of the map (re-framing the whole ride, or just following the car if the viewer
+    // has moved the map themselves)
+    if (!fittedToDriverRef.current) {
+      fittedToDriverRef.current = true;
+      fitToRide();
+    } else if (!map.getBounds().pad(-0.08).contains(pos)) {
+      if (userMovedMapRef.current) map.panTo(pos, { animate: true });
+      else fitToRide();
+    }
+  }, [mapReady, showDriver, driverLat, driverLng, driverName, vehiclePlate, driverFresh]);
 
   // Layer switcher
   const handleToggleSatellite = () => {
@@ -393,16 +497,8 @@ export default function LiveThailandCabMap({
   };
 
   const handleRecenter = () => {
-    const map = mapInstanceRef.current;
-    if (!map || !window.L) return;
-    const L = window.L;
-    try {
-      const bounds = L.latLngBounds([
-        [pickupCoords.lat, pickupCoords.lng],
-        [dropoffCoords.lat, dropoffCoords.lng]
-      ]);
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
-    } catch (e) {}
+    userMovedMapRef.current = false;
+    fitToRide();
   };
 
   return (
@@ -491,6 +587,40 @@ export default function LiveThailandCabMap({
           <LocateFixed size={15} color="#0B132B" />
         </button>
       </div>
+
+      {/* Driver GPS status: is the car on the map live or an old position? */}
+      {mode === 'confirmed' && driverName && (
+        <div
+          data-testid="driver-gps-status"
+          style={{
+            position: 'absolute',
+            left: '12px',
+            bottom: '12px',
+            zIndex: 400,
+            maxWidth: 'calc(100% - 24px)',
+            background: 'rgba(255, 255, 255, 0.96)',
+            border: `1px solid ${driverFresh ? '#86efac' : '#cbd5e1'}`,
+            borderRadius: '12px',
+            padding: '6px 12px',
+            fontSize: '12px',
+            fontWeight: 600,
+            color: driverFresh ? '#15803d' : '#475569',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.12)'
+          }}
+        >
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0, background: driverFresh ? '#16a34a' : '#94a3b8' }}></span>
+          <span>
+            {!showDriver
+              ? "Waiting for the driver's live location"
+              : driverFresh
+                ? `Driver's live location · updated ${formatAgo(driverAge)}`
+                : `No signal from the driver · last seen ${formatAgo(driverAge)}`}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

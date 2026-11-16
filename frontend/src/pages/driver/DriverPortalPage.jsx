@@ -5,6 +5,7 @@
 // ========================================================================
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import HoverGlider, { useEnterAnimation } from '../../components/common/HoverGlider';
 import {
   Car, Shield, CheckCircle2, Clock, MapPin, Phone, MessageSquare,
   AlertCircle, RefreshCw, Calendar, User, LogOut, Check, X, Navigation,
@@ -14,11 +15,28 @@ import {
 } from 'lucide-react';
 import * as api from '../../services/api';
 
+const PICKUP_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+// Pickup times are saved as Thailand (Asia/Bangkok) wall-clock time. The API returns them
+// like "2026-11-13T10:00:00.000Z": the digits are already Thai time and the "Z" is only added
+// by the database driver. So the digits are shown exactly as saved, with no timezone
+// conversion, and labelled as Thailand time. Example: "13 November 2026, 10:00 AM".
+function formatThaiPickupTime(value) {
+  if (!value) return '';
+  const m = String(value).match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+  if (!m) return String(value);
+  const hour = Number(m[4]);
+  return `${Number(m[3])} ${PICKUP_MONTHS[Number(m[2]) - 1]} ${m[1]}, ${hour % 12 || 12}:${m[5]} ${hour < 12 ? 'AM' : 'PM'}`;
+}
+
 export default function DriverPortalPage({ currentUser, onLogout, onNavigateHome }) {
   const driverUser = currentUser || JSON.parse(localStorage.getItem('currentUser') || localStorage.getItem('current_user') || '{}');
 
   // Core State
   const [activeTab, setActiveTab] = useState('active_duty'); // 'active_duty' | 'offers' | 'upcoming' | 'history'
+  // Page content glides in smoothly whenever another tab / menu item is chosen
+  const contentRef = React.useRef(null);
+  useEnterAnimation(contentRef, activeTab);
   const [driverProfile, setDriverProfile] = useState(null);
   const [metrics, setMetrics] = useState({
     today_earnings_thb: 0,
@@ -57,16 +75,21 @@ export default function DriverPortalPage({ currentUser, onLogout, onNavigateHome
   const [gpsStatus, setGpsStatus] = useState('initializing'); // 'active' | 'denied' | 'standby'
   const [lastGpsPingTime, setLastGpsPingTime] = useState(null);
 
+  // Active Vehicle Selection State
+  const [assignedVehicles, setAssignedVehicles] = useState([]);
+  const [showVehicleSelectModal, setShowVehicleSelectModal] = useState(false);
+
   // -------------------------------------------------------------
   // 1. DATA LOADING & BACKGROUND REFRESH
   // -------------------------------------------------------------
   const loadDriverData = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true);
     try {
-      const [summaryRes, offersRes, historyRes] = await Promise.all([
+      const [summaryRes, offersRes, historyRes, vehRes] = await Promise.all([
         api.fetchDriverSummary().catch(() => ({ success: false })),
         api.fetchDriverDutyOffers().catch(() => ({ success: false, data: [] })),
-        api.fetchDriverTrips().catch(() => ({ success: false, data: [] }))
+        api.fetchDriverTrips().catch(() => ({ success: false, data: [] })),
+        api.fetchDriverAssignedVehicles().catch(() => ({ success: false, data: [] }))
       ]);
 
       if (summaryRes.success && summaryRes.data) {
@@ -81,6 +104,10 @@ export default function DriverPortalPage({ currentUser, onLogout, onNavigateHome
         setActiveDuty(d.active_duty);
         setUpcomingTransfers(d.upcoming_transfers || []);
         setIsOnline(d.driver?.status !== 'offline');
+      }
+
+      if (vehRes.success && Array.isArray(vehRes.data)) {
+        setAssignedVehicles(vehRes.data);
       }
 
       if (offersRes.success && Array.isArray(offersRes.data)) {
@@ -169,12 +196,41 @@ export default function DriverPortalPage({ currentUser, onLogout, onNavigateHome
   }, [activeDuty?.id]);
 
   // -------------------------------------------------------------
+  // 2b. ACTIVE VEHICLE SELECTION BEFORE SHIFT
+  // -------------------------------------------------------------
+  const handleSelectVehicle = async (vehId) => {
+    setActionLoading(true);
+    setErrorMsg('');
+    try {
+      const res = await api.selectDriverActiveVehicle(vehId);
+      if (res && res.success) {
+        setSuccessMsg(res.message || 'Active vehicle selected for shift.');
+        setTimeout(() => setSuccessMsg(''), 4000);
+        setShowVehicleSelectModal(false);
+        await loadDriverData(true);
+      } else {
+        setErrorMsg(res?.error || 'Failed to select vehicle.');
+      }
+    } catch (err) {
+      setErrorMsg(err.message || 'Error updating vehicle.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // -------------------------------------------------------------
   // 3. ONLINE / OFFLINE TOGGLE
   // -------------------------------------------------------------
   const handleToggleOnline = async () => {
     if (activeDuty) {
       setErrorMsg('Cannot go offline while on an active transfer duty.');
       setTimeout(() => setErrorMsg(''), 4500);
+      return;
+    }
+
+    // If driver is currently offline and has assigned vehicles, allow checking vehicle
+    if (!isOnline && assignedVehicles.length > 1 && !driverProfile?.active_vehicle_id) {
+      setShowVehicleSelectModal(true);
       return;
     }
 
@@ -531,6 +587,14 @@ export default function DriverPortalPage({ currentUser, onLogout, onNavigateHome
                   <span className="badge bg-dark text-warning font-monospace px-2 py-0.5 border border-secondary" style={{ fontSize: '0.72rem' }}>
                     {vehiclePlate}
                   </span>
+                  <button
+                    onClick={() => setShowVehicleSelectModal(true)}
+                    className="btn btn-sm btn-link p-0 text-decoration-none text-warning fw-bold ms-1"
+                    style={{ fontSize: '0.72rem' }}
+                    title="Change active vehicle for this shift"
+                  >
+                    Change Vehicle
+                  </button>
                 </div>
               </div>
             </div>
@@ -599,15 +663,17 @@ export default function DriverPortalPage({ currentUser, onLogout, onNavigateHome
       )}
 
       {/* MAIN CONTENT WORKSPACE */}
-      <main className="container-fluid px-3 px-md-4 py-3">
+      <main ref={contentRef} className="container-fluid px-3 px-md-4 py-3">
         
         {/* TAB NAVIGATION PILLS */}
-        <div className="d-flex align-items-center gap-2 border-bottom pb-2 mb-3 overflow-x-auto">
+        <HoverGlider className="d-flex align-items-center gap-2 border-bottom pb-2 mb-3 overflow-x-auto light-glide" gliderClassName="hover-glider--pill-light">
           
           <button
             type="button"
             id="tab-active-duty"
             onClick={() => setActiveTab('active_duty')}
+            data-glide
+            data-glide-active={activeTab === 'active_duty' ? 'true' : 'false'}
             className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-flex align-items-center gap-1.5 border ${
               activeTab === 'active_duty' ? 'btn-dark text-white' : 'btn-light text-muted'
             }`}
@@ -626,6 +692,8 @@ export default function DriverPortalPage({ currentUser, onLogout, onNavigateHome
             type="button"
             id="tab-offers"
             onClick={() => setActiveTab('offers')}
+            data-glide
+            data-glide-active={activeTab === 'offers' ? 'true' : 'false'}
             className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-flex align-items-center gap-1.5 border ${
               activeTab === 'offers' ? 'btn-dark text-white' : 'btn-light text-muted'
             }`}
@@ -644,6 +712,8 @@ export default function DriverPortalPage({ currentUser, onLogout, onNavigateHome
             type="button"
             id="tab-upcoming"
             onClick={() => setActiveTab('upcoming')}
+            data-glide
+            data-glide-active={activeTab === 'upcoming' ? 'true' : 'false'}
             className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-flex align-items-center gap-1.5 border ${
               activeTab === 'upcoming' ? 'btn-dark text-white' : 'btn-light text-muted'
             }`}
@@ -662,6 +732,8 @@ export default function DriverPortalPage({ currentUser, onLogout, onNavigateHome
             type="button"
             id="tab-history"
             onClick={() => setActiveTab('history')}
+            data-glide
+            data-glide-active={activeTab === 'history' ? 'true' : 'false'}
             className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-flex align-items-center gap-1.5 border ${
               activeTab === 'history' ? 'btn-dark text-white' : 'btn-light text-muted'
             }`}
@@ -671,7 +743,7 @@ export default function DriverPortalPage({ currentUser, onLogout, onNavigateHome
             <span>Trip History</span>
           </button>
 
-        </div>
+        </HoverGlider>
 
         {/* ------------------------------------------------------------- */}
         {/* TAB 1: ACTIVE DUTY COMPANION (5-STAGE STATE MACHINE)           */}
@@ -785,7 +857,7 @@ export default function DriverPortalPage({ currentUser, onLogout, onNavigateHome
                             {activeDuty.transfer_type || 'AIRPORT PICKUP'}
                           </span>
                           <span className="small text-muted fw-semibold" style={{ fontSize: '0.75rem' }}>
-                            Scheduled: {activeDuty.pickup_datetime}
+                            Scheduled: {formatThaiPickupTime(activeDuty.pickup_datetime)}{activeDuty.pickup_datetime ? ' Thailand time' : ''}
                           </span>
                         </div>
 
@@ -1051,7 +1123,7 @@ export default function DriverPortalPage({ currentUser, onLogout, onNavigateHome
                         <div className="d-flex align-items-center gap-3 text-muted small mb-3" style={{ fontSize: '0.75rem' }}>
                           <span className="d-flex align-items-center gap-1">
                             <Calendar size={13} />
-                            <span>{offer.pickup_datetime}</span>
+                            <span>{formatThaiPickupTime(offer.pickup_datetime)}{offer.pickup_datetime ? ' Thailand time' : ''}</span>
                           </span>
                           <span>•</span>
                           <span>~{offer.distance_km || 30} km</span>
@@ -1119,7 +1191,7 @@ export default function DriverPortalPage({ currentUser, onLogout, onNavigateHome
                         <span className="fw-bold text-warning font-heading">฿{item.total_fare_thb} THB</span>
                       </div>
                       <div className="small text-muted mb-2">
-                        <span className="fw-bold text-dark">{item.pickup_datetime}</span>
+                        <span className="fw-bold text-dark">{formatThaiPickupTime(item.pickup_datetime)}{item.pickup_datetime ? ' Thailand time' : ''}</span>
                       </div>
                       <div className="small text-dark mb-1">
                         <strong>From:</strong> {item.pickup_address}
@@ -1177,7 +1249,9 @@ export default function DriverPortalPage({ currentUser, onLogout, onNavigateHome
                             {trip.booking_id || trip.id}
                           </td>
                           <td className="text-muted small">
-                            {trip.pickup_datetime || trip.created_at?.slice(0, 16)}
+                            {trip.pickup_datetime
+                              ? `${formatThaiPickupTime(trip.pickup_datetime)} Thailand time`
+                              : trip.created_at?.slice(0, 16)}
                           </td>
                           <td>
                             <div className="d-flex flex-column">
@@ -1474,6 +1548,90 @@ export default function DriverPortalPage({ currentUser, onLogout, onNavigateHome
                 )}
               </button>
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ACTIVE VEHICLE SELECTION MODAL */}
+      {showVehicleSelectModal && (
+        <div
+          className="position-fixed top-0 start-0 end-0 bottom-0 d-flex align-items-center justify-content-center p-3 z-3"
+          style={{ backgroundColor: 'rgba(13,27,46,0.75)', backdropFilter: 'blur(4px)', zIndex: 1060 }}
+        >
+          <div className="card border-0 rounded-4 shadow-2xl p-4 bg-white" style={{ maxWidth: '500px', width: '100%' }}>
+            <div className="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
+              <div className="d-flex align-items-center gap-2">
+                <Car size={20} className="text-warning" />
+                <h6 className="fw-bold mb-0 text-dark">Select Active Vehicle for Shift</h6>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowVehicleSelectModal(false)}
+                className="btn btn-sm btn-link text-muted p-0"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-muted small mb-3">
+              Only approved vehicles assigned by your Cab Vendor partner can be operated for passenger transfers.
+            </p>
+
+            {assignedVehicles.length === 0 ? (
+              <div className="alert alert-warning py-2 px-3 small rounded-3 mb-3">
+                No approved vehicles currently assigned to your account. Your default registered vehicle is <strong>{vehicleModel} ({vehiclePlate})</strong>.
+              </div>
+            ) : (
+              <div className="d-flex flex-column gap-2 mb-3">
+                {assignedVehicles.map(v => {
+                  const isCurrent = driverProfile?.active_vehicle_id === v.id || v.is_current_selection || v.is_active;
+                  return (
+                    <div
+                      key={v.id}
+                      className="p-3 rounded-3 border d-flex align-items-center justify-content-between"
+                      style={{
+                        background: isCurrent ? 'rgba(34,197,94,0.05)' : '#fff',
+                        borderColor: isCurrent ? '#22c55e' : '#e2e8f0'
+                      }}
+                    >
+                      <div>
+                        <strong className="d-block text-dark">{v.brand} {v.model}</strong>
+                        <div className="text-muted small" style={{ fontSize: '0.72rem' }}>
+                          <span className="font-monospace text-dark fw-bold me-2">{v.plate_number}</span>
+                          <span>{v.category === 'VIP_VAN' ? 'VIP Van' : v.category === 'SUV' ? 'Premium SUV' : 'Prime Sedan'} • {v.seating_capacity} Seats</span>
+                        </div>
+                      </div>
+                      <div>
+                        {isCurrent ? (
+                          <span className="badge bg-success text-white px-2.5 py-1.5 rounded-pill fw-bold" style={{ fontSize: '0.7rem' }}>
+                            <Check size={12} className="me-1 inline" /> Active Vehicle
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleSelectVehicle(v.id)}
+                            disabled={actionLoading}
+                            className="btn btn-sm btn-outline-dark rounded-pill px-3 py-1 fw-bold"
+                            style={{ fontSize: '0.74rem' }}
+                          >
+                            Select for Shift
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="d-flex justify-content-end">
+              <button
+                type="button"
+                onClick={() => setShowVehicleSelectModal(false)}
+                className="btn btn-sm btn-light rounded-2 px-3 fw-bold"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

@@ -1,16 +1,45 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Car, Compass, Calendar, Clock, MapPin, User, Phone, Check,
   AlertCircle, Search, RefreshCw, Loader2, ArrowRight, ShieldCheck,
   Send, UserCheck, AlertTriangle, Navigation, Sliders, DollarSign,
-  X, CheckCircle2, Map
+  X, CheckCircle2, Map, FileText, CheckCheck, XCircle, ExternalLink, BellRing
 } from 'lucide-react';
+import { connectLiveRooms } from '../../utils/liveSocket';
+import { withGpsTimestamps, applyDriverLocation } from '../../utils/driverGps';
+import DriverGpsCell, { LiveGpsBadge } from '../../components/cab/DriverGpsCell';
+import DriverLiveMapModal from '../../components/cab/DriverLiveMapModal';
 import {
   fetchCabDispatches,
   assignCabDriver,
   fetchDrivers,
-  updateCabPricing
+  fetchVendorDrivers,
+  updateCabPricing,
+  fetchAdminFleetVehicles,
+  verifyAdminFleetVehicle
 } from '../../services/api';
+import { playNotificationSound } from '../../utils/notificationSound';
+import {
+  CATEGORY_LABEL,
+  DISPATCH_POLL_MS,
+  groupSizeLabel,
+  driverFitProblem,
+  findNewOpenJobs
+} from '../../utils/cabDispatchHelpers';
+
+const PICKUP_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+// Pickup times are saved as Thailand (Asia/Bangkok) wall-clock time. The API returns them
+// like "2026-11-13T10:00:00.000Z": the digits are already Thai time and the "Z" is only added
+// by the database driver. So the digits are shown exactly as saved, with no timezone
+// conversion, and labelled as Thailand time. Example: "13 November 2026, 10:00 AM".
+function formatThaiPickupTime(value) {
+  if (!value) return '';
+  const m = String(value).match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+  if (!m) return String(value);
+  const hour = Number(m[4]);
+  return `${Number(m[3])} ${PICKUP_MONTHS[Number(m[2]) - 1]} ${m[1]}, ${hour % 12 || 12}:${m[5]} ${hour < 12 ? 'AM' : 'PM'}`;
+}
 
 export default function AdminCabDispatchMonitor({ currentUser }) {
   const [dispatches, setDispatches] = useState([]);
@@ -37,37 +66,139 @@ export default function AdminCabDispatchMonitor({ currentUser }) {
     minimum_fare_thb: 350
   });
 
-  const loadData = async () => {
-    setLoading(true);
+  // View Mode: 'dispatches' | 'fleet_verification'
+  const [viewTab, setViewTab] = useState('dispatches');
+  const [fleetVehicles, setFleetVehicles] = useState([]);
+  const [fleetLoading, setFleetLoading] = useState(false);
+  const [fleetStatusFilter, setFleetStatusFilter] = useState('ALL');
+
+  const loadFleetVehicles = async () => {
+    setFleetLoading(true);
+    try {
+      const res = await fetchAdminFleetVehicles();
+      if (res && res.success && Array.isArray(res.data)) {
+        setFleetVehicles(res.data);
+      } else {
+        setFleetVehicles([]);
+      }
+    } catch (err) {
+      console.error('Failed to load fleet oversight:', err);
+    } finally {
+      setFleetLoading(false);
+    }
+  };
+
+  const handleApproveVehicle = async (vehId) => {
+    setActionLoading(true);
     setErrorMsg('');
     try {
-      const [dispRes, drvRes] = await Promise.all([
+      const res = await verifyAdminFleetVehicle(vehId, 'APPROVED');
+      if (res && res.success) {
+        setSuccessMsg(`Vehicle ${vehId} approved for transfers.`);
+        setTimeout(() => setSuccessMsg(''), 4000);
+        await loadFleetVehicles();
+      } else {
+        setErrorMsg(res?.error || 'Failed to approve vehicle.');
+      }
+    } catch (err) {
+      setErrorMsg(err.message || 'Error updating vehicle.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRejectVehicle = async (vehId) => {
+    const reason = window.prompt('Enter reason for vehicle document rejection:', 'Document blurred, expired, or non-compliant with Thai DLT regulations');
+    if (!reason) return;
+
+    setActionLoading(true);
+    setErrorMsg('');
+    try {
+      const res = await verifyAdminFleetVehicle(vehId, 'REJECTED', reason);
+      if (res && res.success) {
+        setSuccessMsg(`Vehicle ${vehId} marked as rejected.`);
+        setTimeout(() => setSuccessMsg(''), 4000);
+        await loadFleetVehicles();
+      } else {
+        setErrorMsg(res?.error || 'Failed to reject vehicle.');
+      }
+    } catch (err) {
+      setErrorMsg(err.message || 'Error updating vehicle.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // New-booking alerts: ids already shown, so only genuinely new jobs ring the bell
+  const seenDispatchIds = useRef(null);
+  const [newJobAlert, setNewJobAlert] = useState(null);
+
+  // Driver list with each driver's active vehicle size; falls back to the legacy list
+  const loadDriverRoster = async () => {
+    const rosterRes = await fetchVendorDrivers();
+    if (rosterRes && rosterRes.success && Array.isArray(rosterRes.data)) return rosterRes.data;
+    const legacy = await fetchDrivers();
+    return Array.isArray(legacy) ? legacy : [];
+  };
+
+  const loadData = async ({ silent = false } = {}) => {
+    if (!silent) {
+      setLoading(true);
+      setErrorMsg('');
+    }
+    try {
+      const [dispRes, drvList] = await Promise.all([
         fetchCabDispatches({ date: dateFilter }),
-        fetchDrivers()
+        loadDriverRoster()
       ]);
 
       if (dispRes && dispRes.success && Array.isArray(dispRes.data)) {
-        setDispatches(dispRes.data);
-      } else {
+        const list = dispRes.data;
+        if (seenDispatchIds.current) {
+          const fresh = findNewOpenJobs(seenDispatchIds.current, list);
+          if (fresh.length > 0) {
+            setNewJobAlert({ count: fresh.length, first: fresh[0] });
+            playNotificationSound('cab_new_booking');
+          }
+        }
+        seenDispatchIds.current = new Set(list.map(d => d.id));
+        setDispatches(withGpsTimestamps(list));
+      } else if (!silent) {
         setDispatches([]);
       }
 
-      if (Array.isArray(drvRes)) {
-        setDrivers(drvRes);
-      } else {
-        setDrivers([]);
-      }
+      setDrivers(drvList);
+      if (!silent) loadFleetVehicles();
     } catch (err) {
       console.error('Failed to load admin cab dispatches:', err);
-      setErrorMsg('Unable to retrieve central dispatch data.');
+      if (!silent) setErrorMsg('Unable to retrieve central dispatch data.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
+    // A new date filter is a new list; don't treat its rows as new bookings
+    seenDispatchIds.current = null;
     loadData();
+    // Check for new customer bookings every few seconds
+    const timer = setInterval(() => loadData({ silent: true }), DISPATCH_POLL_MS);
+    return () => clearInterval(timer);
   }, [dateFilter]);
+
+  // Driver positions are pushed here the moment the driver app sends them
+  const [liveStatus, setLiveStatus] = useState('connecting');
+  useEffect(() => connectLiveRooms({
+    rooms: ['admin'],
+    events: {
+      DRIVER_LOCATION_UPDATE: (data) => setDispatches(prev => applyDriverLocation(prev, data))
+    },
+    onStatus: setLiveStatus
+  }), []);
+
+  // Live map pop-up for one ride (reads the row from `dispatches`, so it moves with each update)
+  const [trackDispatchId, setTrackDispatchId] = useState(null);
+  const trackedDispatch = trackDispatchId ? dispatches.find(d => d.id === trackDispatchId) : null;
 
   const handleAssignSubmit = async (e) => {
     e.preventDefault();
@@ -153,6 +284,7 @@ export default function AdminCabDispatchMonitor({ currentUser }) {
           </p>
         </div>
         <div className="d-flex align-items-center gap-2">
+          <LiveGpsBadge status={liveStatus} fallbackSeconds={DISPATCH_POLL_MS / 1000} />
           <button
             onClick={() => setShowPricingModal(true)}
             className="btn btn-sm btn-outline-dark rounded-3 d-flex align-items-center gap-1.5 fw-semibold"
@@ -161,7 +293,7 @@ export default function AdminCabDispatchMonitor({ currentUser }) {
             <span>Pricing Rules</span>
           </button>
           <button
-            onClick={loadData}
+            onClick={() => loadData()}
             className="btn btn-sm btn-outline-secondary rounded-3 d-flex align-items-center gap-1.5"
             disabled={loading}
           >
@@ -214,6 +346,23 @@ export default function AdminCabDispatchMonitor({ currentUser }) {
       </div>
 
       {/* Alerts */}
+      {newJobAlert && (
+        <div className="alert alert-warning py-2 px-3 rounded-3 small d-flex align-items-center justify-content-between gap-2 mb-3">
+          <div className="d-flex align-items-center gap-2">
+            <BellRing size={15} className="flex-shrink-0" />
+            <span>
+              <strong>
+                {newJobAlert.count === 1 ? 'New cab booking waiting for a driver' : `${newJobAlert.count} new cab bookings waiting for a driver`}
+              </strong>
+              {' · '}{newJobAlert.first.pickup_address} · {groupSizeLabel(newJobAlert.first)} · {CATEGORY_LABEL[newJobAlert.first.vehicle_category] || newJobAlert.first.vehicle_category}
+              {newJobAlert.first.vendor_id ? ` · vendor ${newJobAlert.first.vendor_id}` : ''}
+            </span>
+          </div>
+          <button type="button" onClick={() => setNewJobAlert(null)} className="btn btn-sm btn-link text-dark p-0" title="Dismiss">
+            <X size={15} />
+          </button>
+        </div>
+      )}
       {errorMsg && (
         <div className="alert alert-danger py-2 px-3 rounded-3 small d-flex align-items-center gap-2 mb-3">
           <AlertCircle size={15} className="flex-shrink-0" />
@@ -227,6 +376,202 @@ export default function AdminCabDispatchMonitor({ currentUser }) {
         </div>
       )}
 
+      {/* Navigation Tabs */}
+      <div className="d-flex align-items-center gap-2 mb-4 border-bottom pb-2">
+        <button
+          onClick={() => setViewTab('dispatches')}
+          className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-flex align-items-center gap-1.5 ${viewTab === 'dispatches' ? 'btn-dark text-white' : 'btn-outline-secondary'}`}
+        >
+          <Compass size={14} />
+          <span>Active Dispatches &amp; Live Radar</span>
+          <span className="badge bg-secondary ms-1">{dispatches.length}</span>
+        </button>
+        <button
+          onClick={() => setViewTab('fleet_verification')}
+          className={`btn btn-sm rounded-pill px-3 py-1.5 fw-bold d-flex align-items-center gap-1.5 ${viewTab === 'fleet_verification' ? 'btn-dark text-white' : 'btn-outline-secondary'}`}
+        >
+          <ShieldCheck size={14} className="text-warning" />
+          <span>Fleet Document Verification &amp; Oversight</span>
+          {fleetVehicles.filter(v => v.verification_status === 'PENDING_APPROVAL').length > 0 && (
+            <span className="badge bg-warning text-dark ms-1">
+              {fleetVehicles.filter(v => v.verification_status === 'PENDING_APPROVAL').length} Pending
+            </span>
+          )}
+        </button>
+      </div>
+
+      {viewTab === 'fleet_verification' ? (
+        /* FLEET VERIFICATION CONSOLE */
+        <div>
+          <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+            <div>
+              <h5 className="fw-bold mb-0 text-dark">Fleet Vehicle Document Review &amp; Approval</h5>
+              <p className="text-muted small mb-0">Verify Thai commercial registration, insurance, and transport permits before authorizing vehicles for guest transfers.</p>
+            </div>
+            <div className="d-flex align-items-center gap-2">
+              <select
+                className="form-select form-select-sm rounded-2"
+                value={fleetStatusFilter}
+                onChange={e => setFleetStatusFilter(e.target.value)}
+              >
+                <option value="ALL">All Verification Statuses</option>
+                <option value="PENDING_APPROVAL">Pending Approval</option>
+                <option value="APPROVED">Approved &amp; Active</option>
+                <option value="REJECTED">Rejected</option>
+              </select>
+              <button onClick={loadFleetVehicles} className="btn btn-sm btn-outline-secondary rounded-2" title="Refresh Fleet">
+                <RefreshCw size={13} className={fleetLoading ? 'animate-spin' : ''} />
+              </button>
+            </div>
+          </div>
+
+          <div className="card border-0 shadow-sm rounded-3 overflow-hidden bg-white mb-4">
+            <div className="table-responsive">
+              <table className="table table-hover align-middle mb-0">
+                <thead className="bg-light border-bottom">
+                  <tr style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748b' }}>
+                    <th className="ps-3 py-3">Vehicle Details</th>
+                    <th className="py-3">Cab Vendor Partner</th>
+                    <th className="py-3">Thai License Plate</th>
+                    <th className="py-3">Capacity</th>
+                    <th className="py-3">Submitted Documents</th>
+                    <th className="py-3">Status</th>
+                    <th className="pe-3 py-3 text-end">Verification Actions</th>
+                  </tr>
+                </thead>
+                <tbody style={{ fontSize: '0.82rem' }}>
+                  {fleetLoading ? (
+                    <tr>
+                      <td colSpan="7" className="text-center py-5 text-muted">
+                        <Loader2 size={24} className="animate-spin mb-2 d-inline-block text-primary" />
+                        <div>Loading fleet verification queue...</div>
+                      </td>
+                    </tr>
+                  ) : fleetVehicles.filter(v => fleetStatusFilter === 'ALL' || v.verification_status === fleetStatusFilter).length === 0 ? (
+                    <tr>
+                      <td colSpan="7" className="text-center py-5 text-muted">
+                        No fleet vehicles match this filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    fleetVehicles
+                      .filter(v => fleetStatusFilter === 'ALL' || v.verification_status === fleetStatusFilter)
+                      .map(veh => {
+                        const isApproved = veh.verification_status === 'APPROVED';
+                        const isPending = veh.verification_status === 'PENDING_APPROVAL';
+                        const isRejected = veh.verification_status === 'REJECTED';
+
+                        return (
+                          <tr key={veh.id}>
+                            <td className="ps-3">
+                              <div className="d-flex align-items-center gap-2">
+                                {veh.photo_url ? (
+                                  <img src={veh.photo_url} alt="" className="rounded-2" style={{ width: '42px', height: '32px', objectFit: 'cover' }} />
+                                ) : (
+                                  <div className="rounded-2 bg-light d-flex align-items-center justify-content-center text-muted" style={{ width: '42px', height: '32px' }}>
+                                    <Car size={16} />
+                                  </div>
+                                )}
+                                <div>
+                                  <strong className="d-block text-dark">{veh.brand} {veh.model}</strong>
+                                  <span className="text-muted small" style={{ fontSize: '0.7rem' }}>
+                                    {veh.category === 'VIP_VAN' ? 'VIP Van' : veh.category === 'SUV' ? 'Premium SUV' : 'Prime Sedan'} • {veh.color}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+                            <td>
+                              <span className="fw-semibold text-dark">{veh.vendor_business_name || 'VIP Transfer Partner'}</span>
+                              <span className="d-block text-muted small" style={{ fontSize: '0.7rem' }}>{veh.vendor_phone || ''}</span>
+                            </td>
+                            <td>
+                              <span className="font-monospace fw-bold px-2 py-0.5 rounded bg-dark text-warning border" style={{ fontSize: '0.75rem' }}>
+                                {veh.plate_number}
+                              </span>
+                            </td>
+                            <td>
+                              <span className="badge bg-light text-dark border">
+                                {veh.seating_capacity} Seats • {veh.luggage_capacity} Luggage
+                              </span>
+                            </td>
+                            <td>
+                              <div className="d-flex flex-wrap gap-1">
+                                {veh.registration_doc_url ? (
+                                  <a href={veh.registration_doc_url} target="_blank" rel="noopener noreferrer" className="badge bg-primary bg-opacity-10 text-primary text-decoration-none d-flex align-items-center gap-0.5">
+                                    <FileText size={10} /> Reg Book <ExternalLink size={9} />
+                                  </a>
+                                ) : (
+                                  <span className="badge bg-light text-muted">No Reg</span>
+                                )}
+                                {veh.insurance_doc_url ? (
+                                  <a href={veh.insurance_doc_url} target="_blank" rel="noopener noreferrer" className="badge bg-success bg-opacity-10 text-success text-decoration-none d-flex align-items-center gap-0.5">
+                                    <ShieldCheck size={10} /> Insurance <ExternalLink size={9} />
+                                  </a>
+                                ) : null}
+                                {veh.permit_doc_url ? (
+                                  <a href={veh.permit_doc_url} target="_blank" rel="noopener noreferrer" className="badge bg-warning bg-opacity-10 text-dark text-decoration-none d-flex align-items-center gap-0.5">
+                                    <CheckCheck size={10} /> DLT Permit <ExternalLink size={9} />
+                                  </a>
+                                ) : null}
+                              </div>
+                            </td>
+                            <td>
+                              {isApproved && (
+                                <span className="badge bg-success bg-opacity-15 text-success border border-success">
+                                  Approved
+                                </span>
+                              )}
+                              {isPending && (
+                                <span className="badge bg-warning bg-opacity-25 text-dark border border-warning">
+                                  Pending Review
+                                </span>
+                              )}
+                              {isRejected && (
+                                <span className="badge bg-danger bg-opacity-15 text-danger border border-danger">
+                                  Rejected
+                                </span>
+                              )}
+                            </td>
+                            <td className="pe-3 text-end">
+                              <div className="d-flex align-items-center justify-content-end gap-1.5">
+                                {!isApproved && (
+                                  <button
+                                    onClick={() => handleApproveVehicle(veh.id)}
+                                    disabled={actionLoading}
+                                    className="btn btn-sm btn-success rounded-2 px-2.5 py-1 fw-semibold d-flex align-items-center gap-1"
+                                    style={{ fontSize: '0.74rem' }}
+                                    title="Approve vehicle details and documents"
+                                  >
+                                    <CheckCircle2 size={13} />
+                                    <span>Approve</span>
+                                  </button>
+                                )}
+                                {!isRejected && (
+                                  <button
+                                    onClick={() => handleRejectVehicle(veh.id)}
+                                    disabled={actionLoading}
+                                    className="btn btn-sm btn-outline-danger rounded-2 px-2.5 py-1 fw-semibold d-flex align-items-center gap-1"
+                                    style={{ fontSize: '0.74rem' }}
+                                    title="Reject vehicle documents"
+                                  >
+                                    <XCircle size={13} />
+                                    <span>Reject</span>
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* ACTIVE DISPATCHES CONSOLE */
+        <>
       {/* Filters Bar */}
       <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
         <div className="d-flex align-items-center gap-2 flex-grow-1" style={{ maxWidth: '480px' }}>
@@ -322,8 +667,8 @@ export default function AdminCabDispatchMonitor({ currentUser }) {
                   if (isCompleted) badgeColor = 'bg-success text-white';
                   if (isCancelled) badgeColor = 'bg-danger text-white';
 
-                  const pickupTimeStr = dispatch.pickup_datetime 
-                    ? new Date(dispatch.pickup_datetime).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                  const pickupTimeStr = dispatch.pickup_datetime
+                    ? formatThaiPickupTime(dispatch.pickup_datetime)
                     : 'Scheduled';
 
                   const gpsCoords = dispatch.driver_current_location || null;
@@ -337,11 +682,22 @@ export default function AdminCabDispatchMonitor({ currentUser }) {
                         <span className="badge bg-light text-muted border px-1.5 py-0.5 mt-0.5" style={{ fontSize: '0.65rem' }}>
                           {dispatch.vehicle_category || 'SEDAN'}
                         </span>
+                        <div className="text-muted mt-0.5" style={{ fontSize: '0.68rem' }}>
+                          {groupSizeLabel(dispatch)}
+                        </div>
+                        {dispatch.vendor_id && (
+                          <div className="text-muted" style={{ fontSize: '0.66rem' }}>
+                            Vendor: {dispatch.vendor_id}
+                          </div>
+                        )}
                       </td>
                       <td className="py-3">
                         <div className="d-flex align-items-center gap-1 text-dark small fw-semibold">
                           <Calendar size={13} className="text-muted" />
-                          <span>{pickupTimeStr}</span>
+                          <span>
+                            {pickupTimeStr}
+                            {dispatch.pickup_datetime && <span className="text-muted fw-normal"> Thailand time</span>}
+                          </span>
                         </div>
                         <span className="text-muted small" style={{ fontSize: '0.70rem' }}>
                           ~{dispatch.estimated_minutes || 30} mins ({dispatch.distance_km || 0} km)
@@ -378,23 +734,13 @@ export default function AdminCabDispatchMonitor({ currentUser }) {
                         )}
                       </td>
                       <td className="py-3">
-                        {gpsCoords ? (
-                          <div>
-                            <a
-                              href={`https://www.google.com/maps?q=${encodeURIComponent(gpsCoords)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-decoration-none d-inline-flex align-items-center gap-1 text-primary fw-bold"
-                              style={{ fontSize: '0.72rem' }}
-                            >
-                              <Navigation size={12} className="text-success" />
-                              <span className="font-monospace">{gpsCoords}</span>
-                            </a>
-                            <span className="d-block text-muted" style={{ fontSize: '0.66rem' }}>Live GPS Ping</span>
-                          </div>
-                        ) : (
-                          <span className="text-muted small" style={{ fontSize: '0.72rem' }}>Standing By</span>
-                        )}
+                        <DriverGpsCell
+                          hasDriver={Boolean(dispatch.driver_id)}
+                          rideEnded={isCompleted || isCancelled}
+                          coords={gpsCoords}
+                          receivedAt={dispatch.gpsReceivedAt}
+                          onTrack={() => setTrackDispatchId(dispatch.id)}
+                        />
                       </td>
                       <td className="py-3">
                         <div className="fw-bold text-dark font-heading">
@@ -433,6 +779,8 @@ export default function AdminCabDispatchMonitor({ currentUser }) {
           </table>
         </div>
       </div>
+      </>
+      )}
 
       {/* REASSIGN DRIVER MODAL */}
       {showAssignModal && selectedDispatch && (
@@ -470,9 +818,15 @@ export default function AdminCabDispatchMonitor({ currentUser }) {
                 <span className="text-muted">Pickup Location:</span>
                 <span className="fw-bold text-truncate ms-2" style={{ maxWidth: '240px' }}>{selectedDispatch.pickup_address}</span>
               </div>
-              <div className="d-flex justify-content-between">
+              <div className="d-flex justify-content-between mb-1">
                 <span className="text-muted">Destination:</span>
                 <span className="fw-bold text-truncate ms-2" style={{ maxWidth: '240px' }}>{selectedDispatch.dropoff_address}</span>
+              </div>
+              <div className="d-flex justify-content-between">
+                <span className="text-muted">Group:</span>
+                <span className="fw-bold">
+                  {groupSizeLabel(selectedDispatch)} · {CATEGORY_LABEL[selectedDispatch.vehicle_category] || selectedDispatch.vehicle_category}
+                </span>
               </div>
             </div>
 
@@ -488,12 +842,20 @@ export default function AdminCabDispatchMonitor({ currentUser }) {
                   onChange={e => setAssignDriverId(e.target.value)}
                 >
                   <option value="">-- Choose Approved Driver --</option>
-                  {drivers.map(drv => (
-                    <option key={drv.id} value={drv.id}>
-                      {drv.full_name || drv.name} ({drv.vehicle_model || 'Sedan'} - {drv.vehicle_plate || drv.id}) [{(drv.status || 'Offline').toUpperCase()}]
-                    </option>
-                  ))}
+                  {drivers.map(drv => {
+                    const problem = driverFitProblem(drv, selectedDispatch);
+                    return (
+                      <option key={drv.id} value={drv.id} disabled={Boolean(problem)}>
+                        {drv.full_name || drv.name} ({drv.vehicle_model || 'Sedan'} - {drv.vehicle_plate || drv.id}) [{(drv.status || 'Offline').toUpperCase()}]
+                        {drv.vendor_id ? ` · ${drv.vendor_id}` : ''}
+                        {problem ? ` — won't fit: ${problem}` : ''}
+                      </option>
+                    );
+                  })}
                 </select>
+                <div className="text-muted small mt-1">
+                  Only drivers whose active vehicle fits this group can be selected. Assigning another vendor's driver moves the job to that vendor.
+                </div>
               </div>
 
               <div className="d-flex align-items-center justify-content-end gap-2">
@@ -610,6 +972,10 @@ export default function AdminCabDispatchMonitor({ currentUser }) {
             </form>
           </div>
         </div>
+      )}
+
+      {trackedDispatch && (
+        <DriverLiveMapModal dispatch={trackedDispatch} onClose={() => setTrackDispatchId(null)} />
       )}
     </div>
   );

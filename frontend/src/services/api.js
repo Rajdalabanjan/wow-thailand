@@ -436,11 +436,13 @@ export async function fetchBookings() {
   return list;
 }
 
-export async function fetchBookingById(id) {
+export async function fetchBookingById(id, voucherKey = '') {
   if (!id) return null;
   const cleanId = String(id).trim();
+  // voucherKey comes from a shared voucher link (?vk=…) and opens this booking without signing in
+  const keyParam = voucherKey ? `&vk=${encodeURIComponent(voucherKey)}` : '';
   try {
-    const res = await apiFetch(`${API_BASE}?resource=bookings&id=${encodeURIComponent(cleanId)}`);
+    const res = await apiFetch(`${API_BASE}?resource=bookings&id=${encodeURIComponent(cleanId)}${keyParam}`);
     if (res.ok) {
       const json = await res.json();
       if (json && json.success && json.data) {
@@ -780,10 +782,13 @@ export async function b2bLogin(username, password) {
 }
 
 export async function fetchB2BDashboard(partnerId) {
-  const res = await apiFetch(`${API_BASE}?resource=b2b_dashboard&b2b_partner_id=${encodeURIComponent(partnerId || '')}`, {
-    headers: { 'Authorization': `Bearer ${partnerId || ''}` }
-  });
-  if (!res.ok) throw new Error('Failed to fetch B2B dashboard');
+  const res = await apiFetch(`${API_BASE}?resource=b2b_dashboard&b2b_partner_id=${encodeURIComponent(partnerId || '')}`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    const err = new Error(data.error || 'Failed to fetch B2B dashboard');
+    err.status = res.status; // 401/403: the B2B session is no longer valid
+    throw err;
+  }
   return await res.json();
 }
 
@@ -795,30 +800,21 @@ export async function fetchB2BBookings(partnerId, filters = {}) {
     status: filters.status || 'all',
     search: filters.search || ''
   }).toString();
-  const headers = {};
-  if (partnerId && partnerId !== 'all') {
-    headers['Authorization'] = `Bearer ${partnerId}`;
-    headers['X-B2B-Partner-ID'] = partnerId;
-  }
-  const res = await apiFetch(`${API_BASE}?${query}`, { headers });
+  const res = await apiFetch(`${API_BASE}?${query}`);
   if (!res.ok) return [];
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }
 
 export async function fetchB2BCustomers(partnerId, search = '') {
-  const res = await apiFetch(`${API_BASE}?resource=b2b_customers&b2b_partner_id=${encodeURIComponent(partnerId || '')}&search=${encodeURIComponent(search)}`, {
-    headers: { 'Authorization': `Bearer ${partnerId || ''}` }
-  });
+  const res = await apiFetch(`${API_BASE}?resource=b2b_customers&b2b_partner_id=${encodeURIComponent(partnerId || '')}&search=${encodeURIComponent(search)}`);
   if (!res.ok) return [];
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }
 
 export async function fetchB2BReports(partnerId) {
-  const res = await apiFetch(`${API_BASE}?resource=b2b_reports&b2b_partner_id=${encodeURIComponent(partnerId || '')}`, {
-    headers: { 'Authorization': `Bearer ${partnerId || ''}` }
-  });
+  const res = await apiFetch(`${API_BASE}?resource=b2b_reports&b2b_partner_id=${encodeURIComponent(partnerId || '')}`);
   if (!res.ok) throw new Error('Failed to fetch B2B reports');
   return await res.json();
 }
@@ -828,32 +824,18 @@ export async function fetchB2BPricingPreview(params) {
     resource: 'b2b_pricing_preview',
     ...params
   }).toString();
-  const res = await apiFetch(`${API_BASE}?${query}`, {
-    headers: { 'Authorization': `Bearer ${params.b2b_partner_id || ''}` }
-  });
+  const res = await apiFetch(`${API_BASE}?${query}`);
   const data = await res.json();
   if (!res.ok || !data.success) throw new Error(data.error || 'Pricing calculation failed');
   return data.pricing;
 }
 
 export async function b2bBook(bookingPayload) {
-  const token = bookingPayload.b2b_partner_id 
-    || getAuthToken() 
-    || localStorage.getItem('b2b_partner_token')
-    || (() => { try { return JSON.parse(localStorage.getItem('b2b_partner_user') || '{}')?.id; } catch(e) { return ''; } })()
-    || '';
-  const payloadWithPartner = {
-    ...bookingPayload,
-    b2b_partner_id: bookingPayload.b2b_partner_id || token
-  };
+  // apiFetch attaches the signed-in partner's session; the server books as that partner
   const res = await apiFetch(`${API_BASE}?action=b2b_book`, {
     method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      'X-B2B-Partner-ID': token
-    },
-    body: JSON.stringify({ action: 'b2b_book', ...payloadWithPartner })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'b2b_book', ...bookingPayload })
   });
   const data = await res.json();
   if (!res.ok || !data.success) {
@@ -901,9 +883,7 @@ export async function saveB2BPricingRule(ruleData) {
 }
 
 export async function fetchB2BAuditLogs(partnerId = '') {
-  const res = await apiFetch(`${API_BASE}?resource=b2b_audit_logs&b2b_partner_id=${encodeURIComponent(partnerId)}`, {
-    headers: { 'Authorization': `Bearer ${partnerId || ''}` }
-  });
+  const res = await apiFetch(`${API_BASE}?resource=b2b_audit_logs&b2b_partner_id=${encodeURIComponent(partnerId)}`);
   if (!res.ok) return [];
   const data = await res.json();
   return Array.isArray(data) ? data : [];
@@ -1178,9 +1158,7 @@ export async function clearNotifications({ role = '', userId = '', phone = '' } 
 
 export async function fetchB2BWallet(partnerId) {
   try {
-    const res = await apiFetch(`${API_BASE}?resource=b2b_wallet&partner_id=${encodeURIComponent(partnerId || '')}`, {
-      headers: { 'Authorization': `Bearer ${partnerId || ''}` }
-    });
+    const res = await apiFetch(`${API_BASE}?resource=b2b_wallet&partner_id=${encodeURIComponent(partnerId || '')}`);
     if (!res.ok) return { success: false, error: 'Failed to load wallet' };
     return await res.json();
   } catch (err) {
@@ -1205,10 +1183,7 @@ export async function rechargeB2BWallet(payload) {
   try {
     const res = await apiFetch(`${API_BASE}?action=b2b_wallet_recharge`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${payload.b2b_partner_id || payload.partner_id || ''}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'b2b_wallet_recharge', ...payload })
     });
     return await res.json();
@@ -1217,14 +1192,25 @@ export async function rechargeB2BWallet(payload) {
   }
 }
 
+// Admin confirms (or rejects) a partner's wallet top-up after checking the payment arrived
+export async function reviewB2BTopUp(transactionId, approve, note = '') {
+  const action = approve ? 'b2b_approve_wallet_recharge' : 'b2b_reject_wallet_recharge';
+  const res = await apiFetch(`${API_BASE}?action=${action}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, transaction_id: transactionId, note })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.success) throw new Error(data.error || 'Could not update the top-up request.');
+  broadcastNotificationUpdate({ type: 'b2b', title: approve ? 'B2B Top-Up Confirmed' : 'B2B Top-Up Rejected' });
+  return data;
+}
+
 export async function adjustB2BWallet(payload) {
   try {
     const res = await apiFetch(`${API_BASE}?action=b2b_admin_adjust_wallet`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${payload.admin_id || 'admin'}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'b2b_admin_adjust_wallet', ...payload })
     });
     return await res.json();
@@ -1237,10 +1223,7 @@ export async function cancelB2BBooking(bookingId, reason, partnerId) {
   try {
     const res = await apiFetch(`${API_BASE}?action=b2b_cancel_booking`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${partnerId || ''}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'b2b_cancel_booking', booking_id: bookingId, reason: reason })
     });
     return await res.json();
@@ -1435,7 +1418,8 @@ export async function loginUser(username, password) {
 
   // Handle authoritative server error response (e.g. HTTP 403 Forbidden for pending or rejected vendor accounts)
   if (data && (data.error || data.status === 'pending' || data.status === 'rejected')) {
-    if ((res && res.status === 403) || data.status === 'pending' || data.status === 'rejected') {
+    // 429 = too many wrong tries; the server's block must not be bypassed by the offline fallbacks below
+    if ((res && (res.status === 403 || res.status === 429)) || data.status === 'pending' || data.status === 'rejected') {
       const errorMsg = data.error || (data.status === 'pending'
         ? 'Your account registration is currently pending administrator verification and approval. You will be notified once activated.'
         : 'Your account registration was not approved. Please contact WOW THAILAND support.');
@@ -2261,12 +2245,14 @@ export async function createBooking(bookingData, options = {}) {
   }
 
   let serverCashbackPreview = null;
+  let voucherAccessKey = '';
   const res = await apiFetch(`${API_BASE}?action=book`, fetchOptions);
   if (res.ok) {
     const data = await res.json();
     if (data && data.success) {
       createdBookingId = data.booking_id;
       serverCashbackPreview = data.cashback_preview || null;
+      voucherAccessKey = data.voucher_access_key || '';
     } else {
       throw new Error(data?.error || data?.message || 'Server rejected booking request.');
     }
@@ -2337,7 +2323,8 @@ export async function createBooking(bookingData, options = {}) {
     price_breakdown_json: bookingData.price_breakdown_json || null,
     customizations: bookingData.customizations || null,
     cashback_preview: serverCashbackPreview,
-    cashback_earned: (serverCashbackPreview && typeof serverCashbackPreview.amount === 'number') ? serverCashbackPreview.amount : 0
+    cashback_earned: (serverCashbackPreview && typeof serverCashbackPreview.amount === 'number') ? serverCashbackPreview.amount : 0,
+    voucher_access_key: voucherAccessKey
   };
 
   try {
@@ -4628,6 +4615,154 @@ export async function deleteVendorDriver(driverId) {
     return res.json();
   } catch (err) {
     console.error('[API] deleteVendorDriver error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+// ========================================================
+// Phase 2-4: Dedicated Cab Fleet Vehicles & Verification
+// ========================================================
+
+export async function fetchVendorFleetVehicles(vendorId = null) {
+  try {
+    const url = vendorId ? `/api/v1/vendor/fleet-vehicles?vendor_id=${encodeURIComponent(vendorId)}` : '/api/v1/vendor/fleet-vehicles';
+    const res = await apiFetch(url);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      return { success: false, error: err.error || 'Failed to fetch fleet vehicles', data: [] };
+    }
+    return res.json();
+  } catch (err) {
+    console.error('[API] fetchVendorFleetVehicles error:', err);
+    return { success: false, error: err.message, data: [] };
+  }
+}
+
+export async function createVendorFleetVehicle(payload) {
+  try {
+    const res = await apiFetch('/api/v1/vendor/fleet-vehicles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return res.json();
+  } catch (err) {
+    console.error('[API] createVendorFleetVehicle error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function updateVendorFleetVehicle(vehicleId, payload) {
+  try {
+    const res = await apiFetch(`/api/v1/vendor/fleet-vehicles/${encodeURIComponent(vehicleId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return res.json();
+  } catch (err) {
+    console.error('[API] updateVendorFleetVehicle error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function deleteVendorFleetVehicle(vehicleId) {
+  try {
+    const res = await apiFetch(`/api/v1/vendor/fleet-vehicles/${encodeURIComponent(vehicleId)}`, {
+      method: 'DELETE'
+    });
+    return res.json();
+  } catch (err) {
+    console.error('[API] deleteVendorFleetVehicle error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function assignVehicleToDriver(vehicleId, driverId) {
+  try {
+    const res = await apiFetch('/api/v1/vendor/fleet-vehicles/assign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vehicle_id: vehicleId, driver_id: driverId })
+    });
+    return res.json();
+  } catch (err) {
+    console.error('[API] assignVehicleToDriver error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function unassignVehicleFromDriver(vehicleId, driverId) {
+  try {
+    const res = await apiFetch('/api/v1/vendor/fleet-vehicles/unassign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vehicle_id: vehicleId, driver_id: driverId })
+    });
+    return res.json();
+  } catch (err) {
+    console.error('[API] unassignVehicleFromDriver error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function fetchAdminFleetVehicles(status = null, vendorId = null) {
+  try {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (vendorId) params.append('vendor_id', vendorId);
+    const qs = params.toString();
+    const url = qs ? `/api/v1/admin/fleet-vehicles?${qs}` : '/api/v1/admin/fleet-vehicles';
+    const res = await apiFetch(url);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      return { success: false, error: err.error || 'Failed to fetch fleet oversight', data: [] };
+    }
+    return res.json();
+  } catch (err) {
+    console.error('[API] fetchAdminFleetVehicles error:', err);
+    return { success: false, error: err.message, data: [] };
+  }
+}
+
+export async function verifyAdminFleetVehicle(vehicleId, status, rejectionReason = '') {
+  try {
+    const res = await apiFetch(`/api/v1/admin/fleet-vehicles/${encodeURIComponent(vehicleId)}/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, rejection_reason: rejectionReason })
+    });
+    return res.json();
+  } catch (err) {
+    console.error('[API] verifyAdminFleetVehicle error:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function fetchDriverAssignedVehicles() {
+  try {
+    const res = await apiFetch('/api/v1/driver/assigned-vehicles');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      return { success: false, error: err.error || 'Failed to fetch assigned vehicles', data: [] };
+    }
+    return res.json();
+  } catch (err) {
+    console.error('[API] fetchDriverAssignedVehicles error:', err);
+    return { success: false, error: err.message, data: [] };
+  }
+}
+
+export async function selectDriverActiveVehicle(vehicleId) {
+  try {
+    const res = await apiFetch('/api/v1/driver/select-vehicle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vehicle_id: vehicleId })
+    });
+    return res.json();
+  } catch (err) {
+    console.error('[API] selectDriverActiveVehicle error:', err);
     return { success: false, error: err.message };
   }
 }

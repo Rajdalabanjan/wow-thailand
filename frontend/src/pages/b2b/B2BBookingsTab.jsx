@@ -81,6 +81,10 @@ export default function B2BBookingsTab({ partnerUser, forcedMode = null }) {
       case 'settled':
       case 'paid':
         return <span className="badge bg-success text-white text-xs px-2.5 py-1 rounded-pill fw-semibold">Credited</span>;
+      case 'void':
+        return <span className="badge bg-light text-muted border text-xs px-2.5 py-1 rounded-pill">Void (cancelled)</span>;
+      case 'none':
+        return <span className="badge bg-light text-muted border text-xs px-2.5 py-1 rounded-pill">—</span>;
       default:
         return <span className="badge bg-secondary text-white text-xs px-2.5 py-1 rounded-pill">Accrued (Pending)</span>;
     }

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import HoverGlider, { useEnterAnimation } from '../../components/common/HoverGlider';
 import {
   Compass, LogOut, Users, Settings, Shield, LayoutDashboard,
   Building, Car, Hotel, Plane, CalendarDays, Wallet, CreditCard,
@@ -51,9 +52,11 @@ const SIDEBAR_GROUPS = [
     ]
   },
   {
-    label: 'Fleet & Drivers',
+    label: 'Fleet & Transfers',
     items: [
       { id: 'drivers', label: 'Driver Management', icon: <Users size={15} /> },
+      { id: 'cab_dispatch_monitor', label: 'Cab Dispatch & Telemetry', icon: <Compass size={15} /> },
+      { id: 'fleet_oversight', label: 'Global Fleet Oversight', icon: <Car size={15} /> },
     ]
   },
   {
@@ -260,12 +263,15 @@ function SidebarGroup({ group, activeTab, onSelect, defaultOpen }) {
               onDrop={(e) => handleDrop(e, item.id)}
               onDragEnd={handleDragEnd}
               onClick={() => onSelect(item.id)}
+              data-glide
+              data-glide-active={activeTab === item.id ? 'true' : 'false'}
               className="btn w-100 text-start d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3 mb-1"
               style={{
                 fontSize: '0.83rem',
-                background: activeTab === item.id ? 'linear-gradient(90deg, #FF6333, #FF8A00)' : (dragOverItemId === item.id ? 'rgba(255,255,255,0.08)' : 'transparent'),
+                // the selected orange bar is drawn by HoverGlider and glides to the clicked item
+                background: activeTab === item.id ? 'transparent' : (dragOverItemId === item.id ? 'rgba(255,255,255,0.08)' : 'transparent'),
                 color: activeTab === item.id ? '#fff' : 'rgba(255,255,255,0.65)',
-                boxShadow: activeTab === item.id ? '0 4px 12px rgba(255,99,51,0.3)' : 'none',
+                boxShadow: 'none',
                 fontWeight: activeTab === item.id ? 700 : 400,
                 opacity: draggedItemId === item.id ? 0.4 : 1,
                 cursor: 'grab',
@@ -323,6 +329,9 @@ export default function SuperAdminPortalPage({
   };
 
   const [activeTab, setActiveTab] = useState(getInitialTab);
+  // Main content glides in when another menu item is clicked (B2B sub-tabs animate their own content)
+  const contentRef = useRef(null);
+  useEnterAnimation(contentRef, activeTab, (before, next) => String(before).startsWith('b2b_') && String(next).startsWith('b2b_'));
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
@@ -909,8 +918,10 @@ export default function SuperAdminPortalPage({
         </div>
 
         {/* Nav */}
-        <div 
-          className="flex-grow-1 py-2 custom-sidebar-scroll"
+        <HoverGlider
+          gliderClassName="hover-glider--sidebar"
+          activeGliderClassName="hover-glider--sidebar-active"
+          className="flex-grow-1 py-2 custom-sidebar-scroll sidebar-glide"
           style={{
             overflowY: 'auto',
             overflowX: 'hidden'
@@ -929,7 +940,7 @@ export default function SuperAdminPortalPage({
               />
             );
           })}
-        </div>
+        </HoverGlider>
 
         {/* Logout */}
         <div className="p-3 flex-shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
@@ -1173,7 +1184,7 @@ export default function SuperAdminPortalPage({
         </header>
 
         {/* Content */}
-        <div className="flex-grow-1 overflow-auto" style={{ background: '#f0f2f5', minWidth: 0, width: '100%' }}>
+        <div ref={contentRef} className="flex-grow-1 overflow-auto" style={{ background: '#f0f2f5', minWidth: 0, width: '100%' }}>
           {activeTab === 'reviews' ? (
             <AdminReviewsManagement portalTitle="Super Admin Portal" onSelectTab={handleTabChange} />
           ) : activeTab === 'storefront_leads' ? (

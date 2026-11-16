@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import HoverGlider, { useEnterAnimation } from '../../components/common/HoverGlider';
 import {
   LayoutDashboard, Building, PlusCircle, BedDouble, CalendarDays, Tag, Lock,
   BookOpen, FilePlus, ConciergeBell, LogIn, LogOut as LogOutIcon, Users,
@@ -186,12 +187,14 @@ function SidebarGroup({ group, activeTab, onSelect, defaultOpen = false }) {
             <button
               key={item.id}
               onClick={() => onSelect(item.id)}
+              data-glide
+              data-glide-active={activeTab === item.id ? 'true' : 'false'}
               className="btn w-100 text-start d-flex align-items-center gap-3 py-2 px-3 border-0 rounded-pill mb-1 mx-auto"
               style={{
                 fontSize: '0.85rem',
-                background: activeTab === item.id ? 'linear-gradient(90deg, #FF6333, #FF8A00)' : 'transparent',
+                background: 'transparent', // selected pill is drawn by HoverGlider and glides
                 color: activeTab === item.id ? '#fff' : 'rgba(255,255,255,0.65)',
-                boxShadow: activeTab === item.id ? '0 4px 12px rgba(255, 99, 51, 0.3)' : 'none',
+                boxShadow: 'none',
                 fontWeight: activeTab === item.id ? 700 : 400,
                 width: 'calc(100% - 8px)'
               }}
@@ -217,6 +220,9 @@ export default function HotelVendorPortalPage({
   bookings = []
 }) {
   const [activeTab, setActiveTab] = useState('dashboard');
+  // Page content glides in smoothly whenever another tab / menu item is chosen
+  const contentRef = React.useRef(null);
+  useEnterAnimation(contentRef, activeTab);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
   const [notificationsList, setNotificationsList] = useState([]);
@@ -354,8 +360,13 @@ export default function HotelVendorPortalPage({
     );
   }
 
+  // The server marks each hotel with is_mine for the signed-in hotel vendor
+  const serverMarksOwnership = (liveHotels || []).some(h => typeof h.is_mine === 'boolean');
   const vendorHotels = (liveHotels || []).filter((h, idx, self) => {
-    const isOwner = 
+    if (serverMarksOwnership) {
+      return h.is_mine === true && self.findIndex(other => other.id === h.id) === idx;
+    }
+    const isOwner =
       currentUser?.role === 'hotel_vendor' ||
       currentUser?.role === 'admin' ||
       currentUser?.role === 'superadmin' ||
@@ -468,7 +479,7 @@ export default function HotelVendorPortalPage({
         </div>
 
         {/* Nav Groups */}
-        <div className="flex-grow-1 px-2 py-2">
+        <HoverGlider className="flex-grow-1 px-2 py-2 sidebar-glide" gliderClassName="hover-glider--sidebar-pill" activeGliderClassName="hover-glider--sidebar-active-pill">
           {filteredSidebarGroups.map((group, idx) => (
             <SidebarGroup
               key={group.label}
@@ -478,7 +489,7 @@ export default function HotelVendorPortalPage({
               defaultOpen={idx === 0 || idx === 1}
             />
           ))}
-        </div>
+        </HoverGlider>
 
         {/* Logout */}
         <div className="p-3 border-top" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
@@ -565,7 +576,7 @@ export default function HotelVendorPortalPage({
         </header>
 
         {/* Module Content */}
-        <div className="flex-grow-1 overflow-auto p-0">
+        <div ref={contentRef} className="flex-grow-1 overflow-auto p-0">
           <VendorSuspendedBanner 
             vendorId={currentUser?.id} 
             onRechargeClick={() => setActiveTab('wallet')} 

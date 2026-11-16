@@ -1,14 +1,40 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Compass, Calendar, Clock, MapPin, Car, User, Phone, Check,
   AlertCircle, Search, RefreshCw, Loader2, ArrowRight, ShieldCheck,
-  Send, UserCheck, AlertTriangle
+  Send, UserCheck, AlertTriangle, X, BellRing
 } from 'lucide-react';
 import {
   fetchCabDispatches,
   assignCabDriver,
   fetchVendorDrivers
 } from '../../../services/api';
+import { playNotificationSound } from '../../../utils/notificationSound';
+import { connectLiveRooms } from '../../../utils/liveSocket';
+import { withGpsTimestamps, applyDriverLocation } from '../../../utils/driverGps';
+import DriverGpsCell, { LiveGpsBadge } from '../../../components/cab/DriverGpsCell';
+import DriverLiveMapModal from '../../../components/cab/DriverLiveMapModal';
+import {
+  CATEGORY_LABEL,
+  DISPATCH_POLL_MS,
+  groupSizeLabel,
+  driverFitProblem,
+  findNewOpenJobs
+} from '../../../utils/cabDispatchHelpers';
+
+const PICKUP_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+// Pickup times are saved as Thailand (Asia/Bangkok) wall-clock time. The API returns them
+// like "2026-11-13T10:00:00.000Z": the digits are already Thai time and the "Z" is only added
+// by the database driver. So the digits are shown exactly as saved, with no timezone
+// conversion, and labelled as Thailand time. Example: "13 November 2026, 10:00 AM".
+function formatThaiPickupTime(value) {
+  if (!value) return '';
+  const m = String(value).match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+  if (!m) return String(value);
+  const hour = Number(m[4]);
+  return `${Number(m[3])} ${PICKUP_MONTHS[Number(m[2]) - 1]} ${m[1]}, ${hour % 12 || 12}:${m[5]} ${hour < 12 ? 'AM' : 'PM'}`;
+}
 
 export default function VendorTransferDispatches({ currentUser }) {
   const [dispatches, setDispatches] = useState([]);
@@ -25,9 +51,15 @@ export default function VendorTransferDispatches({ currentUser }) {
   const [assignDriverId, setAssignDriverId] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
 
-  const loadData = async () => {
-    setLoading(true);
-    setErrorMsg('');
+  // New-booking alerts: ids already shown, so only genuinely new jobs ring the bell
+  const seenDispatchIds = useRef(null);
+  const [newJobAlert, setNewJobAlert] = useState(null);
+
+  const loadData = async ({ silent = false } = {}) => {
+    if (!silent) {
+      setLoading(true);
+      setErrorMsg('');
+    }
     try {
       const [dispRes, drvRes] = await Promise.all([
         fetchCabDispatches(),
@@ -35,27 +67,58 @@ export default function VendorTransferDispatches({ currentUser }) {
       ]);
 
       if (dispRes && dispRes.success && Array.isArray(dispRes.data)) {
-        setDispatches(dispRes.data);
-      } else {
+        const list = dispRes.data;
+        if (seenDispatchIds.current) {
+          const fresh = findNewOpenJobs(seenDispatchIds.current, list);
+          if (fresh.length > 0) {
+            setNewJobAlert({ count: fresh.length, first: fresh[0] });
+            playNotificationSound('cab_new_booking');
+          }
+        }
+        seenDispatchIds.current = new Set(list.map(d => d.id));
+        setDispatches(withGpsTimestamps(list));
+        if (dispRes.viewer_vendor_id) setVendorRoomId(dispRes.viewer_vendor_id);
+      } else if (!silent) {
         setDispatches([]);
       }
 
       if (drvRes && drvRes.success && Array.isArray(drvRes.data)) {
         setDrivers(drvRes.data);
-      } else {
+      } else if (!silent) {
         setDrivers([]);
       }
     } catch (err) {
       console.error('Failed to load vendor transfer dispatches:', err);
-      setErrorMsg('Unable to retrieve transfer dispatches.');
+      if (!silent) setErrorMsg('Unable to retrieve transfer dispatches.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     loadData();
+    // Check for new customer bookings every few seconds
+    const timer = setInterval(() => loadData({ silent: true }), DISPATCH_POLL_MS);
+    return () => clearInterval(timer);
   }, []);
+
+  // Your drivers' positions are pushed here the moment their driver app sends them
+  const [vendorRoomId, setVendorRoomId] = useState(null);
+  const [liveStatus, setLiveStatus] = useState('connecting');
+  useEffect(() => {
+    if (!vendorRoomId) return undefined;
+    return connectLiveRooms({
+      rooms: [`vendor_${vendorRoomId}`],
+      events: {
+        DRIVER_LOCATION_UPDATE: (data) => setDispatches(prev => applyDriverLocation(prev, data))
+      },
+      onStatus: setLiveStatus
+    });
+  }, [vendorRoomId]);
+
+  // Live map pop-up for one ride (reads the row from `dispatches`, so it moves with each update)
+  const [trackDispatchId, setTrackDispatchId] = useState(null);
+  const trackedDispatch = trackDispatchId ? dispatches.find(d => d.id === trackDispatchId) : null;
 
   const handleAssignSubmit = async (e) => {
     e.preventDefault();
@@ -113,14 +176,17 @@ export default function VendorTransferDispatches({ currentUser }) {
             Monitor incoming customer cab &amp; airport transfer requests assigned to your vendor account, assign chauffeurs, and track live duty progress.
           </p>
         </div>
-        <button
-          onClick={loadData}
-          className="btn btn-sm btn-outline-secondary rounded-3 d-flex align-items-center gap-1.5"
-          disabled={loading}
-        >
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          <span>Refresh Dispatches</span>
-        </button>
+        <div className="d-flex align-items-center gap-2">
+          <LiveGpsBadge status={liveStatus} fallbackSeconds={DISPATCH_POLL_MS / 1000} />
+          <button
+            onClick={() => loadData()}
+            className="btn btn-sm btn-outline-secondary rounded-3 d-flex align-items-center gap-1.5"
+            disabled={loading}
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            <span>Refresh Dispatches</span>
+          </button>
+        </div>
       </div>
 
       {/* Metrics Row */}
@@ -156,6 +222,22 @@ export default function VendorTransferDispatches({ currentUser }) {
       </div>
 
       {/* Alerts */}
+      {newJobAlert && (
+        <div className="alert alert-warning py-2 px-3 rounded-3 small d-flex align-items-center justify-content-between gap-2 mb-3">
+          <div className="d-flex align-items-center gap-2">
+            <BellRing size={15} className="flex-shrink-0" />
+            <span>
+              <strong>
+                {newJobAlert.count === 1 ? 'New booking needs a chauffeur' : `${newJobAlert.count} new bookings need a chauffeur`}
+              </strong>
+              {' · '}{newJobAlert.first.pickup_address} · {groupSizeLabel(newJobAlert.first)} · {CATEGORY_LABEL[newJobAlert.first.vehicle_category] || newJobAlert.first.vehicle_category}
+            </span>
+          </div>
+          <button type="button" onClick={() => setNewJobAlert(null)} className="btn btn-sm btn-link text-dark p-0" title="Dismiss">
+            <X size={15} />
+          </button>
+        </div>
+      )}
       {errorMsg && (
         <div className="alert alert-danger py-2 px-3 rounded-3 small d-flex align-items-center gap-2 mb-3">
           <AlertCircle size={15} className="flex-shrink-0" />
@@ -209,6 +291,7 @@ export default function VendorTransferDispatches({ currentUser }) {
                 <th className="py-3">Route (Origin → Destination)</th>
                 <th className="py-3">Passenger</th>
                 <th className="py-3">Assigned Chauffeur</th>
+                <th className="py-3">Live GPS</th>
                 <th className="py-3">Fare (THB)</th>
                 <th className="py-3">Status</th>
                 <th className="pe-3 py-3 text-end">Action</th>
@@ -217,14 +300,14 @@ export default function VendorTransferDispatches({ currentUser }) {
             <tbody style={{ fontSize: '0.82rem' }}>
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-5 text-muted">
+                  <td colSpan="9" className="text-center py-5 text-muted">
                     <Loader2 size={24} className="animate-spin mb-2 d-inline-block text-primary" />
                     <div>Loading transfer dispatches...</div>
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-5 text-muted">
+                  <td colSpan="9" className="text-center py-5 text-muted">
                     <Compass size={32} className="mb-2 text-muted opacity-50 d-inline-block" />
                     <div className="fw-bold">No transfer dispatches found</div>
                     <div className="small">Customer bookings assigned to your fleet will appear in this live feed.</div>
@@ -245,8 +328,8 @@ export default function VendorTransferDispatches({ currentUser }) {
                   if (isCompleted) badgeColor = 'bg-success text-white';
                   if (isCancelled) badgeColor = 'bg-danger text-white';
 
-                  const pickupTimeStr = dispatch.pickup_datetime 
-                    ? new Date(dispatch.pickup_datetime).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                  const pickupTimeStr = dispatch.pickup_datetime
+                    ? formatThaiPickupTime(dispatch.pickup_datetime)
                     : 'Scheduled';
 
                   return (
@@ -258,11 +341,17 @@ export default function VendorTransferDispatches({ currentUser }) {
                         <span className="badge bg-light text-muted border px-1.5 py-0.5 mt-0.5" style={{ fontSize: '0.65rem' }}>
                           {dispatch.vehicle_category || 'SEDAN'}
                         </span>
+                        <div className="text-muted mt-0.5" style={{ fontSize: '0.68rem' }}>
+                          {groupSizeLabel(dispatch)}
+                        </div>
                       </td>
                       <td className="py-3">
                         <div className="d-flex align-items-center gap-1 text-dark small fw-semibold">
                           <Calendar size={13} className="text-muted" />
-                          <span>{pickupTimeStr}</span>
+                          <span>
+                            {pickupTimeStr}
+                            {dispatch.pickup_datetime && <span className="text-muted fw-normal"> Thailand time</span>}
+                          </span>
                         </div>
                       </td>
                       <td className="py-3" style={{ maxWidth: '240px' }}>
@@ -294,6 +383,15 @@ export default function VendorTransferDispatches({ currentUser }) {
                             Unassigned
                           </span>
                         )}
+                      </td>
+                      <td className="py-3">
+                        <DriverGpsCell
+                          hasDriver={Boolean(dispatch.driver_id)}
+                          rideEnded={isCompleted || isCancelled}
+                          coords={dispatch.driver_current_location || null}
+                          receivedAt={dispatch.gpsReceivedAt}
+                          onTrack={() => setTrackDispatchId(dispatch.id)}
+                        />
                       </td>
                       <td className="py-3">
                         <div className="fw-bold text-dark font-heading">
@@ -369,9 +467,15 @@ export default function VendorTransferDispatches({ currentUser }) {
                 <span className="text-muted">Pickup Location:</span>
                 <span className="fw-bold text-truncate ms-2" style={{ maxWidth: '240px' }}>{selectedDispatch.pickup_address}</span>
               </div>
-              <div className="d-flex justify-content-between">
+              <div className="d-flex justify-content-between mb-1">
                 <span className="text-muted">Destination:</span>
                 <span className="fw-bold text-truncate ms-2" style={{ maxWidth: '240px' }}>{selectedDispatch.dropoff_address}</span>
+              </div>
+              <div className="d-flex justify-content-between">
+                <span className="text-muted">Group:</span>
+                <span className="fw-bold">
+                  {groupSizeLabel(selectedDispatch)} · {CATEGORY_LABEL[selectedDispatch.vehicle_category] || selectedDispatch.vehicle_category}
+                </span>
               </div>
             </div>
 
@@ -387,12 +491,19 @@ export default function VendorTransferDispatches({ currentUser }) {
                   onChange={e => setAssignDriverId(e.target.value)}
                 >
                   <option value="">-- Choose Chauffeur --</option>
-                  {drivers.map(drv => (
-                    <option key={drv.id} value={drv.id}>
-                      {drv.full_name} ({drv.vehicle_model} - {drv.vehicle_plate}) [{(drv.status || 'Offline').toUpperCase()}]
-                    </option>
-                  ))}
+                  {drivers.map(drv => {
+                    const problem = driverFitProblem(drv, selectedDispatch);
+                    return (
+                      <option key={drv.id} value={drv.id} disabled={Boolean(problem)}>
+                        {drv.full_name} ({drv.vehicle_model} - {drv.vehicle_plate}) [{(drv.status || 'Offline').toUpperCase()}]
+                        {problem ? ` — won't fit: ${problem}` : ''}
+                      </option>
+                    );
+                  })}
                 </select>
+                <div className="text-muted small mt-1">
+                  Only chauffeurs whose active vehicle fits this group can be selected.
+                </div>
                 {drivers.length === 0 && (
                   <div className="text-danger small mt-1">
                     No chauffeurs found. Please register chauffeurs in Chauffeur Roster first.
@@ -420,6 +531,10 @@ export default function VendorTransferDispatches({ currentUser }) {
             </form>
           </div>
         </div>
+      )}
+
+      {trackedDispatch && (
+        <DriverLiveMapModal dispatch={trackedDispatch} onClose={() => setTrackDispatchId(null)} />
       )}
     </div>
   );

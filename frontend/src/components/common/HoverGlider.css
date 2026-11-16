@@ -1,0 +1,193 @@
+/* ------------------------------------------------------------------------
+   Gliding hover highlight (HoverGlider.jsx) and premium table-row hover
+   ------------------------------------------------------------------------ */
+
+.hover-glide-scope [data-glide] {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;   /* keeps the click ripple inside the option */
+}
+
+/* The selected background glides to the option you click (slight, springy settle) */
+.active-glider {
+  transition:
+    transform 0.55s cubic-bezier(0.3, 1.25, 0.5, 1),
+    width 0.55s cubic-bezier(0.3, 1.25, 0.5, 1),
+    height 0.55s cubic-bezier(0.3, 1.25, 0.5, 1),
+    opacity 0.3s ease;
+}
+
+.hover-glider--gold-active {
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffd54f 0%, #ffc107 100%);
+  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.hover-glider--sidebar-active {
+  border-radius: 0.5rem;
+  background: linear-gradient(90deg, #ff6333, #ff8a00);
+  box-shadow: 0 6px 16px rgba(255, 99, 51, 0.35);
+}
+
+/* Flight vendor (cyan) and hotel vendor (rounded pill) sidebars */
+.hover-glider--sidebar-cyan {
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgba(0, 184, 217, 0.22) 0%, rgba(0, 144, 184, 0.05) 100%);
+  box-shadow: inset 3px 0 0 #00b8d9, 0 6px 18px rgba(0, 184, 217, 0.15);
+}
+
+.hover-glider--sidebar-active-cyan {
+  border-radius: 0.5rem;
+  background: linear-gradient(90deg, #00b8d9, #0090b8);
+  box-shadow: 0 6px 16px rgba(0, 184, 217, 0.35);
+}
+
+.hover-glider--sidebar-pill {
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 138, 0, 0.2) 0%, rgba(255, 99, 51, 0.06) 100%);
+  box-shadow: 0 6px 18px rgba(255, 99, 51, 0.16);
+}
+
+.hover-glider--sidebar-active-pill {
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff6333, #ff8a00);
+  box-shadow: 0 6px 16px rgba(255, 99, 51, 0.35);
+}
+
+/* Light screens (B2B partner portal, customer portal, driver app) */
+.hover-glider--light {
+  border-radius: 0.6rem;
+  background: rgba(15, 23, 42, 0.06);
+  box-shadow: inset 3px 0 0 #f5c518;
+}
+
+.hover-glider--pill-light {
+  border-radius: 999px;
+  background: rgba(255, 193, 7, 0.16);
+  box-shadow: 0 0 0 1px rgba(255, 193, 7, 0.5), 0 6px 16px rgba(255, 193, 7, 0.18);
+}
+
+.light-glide [data-glide] {
+  transition: color 0.25s ease, transform 0.25s ease !important;
+}
+
+.light-glide [data-glide]:not([data-glide-active="true"]):hover {
+  background: transparent !important;
+  color: #0f172a !important;
+}
+
+.light-glide .glide-ripple {
+  background: radial-gradient(circle, rgba(245, 197, 24, 0.5) 0%, rgba(245, 197, 24, 0.16) 35%, rgba(245, 197, 24, 0) 65%);
+}
+
+/* Soft ripple of light from the clicked point */
+.glide-ripple {
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.18) 35%, rgba(255, 255, 255, 0) 65%);
+  transform: scale(0);
+  animation: glideRipple 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes glideRipple {
+  0% { transform: scale(0); opacity: 1; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+.hover-glider {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  pointer-events: none;
+  will-change: transform, width, height, opacity;
+  transition:
+    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.28s ease;
+}
+
+/* Gold glass pill for the B2B section tabs */
+.hover-glider--gold {
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.26), rgba(255, 193, 7, 0.08));
+  border: 1px solid rgba(255, 213, 79, 0.7);
+  box-shadow: 0 0 22px rgba(255, 193, 7, 0.35), inset 0 0 14px rgba(255, 193, 7, 0.18);
+}
+
+.b2b-tab-glide button[data-glide] {
+  transition: color 0.25s ease, border-color 0.25s ease, transform 0.25s ease !important;
+}
+
+.b2b-tab-glide button[data-glide]:not([data-glide-active="true"]):hover {
+  color: #ffffff !important;
+  border-color: transparent !important;
+  background: transparent !important;
+  transform: translateY(-1px);
+}
+
+/* Warm glow bar for the dark admin sidebars */
+.hover-glider--sidebar {
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgba(255, 138, 0, 0.2) 0%, rgba(255, 99, 51, 0.06) 100%);
+  box-shadow: inset 3px 0 0 #ff8a00, 0 6px 18px rgba(255, 99, 51, 0.16);
+}
+
+.sidebar-glide [data-glide] {
+  transition: color 0.25s ease, padding-left 0.25s ease !important;
+}
+
+.sidebar-glide [data-glide]:not([data-glide-active="true"]):hover {
+  color: #ffffff !important;
+  padding-left: 1.15rem !important;
+}
+
+.sidebar-glide [data-glide] > span:first-child {
+  display: inline-flex;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sidebar-glide [data-glide]:hover > span:first-child {
+  transform: scale(1.15);
+}
+
+/* Table rows: gold accent edge, warm tint and a slight lift on the row under the cursor */
+.wow-hover-rows .table > tbody > tr > * {
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.wow-hover-rows .table > tbody > tr:hover > * {
+  background-color: rgba(255, 193, 7, 0.07) !important;
+  box-shadow: none !important;
+  --bs-table-bg-state: transparent;
+}
+
+.wow-hover-rows .table > tbody > tr:hover > *:first-child {
+  box-shadow: inset 3px 0 0 #ffc107 !important;
+}
+
+.wow-hover-rows .table > tbody > tr:hover td:last-child .btn {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+  transform: translateX(-2px);
+}
+
+.wow-hover-rows .table > tbody > tr td:last-child .btn {
+  transition: background 0.25s ease, color 0.25s ease, transform 0.25s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glide-ripple { display: none; }
+  .hover-glider,
+  .b2b-tab-glide button[data-glide],
+  .sidebar-glide [data-glide],
+  .sidebar-glide [data-glide] > span:first-child,
+  .wow-hover-rows .table > tbody > tr > *,
+  .wow-hover-rows .table > tbody > tr td:last-child .btn {
+    transition: none !important;
+  }
+}

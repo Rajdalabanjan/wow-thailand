@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import * as api from '../../services/api';
 import ForgotPasswordModal from '../../components/ForgotPasswordModal';
+import { isCabVendorRole } from '../../utils/vendorRoles';
 
 const VENDOR_LOGIN_CONFIG = {
   vehicle: {
@@ -87,7 +88,7 @@ export default function VendorLoginPage({
       const userRole = (user.role || '').toLowerCase();
       const isAuthorizedRole = (
         userRole === config.role || 
-        (config.role === 'vendor' && userRole === 'vehicle_vendor') ||
+        (config.role === 'vendor' && isCabVendorRole(userRole)) ||
         userRole === 'admin' || 
         userRole === 'superadmin'
       );

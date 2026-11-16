@@ -476,6 +476,8 @@ export default function CustomerActivitiesTab({
         total_paid: postTierTotal,
         pending_amount: 0,
         status: 'Confirmed',
+        total_members: guests,
+        adults: guests,
         notes: `Guests: ${guests} | Category: ${bookingModalItem.category || 'Experience'} | DOB: ${contactDob}${driverRequired ? ` | Driver: ${driverServiceType} (฿${driverCharge})` : ''}`
       };
 

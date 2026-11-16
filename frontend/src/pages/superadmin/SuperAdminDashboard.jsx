@@ -20,6 +20,7 @@ import HotelBookingDriverSetting from '../../components/common/HotelBookingDrive
 import TripPackagesManagementView from '../../components/admin/TripPackagesManagementView';
 import BookingVoucher from '../../components/common/BookingVoucher';
 import SuperAdminAmenitiesManager from '../../components/superadmin/SuperAdminAmenitiesManager';
+import AdminCabDispatchMonitor from '../admin/AdminCabDispatchMonitor';
 
 // ─── STAT CARD ───────────────────────────────────────────────────────────────
 function StatCard({ label, value, icon, color, trend, sub, onClick }) {
@@ -3519,6 +3520,10 @@ export default function SuperAdminDashboard({
       return <KYCTab vendors={vendors} onApproveVendor={onApproveVendor} />;
     case 'lead_management':
       return <LeadManagement usersList={usersList} currentUser={currentUser} />;
+    case 'cab_dispatches':
+    case 'cab_dispatch_monitor':
+    case 'fleet_oversight':
+      return <AdminCabDispatchMonitor currentUser={currentUser} />;
     case 'hotel_bookings':
       return <BookingsTab bookings={bookings} type="hotel" vendors={vendors} allPackages={allPackages} onRefresh={onRefreshLeads} />;
     case 'vehicle_bookings':

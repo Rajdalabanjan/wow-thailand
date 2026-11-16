@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import HoverGlider, { useEnterAnimation } from '../../components/common/HoverGlider';
 import {
   Compass, LogOut, Car, Shield, ShieldCheck, LayoutDashboard, Calendar,
   Wallet, BarChart2, Settings, CreditCard, Users, DollarSign,
@@ -6,6 +7,7 @@ import {
 } from 'lucide-react';
 import VehiclePMSDashboard from './vehicle-pms/VehiclePMSDashboard';
 import VehicleFleetManagement from './vehicle-pms/VehicleFleetManagement';
+import CabFleetVehicleManagement from './vehicle-pms/CabFleetVehicleManagement';
 import VehicleBookingManagement from './vehicle-pms/VehicleBookingManagement';
 import VehicleCustomerManagement from './vehicle-pms/VehicleCustomerManagement';
 import VendorStorefrontWizard from '../../components/vendor/VendorStorefrontWizard';
@@ -86,7 +88,7 @@ function SidebarGroup({ group, activeTab, onSelect, defaultOpen }) {
       {open && (
         <div className="d-flex flex-column gap-0 px-1">
           {group.items.map(item => (
-            <button key={item.id} onClick={() => onSelect(item.id)} className="btn w-100 text-start d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3 mb-1" style={{ fontSize: '0.83rem', background: activeTab === item.id ? 'linear-gradient(90deg,#FF6333,#FF8A00)' : 'transparent', color: activeTab === item.id ? '#fff' : 'rgba(255,255,255,0.65)', boxShadow: activeTab === item.id ? '0 4px 12px rgba(255,99,51,0.3)' : 'none', fontWeight: activeTab === item.id ? 700 : 400 }}>
+            <button key={item.id} onClick={() => onSelect(item.id)} data-glide data-glide-active={activeTab === item.id ? 'true' : 'false'} className="btn w-100 text-start d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3 mb-1" style={{ fontSize: '0.83rem', background: 'transparent', color: activeTab === item.id ? '#fff' : 'rgba(255,255,255,0.65)', boxShadow: 'none', fontWeight: activeTab === item.id ? 700 : 400 }}>
               <span style={{ color: activeTab === item.id ? '#fff' : '#00B8D9', flexShrink: 0 }}>{item.icon}</span>
               <span>{item.label}</span>
             </button>
@@ -115,6 +117,9 @@ export default function VendorPortalPage({
   onRefreshVehicles
 }) {
   const [activeTab, setActiveTab] = useState('dashboard');
+  // Page content glides in smoothly whenever another tab / menu item is chosen
+  const contentRef = React.useRef(null);
+  useEnterAnimation(contentRef, activeTab);
   const [tabParams, setTabParams] = useState({});
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -192,20 +197,7 @@ export default function VendorPortalPage({
       case 'transfers':
         return <VendorTransferDispatches currentUser={currentUser} />;
       case 'fleet':
-        return (
-          <VehicleFleetManagement
-            currentUser={currentUser}
-            cars={vendorCars}
-            bikes={vendorBikes}
-            initialFilter={tabParams.filter}
-            onAddCar={onAddCar}
-            onAddBike={onAddBike}
-            onUpdateCar={onUpdateCar}
-            onUpdateBike={onUpdateBike}
-            onDeleteCar={onDeleteCar}
-            onDeleteBike={onDeleteBike}
-          />
-        );
+        return <CabFleetVehicleManagement currentUser={currentUser} />;
       case 'bookings':
         return (
           <VehicleBookingManagement
@@ -267,11 +259,11 @@ export default function VendorPortalPage({
             <div className="fw-bold text-uppercase" style={{ fontSize: '0.55rem', letterSpacing: '2px', color: '#00B8D9' }}>Partner PMS</div>
           </div>
         </div>
-        <div className="flex-grow-1 py-2">
+        <HoverGlider className="flex-grow-1 py-2 sidebar-glide" gliderClassName="hover-glider--sidebar" activeGliderClassName="hover-glider--sidebar-active">
           {SIDEBAR_GROUPS.map((group, idx) => (
             <SidebarGroup key={group.label} group={group} activeTab={activeTab} onSelect={(id) => handleNavigate(id, {})} defaultOpen={idx < 2} />
           ))}
-        </div>
+        </HoverGlider>
         <div className="p-3 flex-shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
           <button onClick={onLogout} className="btn w-100 d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3" style={{ background: 'rgba(255,99,51,0.1)', color: '#FF6333', fontSize: '0.85rem', fontWeight: 600 }}>
             <LogOut size={15} /> Sign Out
@@ -343,7 +335,7 @@ export default function VendorPortalPage({
             vendorId={currentUser?.id}
             onRechargeClick={() => setActiveTab('wallet')}
           />
-          {renderContent()}
+          <div ref={contentRef}>{renderContent()}</div>
         </div>
       </div>
     </div>

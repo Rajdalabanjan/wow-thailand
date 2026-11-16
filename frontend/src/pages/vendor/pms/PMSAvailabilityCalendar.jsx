@@ -394,6 +394,8 @@ export default function PMSAvailabilityCalendar({
       await api.pmsUpdateAvailability({
         hotel_id: selectedHotel,
         room_type_id: selectedRoomType === 'all' ? (roomTypes[0]?.id || null) : selectedRoomType,
+        // "All room types" applies the change to every room type of the hotel
+        room_type_ids: selectedRoomType === 'all' ? roomTypes.map(rt => rt.id).filter(Boolean) : [selectedRoomType],
         vendor_id: currentUser?.id || 'admin',
         dates: selectedDates,
         status: actionForm.status,

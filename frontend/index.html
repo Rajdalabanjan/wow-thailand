@@ -8,9 +8,51 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,400;1,600;1,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,800&family=Bebas+Neue&family=Cinzel:wght@600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,400;1,600;1,700&display=swap" rel="stylesheet">
+    <!-- Opening intro styles (see public/intro/) -->
+    <link rel="stylesheet" href="/intro/wow-intro.css">
   </head>
   <body>
+    <!-- WOW THAILAND opening intro (styles & script in public/intro/).
+         "Golden hour over the river": gold-leaf flakes assemble a golden temple on the
+         horizon, its reflection shimmering below, the brand name in the site's Cinzel
+         lettering, destinations drifting along the horizon. Navy & gold like the site.
+         Static markup so it paints before React loads; the temple, flakes, stars and
+         destinations are added by wow-intro.js. -->
+    <div id="wow-intro" class="wow-intro" role="dialog" aria-label="Welcome to WOW THAILAND" hidden>
+      <div class="wow-intro__sky" aria-hidden="true"></div>
+      <div class="wow-intro__stars" aria-hidden="true"></div>
+      <div class="wow-intro__frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+      <div class="wow-intro__stage">
+        <div class="wow-intro__scene" aria-hidden="true">
+          <div class="wow-intro__glow"></div>
+          <div class="wow-intro__ribbon"></div>
+          <div class="wow-intro__temple"></div>
+          <div class="wow-intro__reflection"></div>
+          <div class="wow-intro__horizon"></div>
+          <div class="wow-intro__flakes"></div>
+          <div class="wow-intro__dust"></div>
+        </div>
+
+        <h1 class="wow-intro__title" aria-label="WOW THAILAND">
+          <span class="wow-intro__word" aria-hidden="true"><span style="--i:0">W</span><span style="--i:1">O</span><span style="--i:2">W</span></span>
+          <span class="wow-intro__word wow-intro__word--gold" aria-hidden="true"><span style="--i:3">T</span><span style="--i:4">H</span><span style="--i:5">A</span><span style="--i:6">I</span><span style="--i:7">L</span><span style="--i:8">A</span><span style="--i:9">N</span><span style="--i:10">D</span></span>
+        </h1>
+        <p class="wow-intro__subtitle"><span class="wow-intro__rule"></span>Luxury Travel &amp; Transfers<span class="wow-intro__rule"></span></p>
+      </div>
+
+      <div class="wow-intro__bottom">
+        <span class="wow-intro__caption">Hotels · Cabs · Signature Experiences</span>
+        <span class="wow-intro__progress" aria-hidden="true"><i></i></span>
+        <span class="wow-intro__cta" aria-hidden="true"><span class="wow-intro__fine">Click anywhere to enter</span><span class="wow-intro__coarse">Tap to enter</span></span>
+        <button type="button" class="wow-intro__skip" aria-label="Skip intro">Skip ›</button>
+      </div>
+
+      <div class="wow-intro__sweep" aria-hidden="true"></div>
+    </div>
+
+    <script src="/intro/wow-intro.js"></script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import HoverGlider, { useEnterAnimation } from '../../../components/common/HoverGlider';
 import { 
   Building2, Users, Gift, Tag, Clock, CheckCircle2, XCircle, AlertCircle, 
   Search, Filter, ShieldCheck, Check, X, FileText, ArrowRight, Settings,
@@ -13,6 +14,9 @@ export default function AdminB2BPortal({ activeSubTab = 'b2b_dashboard', onNavig
   const [bookings, setBookings] = useState([]);
   const [pricingRules, setPricingRules] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]);
+  // Section content replays a smooth entrance whenever a tab is clicked
+  const b2bContentRef = useRef(null);
+  useEnterAnimation(b2bContentRef, activeSubTab);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -237,6 +241,36 @@ export default function AdminB2BPortal({ activeSubTab = 'b2b_dashboard', onNavig
     );
   };
 
+  // Agent top-ups only reach the wallet after an admin confirms the payment arrived
+  const pendingTopUps = allTransactions.filter(t => t.transaction_type === 'RECHARGE' && t.status === 'PENDING');
+
+  const handleReviewTopUp = async (tx, approve) => {
+    const agency = tx.company_name || tx.partner_name || tx.partner_id;
+    const amount = `฿${parseFloat(tx.amount || 0).toLocaleString('en-US')}`;
+    let note = '';
+    if (approve) {
+      if (!window.confirm(`Confirm that ${amount} from ${agency} (ref ${tx.payment_gateway_ref || '—'}) has been received? It will be added to their wallet.`)) return;
+    } else {
+      const reason = window.prompt(`Reject the ${amount} top-up from ${agency}? Tell the agent why (shown to them):`, 'Payment not received');
+      if (reason === null) return;
+      note = reason.trim();
+    }
+    setActionLoading(true);
+    setFeedbackMsg('');
+    setFeedbackError('');
+    try {
+      const res = await api.reviewB2BTopUp(tx.id, approve, note);
+      setFeedbackMsg(approve
+        ? `${amount} added to ${agency}'s wallet. New balance: ฿${parseFloat(res.new_balance || 0).toLocaleString('en-US')}`
+        : `Top-up of ${amount} from ${agency} rejected.`);
+      await loadData();
+    } catch (err) {
+      setFeedbackError(err.message || 'Could not update the top-up request.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleConfirmWalletAdjustment = async (e) => {
     e.preventDefault();
     if (!walletModalTarget) return;
@@ -273,7 +307,7 @@ export default function AdminB2BPortal({ activeSubTab = 'b2b_dashboard', onNavig
   };
 
   return (
-    <div className="animate-fade-in p-2 p-md-3">
+    <div className="animate-fade-in p-2 p-md-3 wow-hover-rows">
       {/* Subnav Pills for B2B First-Class Section */}
       <div className="card border-0 shadow-sm rounded-4 p-3 mb-4" style={{ background: '#10243A', border: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
@@ -299,7 +333,7 @@ export default function AdminB2BPortal({ activeSubTab = 'b2b_dashboard', onNavig
         </div>
 
         {/* Sub-tab buttons */}
-        <div className="d-flex gap-2 flex-wrap mt-3 pt-3 border-top" style={{ borderColor: 'rgba(255,255,255,0.12)' }}>
+        <HoverGlider className="d-flex gap-2 flex-wrap mt-3 pt-3 border-top b2b-tab-glide" gliderClassName="hover-glider--gold" activeGliderClassName="hover-glider--gold-active" style={{ borderColor: 'rgba(255,255,255,0.12)' }}>
           {[
             { id: 'b2b_dashboard', label: 'B2B Dashboard', count: null },
             { id: 'b2b_applications', label: 'Partner Applications', count: pendingApplications.length, badgeBg: 'bg-warning text-dark' },
@@ -317,13 +351,16 @@ export default function AdminB2BPortal({ activeSubTab = 'b2b_dashboard', onNavig
               <button
                 key={tab.id}
                 type="button"
+                data-glide
+                data-glide-active={isActive ? 'true' : 'false'}
                 onClick={() => onNavigateSubTab ? onNavigateSubTab(tab.id) : null}
                 className="btn btn-sm py-1.5 px-3 rounded-pill fw-semibold d-inline-flex align-items-center gap-2 transition-all shadow-none"
                 style={{
                   fontSize: '0.78rem',
                   lineHeight: '1.2',
-                  border: isActive ? '1px solid #FFC107' : '1px solid rgba(255,255,255,0.14)',
-                  background: isActive ? '#FFC107' : 'rgba(255,255,255,0.08)',
+                  // the gold selected pill is drawn by HoverGlider and glides between tabs
+                  border: isActive ? '1px solid transparent' : '1px solid rgba(255,255,255,0.14)',
+                  background: isActive ? 'transparent' : 'rgba(255,255,255,0.08)',
                   color: isActive ? '#0f172a' : '#e2e8f0',
                   fontWeight: isActive ? 700 : 500,
                   transition: 'all 0.15s ease'
@@ -347,7 +384,7 @@ export default function AdminB2BPortal({ activeSubTab = 'b2b_dashboard', onNavig
               </button>
             );
           })}
-        </div>
+        </HoverGlider>
       </div>
 
       {/* Notifications / Feedback */}
@@ -369,6 +406,9 @@ export default function AdminB2BPortal({ activeSubTab = 'b2b_dashboard', onNavig
           <button className="btn btn-link p-0 text-muted" onClick={() => setFeedbackError('')}><X size={14} /></button>
         </div>
       )}
+
+      {/* Section content: glides in smoothly when a tab is clicked */}
+      <div ref={b2bContentRef}>
 
       {/* SUB-VIEW 1: B2B DASHBOARD */}
       {activeSubTab === 'b2b_dashboard' && (
@@ -809,7 +849,7 @@ export default function AdminB2BPortal({ activeSubTab = 'b2b_dashboard', onNavig
                           </button>
                         </td>
                         <td>
-                          <strong>{b.b2b_partner_name || b.b2b_partner_id}</strong>
+                          <strong>{b.b2b_partner_name || b.company_name || b.b2b_partner_id || b.partner_id}</strong>
                         </td>
                         <td>{b.item_name}</td>
                         <td>{b.name} ({b.phone})</td>
@@ -909,7 +949,7 @@ export default function AdminB2BPortal({ activeSubTab = 'b2b_dashboard', onNavig
                           </button>
                         </td>
                         <td>
-                          <strong>{b.b2b_partner_name || b.b2b_partner_id}</strong>
+                          <strong>{b.b2b_partner_name || b.company_name || b.b2b_partner_id || b.partner_id}</strong>
                         </td>
                         <td>{b.item_name}</td>
                         <td>{b.name} ({b.phone})</td>
@@ -1005,6 +1045,15 @@ export default function AdminB2BPortal({ activeSubTab = 'b2b_dashboard', onNavig
       {/* SUB-VIEW 7: AGENT WALLETS & LEDGERS */}
       {activeSubTab === 'b2b_wallets' && (
         <div className="animate-fade-in">
+          {pendingTopUps.length > 0 && (
+            <div className="alert alert-warning d-flex align-items-center justify-content-between gap-2 rounded-4 py-2.5 px-3 mb-3 text-xs">
+              <span>
+                <strong>{pendingTopUps.length} wallet top-up{pendingTopUps.length > 1 ? 's' : ''} waiting for confirmation</strong>
+                {' '}(฿{pendingTopUps.reduce((s, t) => s + parseFloat(t.amount || 0), 0).toLocaleString('en-US')}).
+                Check the payment arrived, then confirm it in the statement below.
+              </span>
+            </div>
+          )}
           {/* Stat Cards */}
           <div className="row g-3 mb-4">
             <div className="col-12 col-sm-6 col-lg-3">
@@ -1029,9 +1078,9 @@ export default function AdminB2BPortal({ activeSubTab = 'b2b_dashboard', onNavig
               <div className="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-success">
                 <span className="text-muted text-xxs fw-bold text-uppercase d-block mb-1">Lifetime Recharges Processed</span>
                 <h4 className="fw-bold mb-0 text-success font-heading">
-                  ฿{allTransactions.filter(t => t.transaction_type === 'RECHARGE').reduce((s, t) => s + parseFloat(t.amount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  ฿{allTransactions.filter(t => t.transaction_type === 'RECHARGE' && t.status === 'COMPLETED').reduce((s, t) => s + parseFloat(t.amount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </h4>
-                <span className="text-muted text-3xs">{allTransactions.filter(t => t.transaction_type === 'RECHARGE').length} successful top-ups</span>
+                <span className="text-muted text-3xs">{allTransactions.filter(t => t.transaction_type === 'RECHARGE' && t.status === 'COMPLETED').length} confirmed top-ups</span>
               </div>
             </div>
             <div className="col-12 col-sm-6 col-lg-3">
@@ -1238,9 +1287,15 @@ export default function AdminB2BPortal({ activeSubTab = 'b2b_dashboard', onNavig
                             {isCredit ? '+' : '-'}฿{parseFloat(tx.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                           </td>
                           <td className="text-end text-nowrap text-muted text-xxs">
-                            <span>฿{parseFloat(tx.balance_before || 0).toLocaleString('en-US')}</span>
-                            <span className="mx-1">→</span>
-                            <strong className="text-dark">฿{parseFloat(tx.balance_after || 0).toLocaleString('en-US')}</strong>
+                            {tx.balance_after === null || tx.balance_after === undefined ? (
+                              <span>{tx.status === 'PENDING' ? 'Not added yet' : '—'}</span>
+                            ) : (
+                              <>
+                                <span>฿{parseFloat(tx.balance_before || 0).toLocaleString('en-US')}</span>
+                                <span className="mx-1">→</span>
+                                <strong className="text-dark">฿{parseFloat(tx.balance_after || 0).toLocaleString('en-US')}</strong>
+                              </>
+                            )}
                           </td>
                           <td className="text-center">
                             <span 
@@ -1253,6 +1308,28 @@ export default function AdminB2BPortal({ activeSubTab = 'b2b_dashboard', onNavig
                             >
                               {tx.status || 'COMPLETED'}
                             </span>
+                            {tx.status === 'PENDING' && tx.transaction_type === 'RECHARGE' && (
+                              <div className="d-flex gap-1 justify-content-center mt-1.5">
+                                <button
+                                  type="button"
+                                  disabled={actionLoading}
+                                  onClick={() => handleReviewTopUp(tx, true)}
+                                  className="btn btn-success btn-xs rounded-pill px-2 py-0.5 text-3xs fw-bold"
+                                  title="Payment received: add it to the agent's wallet"
+                                >
+                                  Confirm
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={actionLoading}
+                                  onClick={() => handleReviewTopUp(tx, false)}
+                                  className="btn btn-outline-danger btn-xs rounded-pill px-2 py-0.5 text-3xs fw-bold"
+                                  title="Payment not received: reject the request"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            )}
                           </td>
                         </tr>
                       );
@@ -1264,6 +1341,7 @@ export default function AdminB2BPortal({ activeSubTab = 'b2b_dashboard', onNavig
           </div>
         </div>
       )}
+      </div>
 
       {/* Rejection Modal */}
       {rejectModalTarget && (
@@ -1474,7 +1552,7 @@ export default function AdminB2BPortal({ activeSubTab = 'b2b_dashboard', onNavig
                     </span>
                   </div>
                   <span className="text-muted text-xxs">
-                    Partner Agency: <strong>{selectedBookingDetails.b2b_partner_name || selectedBookingDetails.b2b_partner_id}</strong> • Channel: B2B
+                    Partner Agency: <strong>{selectedBookingDetails.b2b_partner_name || selectedBookingDetails.company_name || selectedBookingDetails.b2b_partner_id || selectedBookingDetails.partner_id}</strong> • Channel: B2B
                   </span>
                 </div>
               </div>

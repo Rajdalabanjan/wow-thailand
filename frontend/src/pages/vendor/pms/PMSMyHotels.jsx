@@ -22,7 +22,7 @@ function HotelCard({ hotel, onNavigate, onAction, vendorBookings }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const hotelStatus = hotel.hotel_status || 'Draft';
   const sc = STATUS_CONFIG[hotelStatus] || STATUS_CONFIG['Draft'];
-  const bookingCount = vendorBookings.filter(b => b.item_id === hotel.id).length;
+  const bookingCount = vendorBookings.filter(b => b.hotel_id === hotel.id || b.item_id === hotel.id).length;
   const images = (() => {
     try { return hotel.images_json ? JSON.parse(hotel.images_json) : []; } catch { return []; }
   })();

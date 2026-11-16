@@ -1,8 +1,8 @@
 // ========================================================================
 // WOW THAILAND: Customer Cabs & Transfer Page (WOW GOA True 3-Column Experience)
 // 3-Column Ola / Uber Split Layout:
-// Left: "Get a ride" parameters & rider contact
-// Center: "Choose a ride" vehicle tiers & transparent fares
+// Left: "Get a ride" parameters, group size (passengers + bags) & rider contact
+// Center: "Your ride" — the vehicle the system picks for the group, with fixed fare
 // Right: Live Leaflet Interactive Map with real route trajectory
 // Seamless in-place transition to Live Dispatch Radar with 4-digit Ride OTP!
 // ========================================================================
@@ -18,6 +18,7 @@ import LiveThailandCabMap from '../../components/cab/LiveThailandCabMap';
 import ThailandLocationAutocomplete from '../../components/cab/ThailandLocationAutocomplete';
 import CabRideHistoryDrawer from '../../components/cab/CabRideHistoryDrawer';
 import { estimateCabFare, bookCabTransfer, trackCabRide, cancelCabRide } from '../../services/api';
+import { connectLiveRooms } from '../../utils/liveSocket';
 
 const COUNTRY_CODES = [
   { code: '+66', country: 'Thailand', flag: '🇹🇭' },
@@ -34,6 +35,98 @@ const COUNTRY_CODES = [
   { code: '+86', country: 'China', flag: '🇨🇳' }
 ];
 
+const pad2 = n => String(n).padStart(2, '0');
+// Local (not UTC) date/time, so early-morning bookings don't get yesterday's date
+const localDateString = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const localTimeString = d => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+
+const MAX_PASSENGERS_INPUT = 15;
+const MAX_BAGS_INPUT = 20;
+const DEFAULT_CHILD_SEAT_FEE_THB = 200;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// The ride in progress is kept in this browser, so a refresh or closed tab
+// doesn't lose the driver details or the start code
+const ACTIVE_RIDE_KEY = 'wow_active_cab_ride';
+function saveActiveRide(ride) {
+  try { localStorage.setItem(ACTIVE_RIDE_KEY, JSON.stringify(ride)); } catch { /* storage unavailable */ }
+}
+function loadActiveRide() {
+  try { return JSON.parse(localStorage.getItem(ACTIVE_RIDE_KEY) || 'null'); } catch { return null; }
+}
+function clearActiveRide() {
+  try { localStorage.removeItem(ACTIVE_RIDE_KEY); } catch { /* storage unavailable */ }
+}
+
+const RIDE_STATUS_LABEL = {
+  ALLOCATED: 'Requested',
+  REQUESTED: 'Requested',
+  DISPATCHED: 'Chauffeur Dispatched',
+  ASSIGNED: 'Chauffeur Dispatched',
+  ARRIVED: 'Chauffeur Arrived',
+  ON_TRIP: 'Trip In Progress',
+  COMPLETED: 'Trip Completed',
+  CANCELLED: 'Cancelled'
+};
+const FINISHED_RIDE_STATUSES = ['Trip Completed', 'Cancelled'];
+const CHANNEL_LABEL = { sms: 'SMS', whatsapp: 'WhatsApp', email: 'email' };
+
+function joinWithAnd(items) {
+  if (items.length <= 1) return items.join('');
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
+// − / + counter used for passengers and bags
+function GroupStepper({ icon, label, value, min, max, onChange }) {
+  const buttonStyle = disabled => ({
+    width: '28px',
+    height: '28px',
+    borderRadius: '50%',
+    border: '1px solid #CBD5E1',
+    backgroundColor: disabled ? '#F1F5F9' : '#FFFFFF',
+    color: disabled ? '#94A3B8' : '#0B132B',
+    fontWeight: 900,
+    fontSize: '16px',
+    lineHeight: 1,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  });
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>
+        {icon}
+        <span>{label}</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <button
+          type="button"
+          aria-label={`Fewer ${label.toLowerCase()}`}
+          disabled={value <= min}
+          onClick={() => onChange(Math.max(min, value - 1))}
+          style={buttonStyle(value <= min)}
+        >
+          −
+        </button>
+        <span aria-live="polite" style={{ minWidth: '18px', textAlign: 'center', fontWeight: 900, fontSize: '14px', color: '#0F172A' }}>
+          {value}
+        </span>
+        <button
+          type="button"
+          aria-label={`More ${label.toLowerCase()}`}
+          disabled={value >= max}
+          onClick={() => onChange(Math.min(max, value + 1))}
+          style={buttonStyle(value >= max)}
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Display details for each vehicle category (the server decides which one is sent)
 const DEFAULT_TIERS = [
   {
     tier: 'SEDAN',
@@ -91,28 +184,34 @@ export default function ThailandCustomerCabsPage({
 
   const [pickupTimingMode, setPickupTimingMode] = useState('NOW'); // 'NOW' | 'SCHEDULE'
   const [pickupDate, setPickupDate] = useState(() => {
-    return initialDate || new Date().toISOString().slice(0, 10);
+    return initialDate || localDateString(new Date());
   });
   const [pickupTime, setPickupTime] = useState(() => {
-    if (initialTime) return initialTime;
-    const now = new Date();
-    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    return initialTime || localTimeString(new Date());
   });
+
+  // Group size: the system picks the vehicle from these, the customer never chooses a car
+  const [passengers, setPassengers] = useState(1);
+  const [bags, setBags] = useState(1);
 
   // Rider Details
   const [riderType, setRiderType] = useState('self'); // 'self' | 'other'
   const [riderName, setRiderName] = useState(() => currentUser?.name || currentUser?.full_name || '');
   const [countryCode, setCountryCode] = useState('+66');
   const [riderPhone, setRiderPhone] = useState(() => currentUser?.phone || '');
+  const [riderEmail, setRiderEmail] = useState(() => currentUser?.email || '');
   const [flightNumber, setFlightNumber] = useState('');
 
-  // Extras
-  const [extraLuggage, setExtraLuggage] = useState(false);
+  // Extras (priced by the server)
   const [childSeat, setChildSeat] = useState(false);
+  const [childSeatFee, setChildSeatFee] = useState(DEFAULT_CHILD_SEAT_FEE_THB);
+  // Channels the server will really use for updates (from the estimate)
+  const [updateChannels, setUpdateChannels] = useState([]);
 
-  // Tiers & Selected Vehicle
-  const [tiers, setTiers] = useState(DEFAULT_TIERS);
-  const [selectedTierKey, setSelectedTierKey] = useState('SEDAN');
+  // Vehicle the system will send for this group (from the estimate)
+  const [matchedRide, setMatchedRide] = useState(null);
+  const [availabilityMessage, setAvailabilityMessage] = useState('');
+  const estimateRequestId = useRef(0);
   const [paymentMethod, setPaymentMethod] = useState('cash'); // 'cash' | 'promptpay' | 'card'
 
   // Loading & Route Metrics
@@ -124,15 +223,20 @@ export default function ThailandCustomerCabsPage({
   const [isBooking, setIsBooking] = useState(false);
   const [bookingError, setBookingError] = useState('');
   const [activeRide, setActiveRide] = useState(null);
+  const [rideActionError, setRideActionError] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
+  // A booked ride the customer stepped away from to book another one
+  const [parkedRide, setParkedRide] = useState(null);
   const [copiedOtp, setCopiedOtp] = useState(false);
   const [showHistoryDrawer, setShowHistoryDrawer] = useState(false);
 
   // Poll Tracking in Confirmed Mode
   const pollIntervalRef = useRef(null);
 
-  // Estimate Fares when pickup/dropoff changes
+  // Ask the server which vehicle fits this group and what it costs
   const fetchEstimates = async () => {
     if (!pickupLocation.trim() || !dropoffLocation.trim()) return;
+    const requestId = ++estimateRequestId.current;
     setIsEstimating(true);
     try {
       const res = await estimateCabFare({
@@ -140,35 +244,55 @@ export default function ThailandCustomerCabsPage({
         dropoff: dropoffLocation,
         travelDate: pickupDate,
         travelTime: pickupTime,
-        pax: selectedTierKey === 'VIP_VAN' ? 8 : (selectedTierKey === 'SUV' ? 4 : 2),
+        passenger_count: passengers,
+        luggage_count: bags,
         currency: 'THB'
       });
 
-      if (res.success && Array.isArray(res.tiers) && res.tiers.length > 0) {
-        const mapped = res.tiers.map(t => {
-          const key = (t.tier || 'SEDAN').toUpperCase();
-          const base = DEFAULT_TIERS.find(d => d.tier === key) || DEFAULT_TIERS[0];
-          return {
+      // Ignore replies to older requests (the customer changed something meanwhile)
+      if (requestId !== estimateRequestId.current) return;
+
+      if (res.success) {
+        const rec = res.recommended;
+        if (rec) {
+          const base = DEFAULT_TIERS.find(d => d.tier === rec.tier) || DEFAULT_TIERS[0];
+          setMatchedRide({
             ...base,
-            fareThb: t.fareThb || t.total_fare_thb || base.fareThb,
-            models: t.models || base.models,
-            breakdown: t.breakdown
-          };
-        });
-        setTiers(mapped);
+            fareThb: rec.fareThb ?? base.fareThb,
+            models: rec.models || base.models,
+            maxPax: rec.maxPax ?? base.maxPax,
+            maxLuggage: rec.maxLuggage ?? base.maxLuggage,
+            breakdown: rec.breakdown,
+            available: rec.available !== false
+          });
+        } else {
+          setMatchedRide(null);
+        }
+        setAvailabilityMessage(res.availabilityMessage || '');
+        if (res.childSeatFeeThb) setChildSeatFee(res.childSeatFeeThb);
+        setUpdateChannels(Array.isArray(res.updateChannels) ? res.updateChannels : []);
         setDistanceKm(res.distanceKm || 30);
         setDurationMin(res.durationMin || 45);
+      } else {
+        setMatchedRide(null);
+        setAvailabilityMessage(res.error || 'Unable to price this ride right now. Please try again.');
       }
     } catch (e) {
       console.error('Estimate error:', e);
+      if (requestId === estimateRequestId.current) {
+        setMatchedRide(null);
+        setAvailabilityMessage('Unable to price this ride right now. Please try again.');
+      }
     } finally {
-      setIsEstimating(false);
+      if (requestId === estimateRequestId.current) setIsEstimating(false);
     }
   };
 
   useEffect(() => {
-    fetchEstimates();
-  }, [pickupLocation, dropoffLocation]);
+    // Short delay so typing an address or tapping +/- quickly sends one request, not many
+    const timer = setTimeout(fetchEstimates, 250);
+    return () => clearTimeout(timer);
+  }, [pickupLocation, dropoffLocation, passengers, bags]);
 
   // Swap Locations
   const handleSwap = () => {
@@ -177,14 +301,17 @@ export default function ThailandCustomerCabsPage({
     setDropoffLocation(temp);
   };
 
-  // Selected Tier Object & Total Fare calculation (including extras)
-  const selectedTier = tiers.find(t => t.tier === selectedTierKey) || tiers[0];
-  const extrasCost = (extraLuggage ? 150 : 0) + (childSeat ? 200 : 0);
-  const calculatedTotalFare = (selectedTier?.fareThb || 850) + extrasCost;
+  // Total shown to the customer = fare of the matched vehicle + extras (server uses the same prices)
+  const canBook = Boolean(matchedRide && matchedRide.available);
+  const calculatedTotalFare = matchedRide ? matchedRide.fareThb + (childSeat ? childSeatFee : 0) : null;
 
   // Handle Request Chauffeur Ride
   const handleConfirmRide = async () => {
     setBookingError('');
+    if (!canBook) {
+      setBookingError(availabilityMessage || 'No vehicle is available for this group right now.');
+      return;
+    }
     if (!riderName.trim()) {
       setBookingError('Please enter passenger full name.');
       return;
@@ -193,25 +320,32 @@ export default function ThailandCustomerCabsPage({
       setBookingError('Please provide an active mobile or WhatsApp number.');
       return;
     }
+    if (riderEmail.trim() && !EMAIL_PATTERN.test(riderEmail.trim())) {
+      setBookingError('Please enter a valid email address, or leave it empty.');
+      return;
+    }
+
+    // "Pickup now" means the moment the customer presses the button, not when the page opened
+    const now = new Date();
+    const travelDate = pickupTimingMode === 'NOW' ? localDateString(now) : pickupDate;
+    const travelTime = pickupTimingMode === 'NOW' ? localTimeString(now) : pickupTime;
 
     setIsBooking(true);
     try {
       const notesList = [];
-      if (extraLuggage) notesList.push('Extra Luggage Space Requested (+฿150)');
-      if (childSeat) notesList.push('Child Safety Seat Requested (+฿200)');
       if (flightNumber.trim()) notesList.push(`Flight: ${flightNumber.trim()}`);
 
       const payload = {
-        tier: selectedTier.tier,
         pickupAddress: pickupLocation,
         dropoffAddress: dropoffLocation,
-        travelDate: pickupDate,
-        travelTime: pickupTime,
-        pax: selectedTier.maxPax,
-        luggage: selectedTier.maxLuggage,
+        travelDate,
+        travelTime,
+        passenger_count: passengers,
+        luggage_count: bags,
+        child_seat: childSeat,
         customerName: riderName.trim(),
         customerPhone: `${countryCode} ${riderPhone.trim()}`,
-        customerEmail: currentUser?.email || 'guest@wowthailand.com',
+        customerEmail: riderEmail.trim(),
         notes: notesList.join(' | '),
         paymentMethod: paymentMethod.toUpperCase(),
         currency: 'THB'
@@ -219,20 +353,27 @@ export default function ThailandCustomerCabsPage({
 
       const res = await bookCabTransfer(payload);
       if (res.success) {
+        const bookedTier = DEFAULT_TIERS.find(d => d.tier === res.vehicleCategory) || matchedRide;
         const rideData = {
           bookingId: res.bookingId || res.data?.booking_id,
           dispatchId: res.dispatchId || res.data?.dispatch_id,
           rideOtp: res.rideOtp || res.data?.ride_otp,
           pickup: pickupLocation,
           dropoff: dropoffLocation,
-          date: pickupDate,
-          time: pickupTime,
-          tierName: selectedTier.name,
-          totalFare: calculatedTotalFare,
+          date: travelDate,
+          time: travelTime,
+          tierName: bookedTier.name,
+          passengers,
+          bags,
+          totalFare: res.fareThb ?? calculatedTotalFare,
           status: 'Requested',
           driver: null,
+          contactPhone: `${countryCode} ${riderPhone.trim()}`,
+          contactEmail: riderEmail.trim(),
+          updatesVia: Array.isArray(res.updatesVia) ? res.updatesVia : [],
           createdAt: Date.now()
         };
+        setRideActionError('');
         setActiveRide(rideData);
         setCurrentView('confirmed');
       } else {
@@ -246,6 +387,72 @@ export default function ThailandCustomerCabsPage({
     }
   };
 
+  // Show a ride on the confirmation screen. `saved` is the copy kept in this browser
+  // (has the start code); without it the details are filled in from tracking.
+  const openRide = (dispatchId, saved = null) => {
+    setRideActionError('');
+    setActiveRide(saved && saved.dispatchId === dispatchId
+      ? saved
+      : { dispatchId, status: 'Requested', driver: null, pickup: '', dropoff: '', date: '', time: '', tierName: '', totalFare: null, updatesVia: [] });
+    setCurrentView('confirmed');
+  };
+
+  const removeRideParamFromUrl = () => {
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has('ride')) {
+        url.searchParams.delete('ride');
+        window.history.replaceState(window.history.state, '', url.toString());
+      }
+    } catch { /* ignore */ }
+  };
+
+  // Leave the confirmation screen and forget the ride in this browser
+  const leaveRide = () => {
+    clearActiveRide();
+    setActiveRide(null);
+    setParkedRide(null);
+    setRideActionError('');
+    setCurrentView('booking');
+    removeRideParamFromUrl();
+  };
+
+  const handleCancelRide = async () => {
+    if (!window.confirm('Are you sure you want to cancel this transfer?')) return;
+    setRideActionError('');
+    setIsCancelling(true);
+    try {
+      const res = await cancelCabRide({ dispatch_id: activeRide.dispatchId, reason: 'Customer requested cancellation' });
+      if (res && res.success) {
+        leaveRide();
+      } else if (/auth/i.test(res?.error || '')) {
+        setRideActionError('Please sign in to cancel online, or call the Chauffeur Helpline and quote your booking reference.');
+      } else {
+        setRideActionError(res?.error || 'Could not cancel this ride. Please call the Chauffeur Helpline.');
+      }
+    } catch {
+      setRideActionError('Could not cancel this ride. Please call the Chauffeur Helpline.');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  // Reopen a ride from a tracking link (?ride=...) or from this browser after a refresh
+  useEffect(() => {
+    let linkedRideId = null;
+    try { linkedRideId = new URLSearchParams(window.location.search).get('ride'); } catch { /* ignore */ }
+    const saved = loadActiveRide();
+    if (linkedRideId) openRide(linkedRideId, saved);
+    else if (saved?.dispatchId) openRide(saved.dispatchId, saved);
+  }, []);
+
+  // Keep the saved copy current; forget it once the ride is finished
+  useEffect(() => {
+    if (!activeRide?.dispatchId) return;
+    if (FINISHED_RIDE_STATUSES.includes(activeRide.status)) clearActiveRide();
+    else saveActiveRide(activeRide);
+  }, [activeRide]);
+
   // Sync ride status in confirmed mode
   useEffect(() => {
     if (currentView === 'confirmed' && activeRide?.dispatchId) {
@@ -254,26 +461,47 @@ export default function ThailandCustomerCabsPage({
           const res = await trackCabRide(activeRide.dispatchId);
           if (res.success && (res.data || res.dispatch)) {
             const d = res.data || res.dispatch;
-            let mappedStatus = 'Requested';
             const rawStatus = (d.ride_status || d.status || 'ALLOCATED').toUpperCase();
-            if (rawStatus === 'ALLOCATED' || rawStatus === 'REQUESTED') mappedStatus = 'Requested';
-            else if (rawStatus === 'DISPATCHED' || rawStatus === 'ASSIGNED') mappedStatus = 'Chauffeur Dispatched';
-            else if (rawStatus === 'ARRIVED') mappedStatus = 'Chauffeur Arrived';
-            else if (rawStatus === 'ON_TRIP') mappedStatus = 'Trip In Progress';
-            else if (rawStatus === 'COMPLETED') mappedStatus = 'Trip Completed';
-            else if (rawStatus === 'CANCELLED') mappedStatus = 'Cancelled';
+            const mappedStatus = RIDE_STATUS_LABEL[rawStatus] || 'Requested';
+            // pickup_datetime is the booked wall-clock time serialised as UTC
+            const pickupIso = String(d.pickup_datetime || '');
+            const tierInfo = DEFAULT_TIERS.find(t => t.tier === d.vehicle_category);
+            // Real GPS from the driver app (only sent while the driver is on the way or on the trip)
+            const loc = d.driver_location;
+            const serverGps = loc && Number.isFinite(Number(loc.latitude)) && Number.isFinite(Number(loc.longitude))
+              ? { lat: Number(loc.latitude), lng: Number(loc.longitude), receivedAt: Date.now() - (Number(loc.age_sec) || 0) * 1000 }
+              : null;
 
             setActiveRide(prev => {
               if (!prev) return prev;
+              // Keep a newer copy of the same position that arrived by live push
+              const gps = serverGps && prev.gps && prev.gps.lat === serverGps.lat && prev.gps.lng === serverGps.lng
+                ? { ...serverGps, receivedAt: Math.max(prev.gps.receivedAt || 0, serverGps.receivedAt) }
+                : serverGps;
               return {
                 ...prev,
+                bookingId: prev.bookingId || d.booking_id,
+                pickup: prev.pickup || d.pickup_address,
+                dropoff: prev.dropoff || d.dropoff_address,
+                date: prev.date || pickupIso.slice(0, 10),
+                time: prev.time || pickupIso.slice(11, 16),
+                tierName: prev.tierName || tierInfo?.name || d.vehicle_category,
+                passengers: prev.passengers || d.passenger_count,
+                bags: prev.bags ?? d.luggage_count,
+                totalFare: prev.totalFare ?? d.total_fare_thb,
                 status: mappedStatus,
                 rideOtp: d.rideOtp || d.ride_otp || prev.rideOtp,
-                driver: d.driver || prev.driver
+                driver: d.driver || prev.driver,
+                liveDispatchId: d.dispatch_id || prev.liveDispatchId,
+                gps
               };
             });
+          } else if (res && res.success === false && /not found/i.test(res.error || '')) {
+            // Old or mistyped tracking link
+            leaveRide();
+            setBookingError('We could not find that ride. Please check your booking message or book again.');
           }
-        } catch (e) {}
+        } catch { /* network hiccup: try again on the next tick */ }
       };
 
       syncTracking();
@@ -284,6 +512,23 @@ export default function ThailandCustomerCabsPage({
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     };
   }, [currentView, activeRide?.dispatchId]);
+
+  // The driver's position is pushed here the moment the driver app sends it
+  const liveRideRoom = currentView === 'confirmed' ? (activeRide?.liveDispatchId || activeRide?.dispatchId) : null;
+  useEffect(() => {
+    if (!liveRideRoom) return undefined;
+    return connectLiveRooms({
+      rooms: [`dispatch_${liveRideRoom}`],
+      events: {
+        DRIVER_LOCATION_UPDATE: (data) => {
+          const lat = Number(data?.latitude);
+          const lng = Number(data?.longitude);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+          setActiveRide(prev => (prev ? { ...prev, gps: { lat, lng, receivedAt: Date.now() } } : prev));
+        }
+      }
+    });
+  }, [liveRideRoom]);
 
   const handleCopyOtp = (otp) => {
     if (!otp) return;
@@ -405,6 +650,23 @@ export default function ThailandCustomerCabsPage({
               boxShadow: '2px 0 12px rgba(0,0,0,0.03)'
             }}
           >
+            {parkedRide && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', backgroundColor: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '10px', padding: '8px 10px', fontSize: '12px', color: '#92400E', fontWeight: 600 }}>
+                <span>🚕 You have a ride booked{parkedRide.date ? ` for ${parkedRide.date} ${parkedRide.time || ''}` : ''}.</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const ride = parkedRide;
+                    setParkedRide(null);
+                    openRide(ride.dispatchId, ride);
+                  }}
+                  style={{ border: 'none', background: '#0B132B', color: '#D4AF37', borderRadius: '8px', padding: '5px 10px', fontSize: '11.5px', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                >
+                  View ride
+                </button>
+              </div>
+            )}
+
             <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#0F172A', margin: '0 0 2px' }}>
               Get a private ride
             </h2>
@@ -531,6 +793,26 @@ export default function ThailandCustomerCabsPage({
               )}
             </div>
 
+            {/* Group Size — decides which vehicle we send */}
+            <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <GroupStepper
+                icon={<Users size={14} color="#0B132B" />}
+                label="Passengers"
+                value={passengers}
+                min={1}
+                max={MAX_PASSENGERS_INPUT}
+                onChange={setPassengers}
+              />
+              <GroupStepper
+                icon={<Briefcase size={14} color="#0B132B" />}
+                label="Bags"
+                value={bags}
+                min={0}
+                max={MAX_BAGS_INPUT}
+                onChange={setBags}
+              />
+            </div>
+
             {/* Passenger Contact Information */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', gap: '8px' }}>
@@ -599,6 +881,29 @@ export default function ThailandCustomerCabsPage({
                 />
               </div>
 
+              <input
+                type="email"
+                value={riderEmail}
+                onChange={(e) => setRiderEmail(e.target.value)}
+                placeholder="Email (optional, for booking updates)"
+                autoComplete="email"
+                style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '12.5px', fontWeight: 600 }}
+              />
+              {(() => {
+                // Only promise channels the server has switched on
+                const phoneChannels = updateChannels.filter(c => c !== 'email').map(c => CHANNEL_LABEL[c] || c);
+                const emailOn = updateChannels.includes('email') && riderEmail.trim();
+                if (phoneChannels.length === 0 && !emailOn) return null;
+                const parts = [];
+                if (phoneChannels.length) parts.push(`by ${joinWithAnd(phoneChannels)} to this number`);
+                if (emailOn) parts.push('by email');
+                return (
+                  <div style={{ fontSize: '11px', color: '#64748B', marginTop: '-4px' }}>
+                    We'll send your booking and driver details {parts.join(' and ')}.
+                  </div>
+                );
+              })()}
+
               {isAirportRoute && (
                 <div style={{ position: 'relative' }}>
                   <Plane size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#D4AF37' }} />
@@ -618,19 +923,10 @@ export default function ThailandCustomerCabsPage({
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#334155', cursor: 'pointer', fontWeight: 500 }}>
                 <input
                   type="checkbox"
-                  checked={extraLuggage}
-                  onChange={(e) => setExtraLuggage(e.target.checked)}
-                />
-                <span>Extra Luggage / Golf Bags (+฿150)</span>
-              </label>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#334155', cursor: 'pointer', fontWeight: 500 }}>
-                <input
-                  type="checkbox"
                   checked={childSeat}
                   onChange={(e) => setChildSeat(e.target.checked)}
                 />
-                <span>Child Safety Seat (+฿200)</span>
+                <span>Child Safety Seat (+฿{childSeatFee})</span>
               </label>
             </div>
 
@@ -642,7 +938,7 @@ export default function ThailandCustomerCabsPage({
           </div>
 
           {/* ══════════════════════════════════════════════════════════════════════
-              PANEL 2: "CHOOSE A RIDE" (Vertical List of Vehicle Tiers & CTA)
+              PANEL 2: "YOUR RIDE" (Vehicle chosen by the system for this group & CTA)
           ══════════════════════════════════════════════════════════════════════ */}
           <div 
             style={{ 
@@ -660,76 +956,79 @@ export default function ThailandCustomerCabsPage({
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                 <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#0F172A', margin: 0 }}>
-                  Choose a ride
+                  Your ride
                 </h2>
                 <span style={{ fontSize: '11px', color: '#059669', fontWeight: 800, backgroundColor: '#DCFCE7', padding: '3px 8px', borderRadius: '12px' }}>
                   ✓ Tolls Included
                 </span>
               </div>
+              <p style={{ fontSize: '12px', color: '#64748B', margin: '0 0 12px' }}>
+                We choose the vehicle that fits your group. Your chauffeur's name and number plate appear as soon as they accept.
+              </p>
 
-              {/* Ride Options List */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {tiers.map(t => {
-                  const isSelected = selectedTierKey === t.tier;
-                  return (
+              {matchedRide ? (
+                <div
+                  style={{
+                    padding: '12px 14px',
+                    borderRadius: '14px',
+                    border: '2px solid #0B132B',
+                    backgroundColor: '#F8FAFC',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    boxShadow: '0 4px 14px rgba(11, 19, 43, 0.08)',
+                    opacity: isEstimating ? 0.6 : 1,
+                    transition: 'opacity 0.15s ease'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div
-                      key={t.tier}
-                      onClick={() => setSelectedTierKey(t.tier)}
                       style={{
-                        padding: '12px 14px',
-                        borderRadius: '14px',
-                        border: isSelected ? '2px solid #0B132B' : '1px solid #E2E8F0',
-                        backgroundColor: isSelected ? '#F8FAFC' : '#FFFFFF',
-                        cursor: 'pointer',
+                        fontSize: '26px',
+                        width: '44px',
+                        height: '44px',
+                        borderRadius: '10px',
+                        backgroundColor: '#E2E8F0',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'space-between',
-                        transition: 'all 0.15s ease',
-                        boxShadow: isSelected ? '0 4px 14px rgba(11, 19, 43, 0.08)' : 'none'
+                        justifyContent: 'center'
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div 
-                          style={{ 
-                            fontSize: '26px', 
-                            width: '44px', 
-                            height: '44px', 
-                            borderRadius: '10px', 
-                            backgroundColor: isSelected ? '#E2E8F0' : '#F1F5F9',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          {t.icon}
-                        </div>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>{t.name}</span>
-                            {t.popular && (
-                              <span style={{ fontSize: '10px', fontWeight: 800, color: '#854D0E', backgroundColor: '#FEF08A', padding: '1px 6px', borderRadius: '8px' }}>
-                                Popular
-                              </span>
-                            )}
-                          </div>
-                          <div style={{ fontSize: '11px', color: '#64748B', marginTop: '1px' }}>
-                            {t.maxPax} Pax · {t.maxLuggage} Bags · {t.models.split(',')[0]}
-                          </div>
-                        </div>
+                      {matchedRide.icon}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>{matchedRide.name}</div>
+                      <div style={{ fontSize: '11px', color: '#64748B', marginTop: '1px' }}>
+                        Fits up to {matchedRide.maxPax} people · {matchedRide.maxLuggage} bags
                       </div>
-
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '16px', fontWeight: 900, color: '#0F172A' }}>
-                          ฿{t.fareThb}
-                        </div>
-                        <div style={{ fontSize: '10px', color: '#94A3B8', textTransform: 'uppercase' }}>
-                          THB
-                        </div>
+                      <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '1px' }}>
+                        {matchedRide.models.split(',')[0]}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 900, color: '#0F172A' }}>
+                      ฿{matchedRide.fareThb}
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#94A3B8', textTransform: 'uppercase' }}>
+                      THB
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ padding: '14px', borderRadius: '14px', border: '1px dashed #CBD5E1', fontSize: '12px', color: '#64748B', textAlign: 'center' }}>
+                  {isEstimating
+                    ? 'Finding the right vehicle for your group...'
+                    : (availabilityMessage || 'Enter pickup and drop-off to see your ride.')}
+                </div>
+              )}
+
+              {matchedRide && !matchedRide.available && availabilityMessage && (
+                <div style={{ marginTop: '10px', backgroundColor: '#FEF3C7', border: '1px solid #FCD34D', color: '#92400E', padding: '8px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: 600 }}>
+                  {availabilityMessage}
+                </div>
+              )}
             </div>
 
             {/* Bottom Bar: Payment Mode + Big Black Request Button */}
@@ -757,7 +1056,7 @@ export default function ThailandCustomerCabsPage({
               <button
                 type="button"
                 onClick={handleConfirmRide}
-                disabled={isBooking || isEstimating}
+                disabled={isBooking || isEstimating || !canBook}
                 style={{
                   width: '100%',
                   padding: '14px 18px',
@@ -767,7 +1066,8 @@ export default function ThailandCustomerCabsPage({
                   color: '#D4AF37',
                   fontSize: '15px',
                   fontWeight: 900,
-                  cursor: isBooking ? 'wait' : 'pointer',
+                  opacity: canBook ? 1 : 0.5,
+                  cursor: isBooking ? 'wait' : (canBook ? 'pointer' : 'not-allowed'),
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -782,7 +1082,11 @@ export default function ThailandCustomerCabsPage({
                     <span>Broadcasting Chauffeur Request...</span>
                   </>
                 ) : (
-                  <span>Request {selectedTier.name} · ฿{calculatedTotalFare} THB</span>
+                  <span>
+                    {canBook
+                      ? `Request ${matchedRide.name} · ฿${calculatedTotalFare} THB`
+                      : 'No vehicle available for this group'}
+                  </span>
                 )}
               </button>
             </div>
@@ -885,6 +1189,13 @@ export default function ThailandCustomerCabsPage({
               <p style={{ fontSize: '12px', color: '#64748B', margin: 0 }}>
                 {activeRide.tierName} · Dispatch #{activeRide.dispatchId}
               </p>
+              <p style={{ fontSize: '12px', color: '#334155', margin: '6px 0 0', fontWeight: 600 }}>
+                {activeRide.updatesVia?.length > 0
+                  ? `📩 Your booking and driver details are sent by ${joinWithAnd(activeRide.updatesVia.map(c => CHANNEL_LABEL[c] || c))}` +
+                    `${activeRide.updatesVia.some(c => c !== 'email') ? ` to ${activeRide.contactPhone}` : ''}` +
+                    `${activeRide.updatesVia.includes('email') ? `${activeRide.updatesVia.length > 1 ? ' and' : ''} to ${activeRide.contactEmail}` : ''}.`
+                  : '📌 This ride is saved on this device. You can close the page and come back any time.'}
+              </p>
             </div>
 
             {/* Radar Broadcast Banner */}
@@ -906,7 +1217,7 @@ export default function ThailandCustomerCabsPage({
                     Chauffeur Alert Sent
                   </div>
                   <div style={{ fontSize: '11.5px', color: '#78350F', marginTop: '1px', lineHeight: 1.35 }}>
-                    Broadcast to active chauffeurs near {activeRide.pickup}. Screen updates automatically once accepted!
+                    Broadcast to active chauffeurs near {activeRide?.pickup}. Screen updates automatically once accepted!
                   </div>
                 </div>
               </div>
@@ -978,81 +1289,163 @@ export default function ThailandCustomerCabsPage({
               </button>
             </div>
 
-            {/* Chauffeur Details Card */}
-            <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        {/* Chauffeur Details Card: Clean Radar State while waiting, Real Chauffeur after acceptance */}
+            {!activeRide.driver ? (
+              <div 
+                style={{ 
+                  backgroundColor: '#FFFFFF', 
+                  border: '1px solid #E2E8F0', 
+                  borderRadius: '14px', 
+                  padding: '16px', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '12px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+                }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '46px', height: '46px', borderRadius: '50%', backgroundColor: '#D4AF37', color: '#0B132B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '16px' }}>
-                    {(activeRide.driver?.name || 'Somchai Prasert')[0]}
+                  <div 
+                    style={{ 
+                      width: '44px', 
+                      height: '44px', 
+                      borderRadius: '50%', 
+                      backgroundColor: 'rgba(212, 175, 55, 0.12)', 
+                      border: '1.5px solid #D4AF37', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <span className="spinner-border spinner-border-sm text-warning" style={{ width: '18px', height: '18px' }} />
                   </div>
                   <div>
-                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>
-                      {activeRide.driver?.name || 'Somchai Prasert'}
+                    <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A' }}>
+                      Broadcasting to Nearby Chauffeurs...
                     </div>
-                    <div style={{ fontSize: '11.5px', color: '#64748B' }}>
-                      ⭐ 4.95 · Verified Chauffeur
+                    <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '2px' }}>
+                      Searching licensed Thai chauffeurs in pickup radius
                     </div>
                   </div>
                 </div>
 
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 800, color: '#0F172A' }}>
-                    {activeRide.driver?.vehicle?.model || 'Toyota Camry VIP'}
+                <div 
+                  style={{ 
+                    backgroundColor: '#F8FAFC', 
+                    borderRadius: '10px', 
+                    padding: '10px 14px', 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    fontSize: '12px', 
+                    border: '1px solid #E2E8F0' 
+                  }}
+                >
+                  <div>
+                    <span style={{ color: '#64748B' }}>Vehicle: </span>
+                    <strong style={{ color: '#0F172A' }}>{activeRide.tierName}</strong>
+                    {activeRide.passengers && (
+                      <span style={{ color: '#64748B' }}>
+                        {' '}· {activeRide.passengers} {activeRide.passengers === 1 ? 'passenger' : 'passengers'} · {activeRide.bags} {activeRide.bags === 1 ? 'bag' : 'bags'}
+                      </span>
+                    )}
                   </div>
-                  <div style={{ fontSize: '11px', fontWeight: 800, backgroundColor: '#0B132B', color: '#FFFFFF', padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginTop: '2px' }}>
-                    {activeRide.driver?.vehicle?.plateNumber || '1กข 4589'}
+                  <div>
+                    <span style={{ color: '#64748B' }}>Status: </span>
+                    <span style={{ color: '#D97706', fontWeight: 800 }}>Awaiting Acceptance</span>
                   </div>
                 </div>
               </div>
+            ) : (
+              <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {activeRide.driver.photo ? (
+                      <img
+                        src={activeRide.driver.photo}
+                        alt={activeRide.driver.name}
+                        style={{ width: '46px', height: '46px', borderRadius: '50%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <div style={{ width: '46px', height: '46px', borderRadius: '50%', backgroundColor: '#D4AF37', color: '#0B132B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '16px' }}>
+                        {(activeRide.driver.name || 'D')[0]}
+                      </div>
+                    )}
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>
+                        {activeRide.driver.name}
+                      </div>
+                      <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+                        ⭐ {activeRide.driver.rating || '4.95'} · Verified Chauffeur
+                      </div>
+                    </div>
+                  </div>
 
-              <div style={{ display: 'flex', gap: '8px', paddingTop: '8px', borderTop: '1px solid #F1F5F9' }}>
-                <a
-                  href="tel:+66812345678"
-                  style={{
-                    flex: 1,
-                    padding: '8px',
-                    borderRadius: '8px',
-                    border: '1px solid #E2E8F0',
-                    backgroundColor: '#F8FAFC',
-                    color: '#0F172A',
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    textDecoration: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <Phone size={14} color="#059669" />
-                  <span>Call Chauffeur</span>
-                </a>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#0F172A' }}>
+                      {[activeRide.driver.vehicle_color, activeRide.driver.vehicle_model || activeRide.driver.vehicle?.model].filter(Boolean).join(' ') || activeRide.tierName}
+                    </div>
+                    {(activeRide.driver.vehicle_plate || activeRide.driver.vehicle?.plateNumber) && (
+                      <div style={{ fontSize: '11px', fontWeight: 800, backgroundColor: '#0B132B', color: '#FFFFFF', padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginTop: '2px' }}>
+                        {activeRide.driver.vehicle_plate || activeRide.driver.vehicle?.plateNumber}
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-                <a
-                  href="https://wa.me/66812345678"
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    flex: 1,
-                    padding: '8px',
-                    borderRadius: '8px',
-                    border: '1px solid #BBF7D0',
-                    backgroundColor: '#ECFDF5',
-                    color: '#065F46',
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    textDecoration: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <MessageSquare size={14} />
-                  <span>WhatsApp</span>
-                </a>
+                <div style={{ display: 'flex', gap: '8px', paddingTop: '8px', borderTop: '1px solid #F1F5F9' }}>
+                  {activeRide.driver.phone && (
+                    <a
+                      href={'tel:' + activeRide.driver.phone}
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        borderRadius: '8px',
+                        border: '1px solid #E2E8F0',
+                        backgroundColor: '#F8FAFC',
+                        color: '#0F172A',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        textDecoration: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <Phone size={14} color="#059669" />
+                      <span>Call Chauffeur</span>
+                    </a>
+                  )}
+
+                  {activeRide.driver.phone && (
+                    <a
+                      href={'https://wa.me/' + activeRide.driver.phone.replace(/[^0-9]/g, '')}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        flex: 1,
+                        padding: '8px',
+                        borderRadius: '8px',
+                        border: '1px solid #BBF7D0',
+                        backgroundColor: '#ECFDF5',
+                        color: '#065F46',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        textDecoration: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <MessageSquare size={14} />
+                      <span>WhatsApp</span>
+                    </a>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Route Summary */}
             <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '12px 14px', fontSize: '12px' }}>
@@ -1066,17 +1459,33 @@ export default function ThailandCustomerCabsPage({
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #E2E8F0', fontSize: '13px' }}>
                 <span style={{ fontWeight: 700, color: '#64748B' }}>Total Guaranteed Fare</span>
-                <span style={{ fontWeight: 900, color: '#0F172A' }}>฿{activeRide.totalFare} THB</span>
+                <span style={{ fontWeight: 900, color: '#0F172A' }}>
+                  {activeRide.totalFare != null ? `฿${activeRide.totalFare} THB` : '…'}
+                </span>
               </div>
             </div>
+
+            {rideActionError && (
+              <div style={{ backgroundColor: '#FEE2E2', border: '1px solid #FCA5A5', color: '#DC2626', padding: '8px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: 600 }}>
+                {rideActionError}
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div style={{ display: 'flex', gap: '8px', marginTop: 'auto' }}>
               <button
                 type="button"
                 onClick={() => {
+                  if (FINISHED_RIDE_STATUSES.includes(activeRide.status)) {
+                    leaveRide();
+                    return;
+                  }
+                  // The ride stays booked and saved; keep a shortcut back to it
+                  setParkedRide(activeRide);
                   setActiveRide(null);
+                  setRideActionError('');
                   setCurrentView('booking');
+                  removeRideParamFromUrl();
                 }}
                 style={{
                   flex: 1,
@@ -1093,30 +1502,25 @@ export default function ThailandCustomerCabsPage({
                 Book Another Ride
               </button>
 
-              <button
-                type="button"
-                onClick={async () => {
-                  if (window.confirm('Are you sure you want to cancel this transfer?')) {
-                    try {
-                      await cancelCabRide({ dispatchId: activeRide.dispatchId, reason: 'Customer requested cancellation' });
-                    } catch (e) {}
-                    setActiveRide(null);
-                    setCurrentView('booking');
-                  }
-                }}
-                style={{
-                  padding: '12px 18px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  backgroundColor: '#FEE2E2',
-                  color: '#DC2626',
-                  fontSize: '13px',
-                  fontWeight: 800,
-                  cursor: 'pointer'
-                }}
-              >
-                Cancel
-              </button>
+              {!FINISHED_RIDE_STATUSES.includes(activeRide.status) && (
+                <button
+                  type="button"
+                  onClick={handleCancelRide}
+                  disabled={isCancelling}
+                  style={{
+                    padding: '12px 18px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    backgroundColor: '#FEE2E2',
+                    color: '#DC2626',
+                    fontSize: '13px',
+                    fontWeight: 800,
+                    cursor: isCancelling ? 'wait' : 'pointer'
+                  }}
+                >
+                  {isCancelling ? 'Cancelling...' : 'Cancel'}
+                </button>
+              )}
             </div>
           </div>
 
@@ -1146,12 +1550,13 @@ export default function ThailandCustomerCabsPage({
               }}
             >
               <LiveThailandCabMap
-                pickupLocation={activeRide.pickup}
-                dropoffLocation={activeRide.dropoff}
-                mode="confirmed"
-                driverName="Somchai Prasert"
-                vehiclePlate="1กข 4589"
-                driverStatus="DISPATCHED"
+                pickupLocation={activeRide?.pickup}
+                dropoffLocation={activeRide?.dropoff}
+                mode={activeRide?.driver ? "confirmed" : "estimate"}
+                driverName={activeRide?.driver?.name || null}
+                vehiclePlate={activeRide?.driver?.vehicle_plate || activeRide?.driver?.vehicle?.plateNumber || null}
+                driverStatus={activeRide?.status || 'ALLOCATED'}
+                driverLocation={activeRide?.gps || null}
                 height="100%"
               />
             </div>
@@ -1167,6 +1572,8 @@ export default function ThailandCustomerCabsPage({
           onClose={() => setShowHistoryDrawer(false)}
           onTrackRide={(dispatchId) => {
             setShowHistoryDrawer(false);
+            setParkedRide(null);
+            openRide(dispatchId, loadActiveRide());
           }}
         />
       )}

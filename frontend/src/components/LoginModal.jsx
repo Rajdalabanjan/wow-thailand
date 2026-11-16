@@ -33,9 +33,10 @@ export default function LoginModal({ isOpen, onClose, onLogin }) {
       return;
     }
     
-    const success = await onLogin(username, password);
-    if (!success) {
-      setErrorMsg("Invalid username or password. Check credentials.");
+    // true when signed in; otherwise the reason from the server (or false)
+    const result = await onLogin(username, password);
+    if (result !== true) {
+      setErrorMsg(typeof result === 'string' && result ? result : "Invalid username or password. Check credentials.");
     } else {
       setErrorMsg('');
       setUsername('');
@@ -49,13 +50,13 @@ export default function LoginModal({ isOpen, onClose, onLogin }) {
     setPassword(p);
     setErrorMsg('');
     
-    const success = await onLogin(u, p);
-    if (success) {
+    const result = await onLogin(u, p);
+    if (result === true) {
       setUsername('');
       setPassword('');
       onClose();
     } else {
-      setErrorMsg("Invalid username or password. Check credentials.");
+      setErrorMsg(typeof result === 'string' && result ? result : "Invalid username or password. Check credentials.");
     }
   };
 
@@ -269,16 +270,16 @@ export default function LoginModal({ isOpen, onClose, onLogin }) {
                   type="button"
                   className="btn btn-xs btn-outline-secondary text-start d-flex justify-content-between align-items-center py-1.5 px-2.5 rounded-2 border-0 small text-dark"
                   style={{ background: '#f1f5f9' }}
-                  onClick={() => handleQuickLogin('superadmin@gmail.com', 'superadmin')}
+                  onClick={() => handleQuickLogin('superadmin', 'admin@2026')}
                 >
                   <span className="fw-bold small" style={{ fontSize: '11px' }}>Superadmin (Full Access)</span>
-                  <span className="text-xxs text-muted">superadmin / superadmin</span>
+                  <span className="text-xxs text-muted">superadmin / admin@2026</span>
                 </button>
                 <button
                   type="button"
                   className="btn btn-xs btn-outline-secondary text-start d-flex justify-content-between align-items-center py-1.5 px-2.5 rounded-2 border-0 small text-dark"
                   style={{ background: '#f1f5f9' }}
-                  onClick={() => handleQuickLogin('admin@gmail.com', 'admin@2026')}
+                  onClick={() => handleQuickLogin('admin', 'admin@2026')}
                 >
                   <span className="fw-bold small" style={{ fontSize: '11px' }}>Admin (Operators)</span>
                   <span className="text-xxs text-muted">admin / admin@2026</span>
@@ -287,16 +288,16 @@ export default function LoginModal({ isOpen, onClose, onLogin }) {
                   type="button"
                   className="btn btn-xs btn-outline-secondary text-start d-flex justify-content-between align-items-center py-1.5 px-2.5 rounded-2 border-0 small text-dark"
                   style={{ background: '#f1f5f9' }}
-                  onClick={() => handleQuickLogin('transfer_vendor@wowthailand.com', 'admin@2026')}
+                  onClick={() => handleQuickLogin('cabs_operator', 'admin@2026')}
                 >
-                  <span className="fw-bold small" style={{ fontSize: '11px' }}>Cab Vendor (Transfer Fleet & Drivers)</span>
-                  <span className="text-xxs text-muted">vendor / admin@2026</span>
+                  <span className="fw-bold small" style={{ fontSize: '11px' }}>Vehicle Vendor (Fleet Listings)</span>
+                  <span className="text-xxs text-muted">cabs_operator / admin@2026</span>
                 </button>
                 <button
                   type="button"
                   className="btn btn-xs btn-outline-secondary text-start d-flex justify-content-between align-items-center py-1.5 px-2.5 rounded-2 border-0 small text-dark"
                   style={{ background: '#f1f5f9' }}
-                  onClick={() => handleQuickLogin('hotel_transfer_vendor@wowthailand.com', 'admin@2026')}
+                  onClick={() => handleQuickLogin('hotel_vendor', 'admin@2026')}
                 >
                   <span className="fw-bold small" style={{ fontSize: '11px' }}>Hotel Vendor (Hotel PMS)</span>
                   <span className="text-xxs text-muted">hotel_vendor / admin@2026</span>
@@ -304,8 +305,17 @@ export default function LoginModal({ isOpen, onClose, onLogin }) {
                 <button
                   type="button"
                   className="btn btn-xs btn-outline-secondary text-start d-flex justify-content-between align-items-center py-1.5 px-2.5 rounded-2 border-0 small text-dark"
+                  style={{ background: '#f1f5f9' }}
+                  onClick={() => handleQuickLogin('flight_vendor', 'admin@2026')}
+                >
+                  <span className="fw-bold small" style={{ fontSize: '11px' }}>Flight Vendor (Flight PMS)</span>
+                  <span className="text-xxs text-muted">flight_vendor / admin@2026</span>
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-xs btn-outline-secondary text-start d-flex justify-content-between align-items-center py-1.5 px-2.5 rounded-2 border-0 small text-dark"
                   style={{ background: '#f5f3ff', border: '1px solid #ddd6fe' }}
-                  onClick={() => handleQuickLogin('subadmin@wowthailand.com', 'admin@2026')}
+                  onClick={() => handleQuickLogin('subadmin', 'admin@2026')}
                 >
                   <span className="fw-bold small text-dark" style={{ fontSize: '11px' }}>🛡️ Sub-Admin Portal (Lead Operations)</span>
                   <span className="text-xxs fw-bold" style={{ color: '#7c3aed' }}>subadmin / admin@2026</span>
@@ -314,7 +324,7 @@ export default function LoginModal({ isOpen, onClose, onLogin }) {
                   type="button"
                   className="btn btn-xs btn-outline-secondary text-start d-flex justify-content-between align-items-center py-1.5 px-2.5 rounded-2 border-0 small text-dark"
                   style={{ background: '#eff6ff', border: '1px solid #dbeafe' }}
-                  onClick={() => handleQuickLogin('partner_a@agency.com', 'admin@2026')}
+                  onClick={() => handleQuickLogin('partner_a', 'admin@2026')}
                 >
                   <span className="fw-bold small text-dark" style={{ fontSize: '11px' }}>💼 B2B Portal (Travel Partner Agency)</span>
                   <span className="text-xxs text-primary fw-bold">partner_a / admin@2026</span>
@@ -323,10 +333,10 @@ export default function LoginModal({ isOpen, onClose, onLogin }) {
                   type="button"
                   className="btn btn-xs btn-outline-secondary text-start d-flex justify-content-between align-items-center py-1.5 px-2.5 rounded-2 border-0 small text-dark"
                   style={{ background: '#fffbeb', border: '1px solid #fef3c7' }}
-                  onClick={() => handleQuickLogin('driver@gmail.com', 'driver')}
+                  onClick={() => handleQuickLogin('driver@gmail.com', 'admin@2026')}
                 >
                   <span className="fw-bold small text-dark" style={{ fontSize: '11px' }}>🚗 Driver Portal (WOW THAILAND Fleet)</span>
-                  <span className="text-xxs text-warning fw-bold">driver@gmail.com</span>
+                  <span className="text-xxs text-warning fw-bold">driver@gmail.com / admin@2026</span>
                 </button>
               </div>
             )}

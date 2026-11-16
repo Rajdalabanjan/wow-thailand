@@ -21,8 +21,27 @@ export default function CustomerBookingsTab({
   const [selectedVoucherBooking, setSelectedVoucherBooking] = useState(null);
   const [cancellingBooking, setCancellingBooking] = useState(null);
 
+  // Cab rides are tracked and cancelled on their ride page (live map, driver details, ride cancel),
+  // so their rows get a "Track ride" button instead of the general cancel form
+  const isCabRide = (b) => Boolean(b && b.dispatch_id);
+  const rideIsActive = (b) => !['COMPLETED', 'CANCELLED'].includes(String(b?.ride_status || '').toUpperCase());
+  const openRide = (b) => {
+    window.location.href = `/cabs?ride=${encodeURIComponent(b.dispatch_id)}`;
+  };
+  const cabDriverText = (b) => (b.assigned_driver_name
+    ? `🚖 ${b.assigned_driver_name}${b.vehicle_plate ? ` · ${b.vehicle_plate}` : ''}${b.vehicle_name ? ` · ${b.vehicle_name}` : ''}`
+    : '🚖 Driver being assigned');
+
+  const paymentText = (b, isPaid, pendingAmt) => {
+    if (isPaid) return 'Paid Full';
+    if (b.payment_note) return b.payment_note;
+    const paid = parseFloat(b.paid_amount || b.total_paid || 0);
+    if (paid <= 0) return 'Not paid yet';
+    return pendingAmt != null ? `Partially Paid (Pending: ฿${pendingAmt.toLocaleString('en-US')})` : 'Partially Paid';
+  };
+
   const canCancel = (b) => {
-    if (!b) return false;
+    if (!b || isCabRide(b)) return false;
     const st = (b.status || '').toLowerCase();
     return st !== 'cancelled' && st !== 'completed';
   };
@@ -410,6 +429,7 @@ export default function CustomerBookingsTab({
 
   const getCategoryTitle = (b) => {
     if (!b) return 'Booking';
+    if (isCabRide(b)) return 'Cab Transfer';
     if (isCraftCategory(b)) return 'Craft My Trip';
     if (isFlightCategory(b)) return 'Flight';
     if (isHotelCategory(b)) return 'Hotel';
@@ -424,6 +444,7 @@ export default function CustomerBookingsTab({
 
   const getCategoryBadge = (b) => {
     if (!b) return 'Booking';
+    if (isCabRide(b)) return '🚖 Cab Transfer';
     if (isCraftCategory(b)) return '✨ Craft My Trip';
     if (isFlightCategory(b)) return '✈️ Flight';
     if (isHotelCategory(b)) return '🏨 Hotel';
@@ -579,8 +600,11 @@ export default function CustomerBookingsTab({
                 </h6>
 
                 <div className="text-muted text-xs mb-2">
-                  📍 {b.pickup_location || b.pickup || b.hotel_location || 'Thailand'} {b.pickup_time ? `• ${b.pickup_time}` : ''}
+                  📍 {b.pickup_location || b.pickup || b.hotel_location || 'Thailand'}{b.drop_location ? ` → ${b.drop_location}` : ''} {b.pickup_time ? `• ${b.pickup_time}` : ''}
                 </div>
+                {isCabRide(b) && (
+                  <div className="text-dark text-xs fw-semibold mb-2">{cabDriverText(b)}</div>
+                )}
 
                 {isTripPackageItem(b) && (
                   <div className="d-flex flex-wrap gap-1 mb-2">
@@ -601,7 +625,7 @@ export default function CustomerBookingsTab({
                   </div>
                   <div className="d-flex justify-content-between">
                     <span className="text-muted">Payment Status:</span>
-                    <span className={`fw-bold ${isPaid ? 'text-success' : 'text-warning'}`}>{isPaid ? 'Paid Full' : `Partially Paid (Pending: ฿${pendingAmt.toLocaleString('en-US')})`}</span>
+                    <span className={`fw-bold ${isPaid ? 'text-success' : 'text-warning'}`}>{paymentText(b, isPaid, pendingAmt)}</span>
                   </div>
                 </div>
 
@@ -620,6 +644,16 @@ export default function CustomerBookingsTab({
                     <Eye size={14} />
                     <span>View & Print Voucher</span>
                   </button>
+                  {isCabRide(b) && rideIsActive(b) && (
+                    <button
+                      onClick={() => openRide(b)}
+                      className="btn btn-sm btn-success fw-bold rounded-pill py-2 w-100 text-xs d-flex align-items-center justify-content-center gap-1.5 shadow-xs mt-1.5"
+                      title="See your driver live on the map, or cancel the ride"
+                    >
+                      <MapPin size={14} />
+                      <span>Track ride</span>
+                    </button>
+                  )}
                   {canCancel(b) && (
                     <button
                       onClick={() => setCancellingBooking(b)}
@@ -679,9 +713,14 @@ export default function CustomerBookingsTab({
                           <div className="text-muted d-flex align-items-center gap-1 mt-0.5 text-truncate" style={{ fontSize: '11.5px' }}>
                             <span className="text-danger flex-shrink-0">📍</span>
                             <span className="text-truncate">
-                              {b.pickup_location || b.pickup_loc || b.pickup || b.hotel_location || 'Thailand'} {b.pickup_time ? `• ${b.pickup_time}` : ''}
+                              {b.pickup_location || b.pickup_loc || b.pickup || b.hotel_location || 'Thailand'}{b.drop_location ? ` → ${b.drop_location}` : ''} {b.pickup_time ? `• ${b.pickup_time}` : ''}
                             </span>
                           </div>
+                          {isCabRide(b) && (
+                            <div className="text-dark fw-semibold text-truncate mt-0.5" style={{ fontSize: '11.5px' }}>
+                              {cabDriverText(b)}
+                            </div>
+                          )}
                           {isTripPackageItem(b) && (
                             <div className="d-flex flex-wrap gap-1 mt-1.5">
                               <span className="badge bg-light text-dark border" style={{ fontSize: '9.5px' }}>🏨 {b.hotel_name || 'Resort Stay'}</span>
@@ -721,7 +760,7 @@ export default function CustomerBookingsTab({
                         </span>
                       ) : (
                         <span className="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2.5 py-1.5 rounded-pill text-xxs fw-bold">
-                          Partially Paid
+                          {paymentText(b, isPaid, null)}
                         </span>
                       )}
                     </td>
@@ -746,6 +785,16 @@ export default function CustomerBookingsTab({
                           <Eye size={13} />
                           <span>View Voucher</span>
                         </button>
+                        {isCabRide(b) && rideIsActive(b) && (
+                          <button
+                            onClick={() => openRide(b)}
+                            className="btn btn-sm btn-success fw-bold rounded-pill px-3 py-1.5 text-xs d-inline-flex align-items-center gap-1.5 shadow-xs transition-all"
+                            title="See your driver live on the map, or cancel the ride"
+                          >
+                            <MapPin size={13} />
+                            <span>Track ride</span>
+                          </button>
+                        )}
                         {canCancel(b) && (
                           <button
                             onClick={() => setCancellingBooking(b)}

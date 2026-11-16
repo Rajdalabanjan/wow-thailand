@@ -32,13 +32,17 @@ export default defineConfig(({ mode }) => {
         ignored: ['**/dist/**', '**/.git/**', '**/backend/**']
       },
       proxy: {
+        // xfwd passes the visitor's address on (X-Forwarded-For), so the backend can tell
+        // this computer apart from other devices reaching the dev server
         '/api.php': {
           target: apiTarget,
           changeOrigin: true,
+          xfwd: true,
         },
         '/api': {
           target: apiTarget,
           changeOrigin: true,
+          xfwd: true,
         },
         '/backend/uploads': {
           target: apiTarget,
@@ -48,6 +52,12 @@ export default defineConfig(({ mode }) => {
         '/uploads': {
           target: apiTarget,
           changeOrigin: true,
+        },
+        // Live updates (driver GPS etc.) over Socket.IO
+        '/socket.io': {
+          target: apiTarget,
+          changeOrigin: true,
+          ws: true,
         },
       },
     },

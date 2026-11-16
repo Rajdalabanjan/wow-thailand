@@ -316,10 +316,14 @@ export default function CustomerOverviewTab({
   const [selfDriveSubcategory, setSelfDriveSubcategory] = useState('all');
 
   useEffect(() => {
-    if (exploreFocus === 'explore' || exploreFocus === 'fleets' || exploreFocus === 'book' || exploreFocus === 'selfdrive') {
-      setExploreCategory('selfdrive');
+    if (exploreFocus === 'cabs' || exploreFocus === 'selfdrive' || exploreFocus === 'fleets') {
+      setExploreCategory('cabs');
+    } else if (exploreFocus === 'activities' || exploreFocus === 'sightseeing') {
+      setExploreCategory('activities');
     } else if (exploreFocus === 'craft' || exploreFocus === 'craftmytrip') {
       setExploreCategory('craftmytrip');
+    } else {
+      setExploreCategory('hotels');
     }
   }, [exploreFocus]);
 

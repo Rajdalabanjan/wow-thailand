@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Hotel, Car, Compass, Search, Filter, Gift, Tag, Check, Star, 
   Users, Calendar, Sparkles, MapPin, ArrowRight, ShieldCheck, Clock, 
@@ -86,6 +86,8 @@ export default function B2BInventoryTab({
 
   // Selected item for booking modal
   const [bookingItem, setBookingItem] = useState(null);
+  // Changes for each new booking attempt (see idempotency_key below)
+  const bookingAttemptRef = useRef(Date.now());
   const [guestDetails, setGuestDetails] = useState({
     name: '',
     phone: '',
@@ -115,9 +117,11 @@ export default function B2BInventoryTab({
     }
   };
 
-  // Commission and Net discount rate from partner profile or default
-  const commRate = parseFloat(partnerUser?.default_commission_rate || 10.00);
-  const netDiscountRate = parseFloat(partnerUser?.default_net_discount_rate || 10.00);
+  // Commission and net discount rates for this service (the server applies the same rates)
+  const rateCategory = activeService === 'hotels' ? 'hotel' : ((activeService === 'cabs' || activeService === 'cars') ? 'vehicle' : 'package');
+  const serviceRates = partnerUser?.service_rates?.[rateCategory];
+  const commRate = parseFloat(serviceRates?.commission ?? partnerUser?.default_commission_rate ?? 10.00);
+  const netDiscountRate = parseFloat(serviceRates?.net ?? partnerUser?.default_net_discount_rate ?? 10.00);
 
   useEffect(() => {
     if (initialService) {
@@ -209,6 +213,7 @@ export default function B2BInventoryTab({
 
   // Open booking modal
   const handleOpenBooking = (item) => {
+    bookingAttemptRef.current = Date.now();
     setBookingItem(item);
     setBookingError('');
     setBookingSuccess(null);
@@ -262,6 +267,8 @@ export default function B2BInventoryTab({
       guest_phone: guestDetails.phone,
       guest_email: guestDetails.email,
       payment_method: guestDetails.payment_method,
+      // Same key for retries of this one submission, so a double-click cannot book (and charge) twice
+      idempotency_key: `inv_${partnerUser?.id}_${bookingItem.id}_${bookingAttemptRef.current}`,
       extra_details: {
         total_amount: totalSelling,
         special_requests: guestDetails.special_requests,
@@ -277,6 +284,10 @@ export default function B2BInventoryTab({
       const res = await api.b2bBook(payload);
       if (res && res.success) {
         setBookingSuccess(res);
+        bookingAttemptRef.current = Date.now();
+        if (res.wallet_balance !== undefined) {
+          window.dispatchEvent(new CustomEvent('b2b-wallet-changed', { detail: { balance: res.wallet_balance } }));
+        }
       } else {
         setBookingError(res.error || 'Failed to submit booking.');
       }
