@@ -17,8 +17,9 @@ export async function resolveVendorId(user) {
   if (ADMIN_ROLES.has(user.role)) return null;
 
   try {
+    // ORDER BY keeps the result stable when one login owns several vendor rows
     const rows = await query(
-      'SELECT id FROM vendors WHERE user_id = ? OR id = ? LIMIT 1',
+      'SELECT id FROM vendors WHERE user_id = ? OR id = ? ORDER BY id ASC LIMIT 1',
       [user.id, user.id]
     );
     if (rows.length > 0) {

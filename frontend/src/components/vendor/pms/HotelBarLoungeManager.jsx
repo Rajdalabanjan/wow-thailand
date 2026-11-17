@@ -237,7 +237,7 @@ export default function HotelBarLoungeManager({ currentUser, vendorHotels = [], 
       {/* Header bar */}
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
         <div className="d-flex align-items-center gap-2.5">
-          <div className="rounded-3 p-2 d-flex align-items-center justify-content-center text-white" style={{ background: 'linear-gradient(135deg, #FF6333, #FF8A00)' }}>
+          <div className="rounded-3 p-2 d-flex align-items-center justify-content-center text-dark" style={{ background: 'linear-gradient(135deg, #F5C518, #E5A826)' }}>
             <Wine size={22} />
           </div>
           <div>
@@ -487,8 +487,8 @@ export default function HotelBarLoungeManager({ currentUser, vendorHotels = [], 
               <div className="d-flex flex-column gap-2 pt-3 border-top">
                 <button
                   type="submit"
-                  className="btn text-white w-100 rounded-pill py-2 fw-bold"
-                  style={{ background: 'linear-gradient(90deg, #FF6333, #FF8A00)' }}
+                  className="btn text-dark w-100 rounded-pill py-2 fw-bold"
+                  style={{ background: 'linear-gradient(90deg, #F5C518, #E5A826)' }}
                   disabled={saving || uploadingImage}
                 >
                   {saving ? 'Saving Profile...' : 'Save Bar & Lounge Profile'}

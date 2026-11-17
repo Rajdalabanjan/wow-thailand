@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { apiFetch, API_BASE } from '../../services/api';
 
-const COLORS = { primary: '#FF6333', dark: '#0D1B2E', success: '#16a34a', danger: '#dc2626', warn: '#ca8a04' };
+const COLORS = { primary: '#F5C518', dark: '#0D1B2E', success: '#16a34a', danger: '#dc2626', warn: '#ca8a04' };
 
 function StatusBadge({ status }) {
   const norm = (status || '').toLowerCase().trim();
@@ -1533,7 +1533,7 @@ function VendorWalletsTab() {
   return (
     <div>
       {/* Global Wallet Escalation Policy Settings */}
-      <div className="card p-3 mb-4 border-0 shadow-sm rounded-3" style={{ background: '#f8fafc', borderLeft: '4px solid #FF6333' }}>
+      <div className="card p-3 mb-4 border-0 shadow-sm rounded-3" style={{ background: '#f8fafc', borderLeft: '4px solid #F5C518' }}>
         <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
           <div>
             <div className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>

@@ -130,7 +130,7 @@ export default function DatePickerPopover({
                     fontWeight: isSelected ? 700 : 500,
                     borderRadius: '8px',
                     border: 'none',
-                    background: isSelected ? '#FF6333' : 'transparent',
+                    background: isSelected ? '#F5C518' : 'transparent',
                     color: isSelected ? '#fff' : (isPast ? '#cbd5e1' : '#1e293b'),
                     opacity: isPast ? 0.35 : 1,
                     cursor: isPast ? 'not-allowed' : 'pointer',

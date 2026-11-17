@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { 
   Building2, User, Phone, Mail, Globe, MapPin, Lock, 
-  CheckCircle2, AlertCircle, ArrowRight, ShieldCheck, Compass, FileText, ArrowLeft,
+  CheckCircle2, AlertCircle, ArrowRight, ShieldCheck, FileText, ArrowLeft,
   Percent, Tag, Check
 } from 'lucide-react';
+import TempleMark from '../../components/common/TempleMark';
 import * as api from '../../services/api';
 
 export default function B2BRegisterPage({ onNavigateLogin, onNavigateHome, onNavigateBack }) {
@@ -115,10 +116,10 @@ export default function B2BRegisterPage({ onNavigateLogin, onNavigateHome, onNav
         <div className="container py-3 d-flex justify-content-between align-items-center">
           <div className="d-flex align-items-center gap-2" style={{ cursor: 'pointer' }} onClick={onNavigateHome}>
             <div className="rounded-3 p-2 bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px' }}>
-              <Compass size={22} />
+              <TempleMark size={22} />
             </div>
             <div>
-              <span className="fw-black fs-5 tracking-wider text-white font-heading">WOW THAILAND</span>
+              <span className="brand-wordmark fs-5 text-white">WOW <span className="brand-gold">THAILAND</span></span>
               <span className="badge bg-warning text-dark text-xxs fw-bold ms-2 px-2 py-0.5 rounded-pill">B2B PORTAL</span>
             </div>
           </div>
@@ -210,10 +211,10 @@ export default function B2BRegisterPage({ onNavigateLogin, onNavigateHome, onNav
       <div className="container py-3 d-flex justify-content-between align-items-center">
         <div className="d-flex align-items-center gap-2" style={{ cursor: 'pointer' }} onClick={onNavigateHome}>
           <div className="rounded-3 p-2 bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px' }}>
-            <Compass size={22} />
+            <TempleMark size={22} />
           </div>
           <div>
-            <span className="fw-black fs-5 tracking-wider text-white font-heading">WOW THAILAND</span>
+            <span className="brand-wordmark fs-5 text-white">WOW <span className="brand-gold">THAILAND</span></span>
             <span className="badge bg-warning text-dark text-xxs fw-bold ms-2 px-2 py-0.5 rounded-pill">B2B PARTNER</span>
           </div>
         </div>

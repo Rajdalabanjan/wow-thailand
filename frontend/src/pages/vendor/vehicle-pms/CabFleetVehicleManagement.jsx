@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Car, Plus, Shield, ShieldCheck, AlertCircle, FileText, CheckCircle2,
   XCircle, Wrench, Users, Search, RefreshCw, Loader2, ExternalLink,
-  ChevronRight, ToggleLeft, ToggleRight, Trash2, Edit
+  ChevronRight, ToggleLeft, ToggleRight, Trash2, Edit, Upload, Image as ImageIcon
 } from 'lucide-react';
 import {
+  uploadImage,
   fetchVendorFleetVehicles,
   createVendorFleetVehicle,
   updateVendorFleetVehicle,
@@ -50,6 +51,42 @@ export default function CabFleetVehicleManagement({ currentUser }) {
     insurance_doc_url: '',
     permit_doc_url: ''
   });
+
+  // Vehicle photo picked from this device: uploaded straight away, the form keeps its link
+  const photoInputRef = useRef(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState('');
+  const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+
+  const handlePhotoFileChange = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = ''; // picking the same file again still triggers a change
+    if (!file) return;
+    setPhotoError('');
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+      setPhotoError('Please choose a JPG, PNG or WebP image.');
+      return;
+    }
+    if (file.size > MAX_PHOTO_BYTES) {
+      setPhotoError('This photo is larger than 10 MB. Please choose a smaller one.');
+      return;
+    }
+    setPhotoUploading(true);
+    try {
+      const url = await uploadImage(file);
+      // uploadImage falls back to an inline data: link when the server upload fails;
+      // that is far too long to save with the vehicle, so treat it as a failed upload
+      if (!url || url.startsWith('data:')) {
+        setPhotoError('Upload failed. Please try again, or paste a photo link instead.');
+        return;
+      }
+      setFormData(prev => ({ ...prev, photo_url: url }));
+    } catch {
+      setPhotoError('Upload failed. Please try again, or paste a photo link instead.');
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
 
   const [selectedDriverId, setSelectedDriverId] = useState('');
 
@@ -221,7 +258,7 @@ export default function CabFleetVehicleManagement({ currentUser }) {
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 pb-3 mb-4 border-bottom border-secondary border-opacity-25">
         <div>
           <div className="d-flex align-items-center gap-2">
-            <span className="p-2 rounded-3" style={{ background: 'rgba(255,99,51,0.15)', color: '#FF6333' }}>
+            <span className="p-2 rounded-3" style={{ background: 'rgba(245, 197, 24, 0.15)', color: '#B8860B' }}>
               <Car size={24} />
             </span>
             <div>
@@ -245,8 +282,8 @@ export default function CabFleetVehicleManagement({ currentUser }) {
           </button>
           <button
             onClick={() => setShowAddModal(true)}
-            className="btn btn-sm d-flex align-items-center gap-1.5 fw-bold text-white px-3 py-2 rounded-3 shadow-sm"
-            style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)' }}
+            className="btn btn-sm d-flex align-items-center gap-1.5 fw-bold text-dark px-3 py-2 rounded-3 shadow-sm"
+            style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)' }}
           >
             <Plus size={16} />
             <span>Register Vehicle</span>
@@ -362,8 +399,8 @@ export default function CabFleetVehicleManagement({ currentUser }) {
           </p>
           <button
             onClick={() => setShowAddModal(true)}
-            className="btn btn-sm text-white fw-semibold px-3 py-1.5 rounded-3"
-            style={{ background: '#FF6333' }}
+            className="btn btn-sm text-dark fw-semibold px-3 py-1.5 rounded-3"
+            style={{ background: '#F5C518' }}
           >
             Register First Vehicle
           </button>
@@ -422,7 +459,7 @@ export default function CabFleetVehicleManagement({ currentUser }) {
 
                     {/* Category Tag */}
                     <div className="position-absolute top-0 end-0 m-2">
-                      <span className="badge px-2 py-1 rounded-pill fw-bold" style={{ background: 'rgba(13,27,46,0.85)', backdropFilter: 'blur(4px)', color: '#00B8D9', fontSize: '0.68rem', border: '1px solid rgba(0,184,217,0.3)' }}>
+                      <span className="badge px-2 py-1 rounded-pill fw-bold" style={{ background: 'rgba(13,27,46,0.85)', backdropFilter: 'blur(4px)', color: '#F5C518', fontSize: '0.68rem', border: '1px solid rgba(245, 197, 24, 0.3)' }}>
                         {veh.category === 'VIP_VAN' ? 'VIP Van' : veh.category === 'SUV' ? 'Premium SUV' : 'Prime Sedan'}
                       </span>
                     </div>
@@ -464,10 +501,10 @@ export default function CabFleetVehicleManagement({ currentUser }) {
                     </div>
 
                     {/* Assigned Chauffeur */}
-                    <div className="mb-3 p-2 rounded-2" style={{ background: 'rgba(0,184,217,0.05)', border: '1px solid rgba(0,184,217,0.15)' }}>
+                    <div className="mb-3 p-2 rounded-2" style={{ background: 'rgba(245, 197, 24, 0.05)', border: '1px solid rgba(245, 197, 24, 0.15)' }}>
                       <div className="d-flex align-items-center justify-content-between mb-1">
                         <span className="text-secondary small d-flex align-items-center gap-1" style={{ fontSize: '0.68rem' }}>
-                          <Users size={12} style={{ color: '#00B8D9' }} /> Assigned Chauffeur:
+                          <Users size={12} style={{ color: '#B8860B' }} /> Assigned Chauffeur:
                         </span>
                         {isApproved && (
                           <button
@@ -476,7 +513,7 @@ export default function CabFleetVehicleManagement({ currentUser }) {
                               setShowAssignModal(true);
                             }}
                             className="btn btn-link p-0 text-decoration-none fw-bold"
-                            style={{ color: '#FF6333', fontSize: '0.68rem' }}
+                            style={{ color: '#B8860B', fontSize: '0.68rem' }}
                           >
                             {assignedDrivers.length > 0 ? '+ Reassign' : '+ Assign'}
                           </button>
@@ -568,7 +605,7 @@ export default function CabFleetVehicleManagement({ currentUser }) {
           <div className="rounded-3 p-4 shadow-lg" style={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(15,23,42,0.08)', width: '92%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom border-secondary border-opacity-25">
               <div className="d-flex align-items-center gap-2">
-                <Car size={20} style={{ color: '#FF6333' }} />
+                <Car size={20} style={{ color: '#B8860B' }} />
                 <h5 className="fw-bold text-dark mb-0">Register New Transfer Vehicle</h5>
               </div>
               <button onClick={() => setShowAddModal(false)} className="btn btn-sm btn-light border-0">✕</button>
@@ -585,8 +622,8 @@ export default function CabFleetVehicleManagement({ currentUser }) {
                         onClick={() => handleCategoryChange(opt.value)}
                         className="p-2.5 rounded-2 text-center cursor-pointer"
                         style={{
-                          background: formData.category === opt.value ? 'rgba(255,99,51,0.1)' : '#F8FAFC',
-                          border: `1.5px solid ${formData.category === opt.value ? '#FF6333' : '#E2E8F0'}`,
+                          background: formData.category === opt.value ? 'rgba(245, 197, 24, 0.1)' : '#F8FAFC',
+                          border: `1.5px solid ${formData.category === opt.value ? '#F5C518' : '#E2E8F0'}`,
                           cursor: 'pointer'
                         }}
                       >
@@ -684,21 +721,80 @@ export default function CabFleetVehicleManagement({ currentUser }) {
                 </div>
               </div>
 
-              {/* Vehicle Photo URL */}
+              {/* Vehicle Photo: upload from this device, or paste a link */}
               <div className="mb-3">
-                <label className="form-label text-secondary small fw-semibold">Vehicle Photograph URL</label>
-                <input
-                  type="url"
-                  value={formData.photo_url}
-                  onChange={(e) => setFormData({ ...formData, photo_url: e.target.value })}
-                  placeholder="https://images.unsplash.com/... or uploaded photo link"
-                  className="form-control form-control-sm"
-                  style={{ background: '#FFFFFF', borderColor: '#E2E8F0' }}
-                />
+                <label className="form-label text-secondary small fw-semibold" htmlFor="vehicle-photo-file">Vehicle Photograph</label>
+                <div className="d-flex align-items-start gap-3">
+                  {/* Preview */}
+                  <div
+                    className="flex-shrink-0 rounded-3 overflow-hidden d-flex align-items-center justify-content-center border"
+                    style={{ width: '96px', height: '72px', background: '#F8FAFC', borderColor: '#E2E8F0' }}
+                  >
+                    {photoUploading ? (
+                      <Loader2 size={20} className="text-muted animate-spin" />
+                    ) : formData.photo_url ? (
+                      <img
+                        src={formData.photo_url}
+                        alt="Vehicle"
+                        className="w-100 h-100"
+                        style={{ objectFit: 'cover' }}
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    ) : (
+                      <ImageIcon size={22} className="text-muted" />
+                    )}
+                  </div>
+
+                  <div className="flex-grow-1 min-w-0">
+                    <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
+                      <input
+                        id="vehicle-photo-file"
+                        ref={photoInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="d-none"
+                        onChange={handlePhotoFileChange}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-dark rounded-pill px-3 d-inline-flex align-items-center gap-1.5"
+                        onClick={() => photoInputRef.current?.click()}
+                        disabled={photoUploading}
+                      >
+                        <Upload size={14} />
+                        {photoUploading ? 'Uploading…' : formData.photo_url ? 'Replace photo' : 'Upload from device'}
+                      </button>
+                      {formData.photo_url && !photoUploading && (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-link text-danger text-decoration-none p-0 d-inline-flex align-items-center gap-1"
+                          onClick={() => { setFormData({ ...formData, photo_url: '' }); setPhotoError(''); }}
+                        >
+                          <Trash2 size={13} /> Remove
+                        </button>
+                      )}
+                      <span className="text-muted" style={{ fontSize: '11.5px' }}>JPG, PNG or WebP, up to 10 MB</span>
+                    </div>
+                    <input
+                      type="url"
+                      value={formData.photo_url}
+                      onChange={(e) => { setFormData({ ...formData, photo_url: e.target.value }); setPhotoError(''); }}
+                      placeholder="…or paste a photo link (https://…)"
+                      className="form-control form-control-sm"
+                      style={{ background: '#FFFFFF', borderColor: '#E2E8F0' }}
+                      aria-label="Vehicle photograph link"
+                    />
+                    {photoError && (
+                      <div className="text-danger mt-1 d-flex align-items-center gap-1" style={{ fontSize: '12px' }}>
+                        <AlertCircle size={13} /> {photoError}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Document URLs (DLT, Insurance, Transport Permit) */}
-              <div className="p-3 rounded-2 mb-3" style={{ background: 'rgba(0,184,217,0.05)', border: '1px solid rgba(0,184,217,0.15)' }}>
+              <div className="p-3 rounded-2 mb-3" style={{ background: 'rgba(245, 197, 24, 0.05)', border: '1px solid rgba(245, 197, 24, 0.15)' }}>
                 <div className="d-flex align-items-center gap-1.5 mb-2 text-info small fw-bold">
                   <ShieldCheck size={14} /> Thai Transport Document Verification Links
                 </div>
@@ -750,9 +846,9 @@ export default function CabFleetVehicleManagement({ currentUser }) {
                 </button>
                 <button
                   type="submit"
-                  disabled={actionLoading}
-                  className="btn btn-sm text-white fw-bold px-4"
-                  style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)' }}
+                  disabled={actionLoading || photoUploading}
+                  className="btn btn-sm text-dark fw-bold px-4"
+                  style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)' }}
                 >
                   {actionLoading ? <Loader2 size={14} className="spinner-border spinner-border-sm me-1" /> : null}
                   Submit for Verification
@@ -769,7 +865,7 @@ export default function CabFleetVehicleManagement({ currentUser }) {
           <div className="rounded-3 p-4 shadow-lg" style={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(15,23,42,0.08)', width: '92%', maxWidth: '480px' }}>
             <div className="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom border-secondary border-opacity-25">
               <div className="d-flex align-items-center gap-2">
-                <Users size={18} style={{ color: '#00B8D9' }} />
+                <Users size={18} style={{ color: '#B8860B' }} />
                 <h6 className="fw-bold text-dark mb-0">Assign Chauffeur to Vehicle</h6>
               </div>
               <button onClick={() => setShowAssignModal(false)} className="btn btn-sm btn-light border-0">✕</button>
@@ -821,8 +917,8 @@ export default function CabFleetVehicleManagement({ currentUser }) {
                 <button
                   type="submit"
                   disabled={actionLoading || drivers.length === 0 || !selectedDriverId}
-                  className="btn btn-sm text-white fw-bold px-4"
-                  style={{ background: 'linear-gradient(135deg, #00B8D9 0%, #0088A3 100%)' }}
+                  className="btn btn-sm text-dark fw-bold px-4"
+                  style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)' }}
                 >
                   {actionLoading ? <Loader2 size={14} className="spinner-border spinner-border-sm me-1" /> : null}
                   Confirm Assignment

@@ -1,0 +1,309 @@
+/* Premium one-time-code input (components/common/OtpInput.jsx)
+   light: soft white boxes for white cards
+   dark:  "glassy" boxes with warm amber edges, used by OtpVerifyPanel
+   States: typing -> verifying (boxes orbit) -> success (boxes merge into a green seal)
+           or error (back in a row, red, shake) */
+
+.otp-input {
+  --otp-size: 56px;
+  --otp-gap: 10px;
+  --otp-gold: #F5C518;
+  --otp-gold-deep: #E5A826;
+  --otp-navy: #0B192C;
+  --otp-h: calc(var(--otp-size) * 1.18);
+  /* orbit radius while verifying: tighter for 4 boxes, wider for 6 */
+  --otp-r: calc(var(--otp-size) * (0.42 + var(--n, 6) * 0.13));
+  position: relative;
+  height: var(--otp-h);
+  margin: 0 auto;
+  transition: height 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* The boxes size from the width they are given (cqi = 1% of the wrapper's width),
+   so six boxes fit even inside a narrow modal on a phone */
+.otp-input-wrap {
+  container-type: inline-size;
+  width: 100%;
+}
+.otp-input--len6 {
+  --otp-gap: min(10px, 2cqi);
+  --otp-size: min(54px, calc((100cqi - 5 * var(--otp-gap)) / 6));
+}
+.otp-input--len4 {
+  --otp-gap: min(12px, 3cqi);
+  --otp-size: min(62px, calc((100cqi - 3 * var(--otp-gap)) / 4));
+}
+.otp-input.is-verifying,
+.otp-input.is-success { height: calc(var(--otp-r) * 2 + var(--otp-h)); }
+
+.otp-input__track {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--otp-gap);
+}
+
+.otp-input__cell {
+  position: relative;
+  flex: none;
+  width: var(--otp-size);
+  height: var(--otp-h);
+  border-radius: 14px;
+  opacity: 0;
+  transform: translateY(10px) scale(0.96);
+  animation: otpIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: calc(var(--i) * 55ms);
+  transition: transform 0.55s cubic-bezier(0.34, 1.3, 0.64, 1), opacity 0.35s ease;
+}
+@keyframes otpIn {
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- the box ---------- */
+.otp-input__box {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  text-align: center;
+  font-family: var(--font-heading, 'Outfit', sans-serif);
+  font-size: calc(var(--otp-size) * 0.5);
+  font-weight: 800;
+  line-height: 1;
+  caret-color: transparent;
+  outline: none;
+  padding: 0;
+  transition: border-color 0.2s ease, box-shadow 0.25s ease, background 0.25s ease, transform 0.2s ease;
+}
+.otp-input__box:disabled { cursor: progress; }
+/* the digit is selected on focus (so typing replaces it); hide the blue selection box */
+.otp-input__box::selection { background: transparent; }
+
+.otp-input--light .otp-input__box {
+  color: var(--otp-navy);
+  background: linear-gradient(180deg, #FFFFFF 0%, #F6F8FB 100%);
+  border: 1.5px solid #DCE3EC;
+  box-shadow: 0 1px 2px rgba(11, 25, 44, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.otp-input--light .otp-input__box:disabled { opacity: 0.85; }
+
+/* glassy dark box with a warm amber edge (gradient border) */
+.otp-input--dark .otp-input__box {
+  color: #FFFFFF;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(160deg, rgba(38, 34, 30, 0.92), rgba(16, 16, 18, 0.96)) padding-box,
+    linear-gradient(140deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06) 45%, rgba(229, 168, 38, 0.55) 80%, rgba(239, 120, 60, 0.75)) border-box;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- active box ---------- */
+.otp-input__cell.is-active .otp-input__box {
+  transform: translateY(-2px);
+}
+.otp-input--light .otp-input__cell.is-active .otp-input__box {
+  border-color: var(--otp-gold-deep);
+  box-shadow: 0 0 0 4px rgba(245, 197, 24, 0.22), 0 8px 22px rgba(229, 168, 38, 0.22);
+}
+.otp-input--dark .otp-input__cell.is-active .otp-input__box {
+  background:
+    linear-gradient(160deg, rgba(48, 42, 30, 0.95), rgba(20, 18, 16, 0.96)) padding-box,
+    linear-gradient(140deg, #FFE38A, #F5C518 50%, #E5A826) border-box;
+  box-shadow: 0 0 0 4px rgba(245, 197, 24, 0.14), 0 10px 26px rgba(229, 168, 38, 0.28);
+}
+.otp-input__cell.is-active::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 18px;
+  border: 1px solid rgba(245, 197, 24, 0.45);
+  pointer-events: none;
+  animation: otpBreath 1.8s ease-in-out infinite;
+}
+@keyframes otpBreath {
+  0%, 100% { opacity: 0.25; transform: scale(0.98); }
+  50% { opacity: 0.9; transform: scale(1.02); }
+}
+
+/* ---------- filled box: a quick pop as the digit lands ---------- */
+.otp-input__cell.is-filled .otp-input__box { animation: otpPop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.otp-input--light .otp-input__cell.is-filled .otp-input__box {
+  border-color: rgba(229, 168, 38, 0.75);
+  background: linear-gradient(180deg, #FFFDF4 0%, #FFF6D6 100%);
+}
+.otp-input--dark .otp-input__cell.is-filled .otp-input__box {
+  background:
+    linear-gradient(160deg, rgba(44, 38, 30, 0.95), rgba(18, 17, 16, 0.96)) padding-box,
+    linear-gradient(140deg, rgba(255, 255, 255, 0.25), rgba(245, 197, 24, 0.55) 55%, rgba(239, 120, 60, 0.9)) border-box;
+}
+@keyframes otpPop {
+  0% { transform: scale(0.88); }
+  100% { transform: scale(1); }
+}
+
+/* blinking caret in the active empty box */
+.otp-input__caret {
+  position: absolute;
+  left: 50%;
+  top: 28%;
+  bottom: 28%;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: var(--otp-gold-deep);
+  pointer-events: none;
+  animation: otpCaret 1s steps(1) infinite;
+}
+@keyframes otpCaret { 50% { opacity: 0; } }
+
+/* ---------- verifying: the boxes leave the row and orbit ---------- */
+/* each box moves from its place in the row to a point on a circle around the centre */
+.otp-input.is-verifying .otp-input__cell,
+.otp-input.is-success .otp-input__cell {
+  --angle: calc(var(--i) * 1turn / var(--n) - 0.25turn);
+  --row-x: calc((var(--i) - (var(--n) - 1) / 2) * (var(--otp-size) + var(--otp-gap)));
+  opacity: 1;
+  animation: none;
+  transform:
+    translate(calc(cos(var(--angle)) * var(--otp-r) - var(--row-x)), calc(sin(var(--angle)) * var(--otp-r)))
+    scale(0.86);
+}
+.otp-input.is-verifying .otp-input__track {
+  animation: otpOrbit 1.5s linear infinite;
+}
+@keyframes otpOrbit { to { transform: rotate(1turn); } }
+.otp-input.is-verifying .otp-input__cell::after { display: none; }
+.otp-input--dark.is-verifying .otp-input__box {
+  box-shadow: 0 0 0 1px rgba(245, 197, 24, 0.12), 0 0 18px rgba(239, 120, 60, 0.3);
+}
+
+/* ---------- success: the boxes pull into the centre and become the seal ---------- */
+.otp-input.is-success .otp-input__cell {
+  transform: translate(calc(0px - var(--row-x)), 0) scale(0.4) rotate(45deg);
+  opacity: 0;
+  transition: transform 0.45s cubic-bezier(0.55, 0, 0.3, 1), opacity 0.35s ease 0.12s;
+}
+
+.otp-input__seal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--otp-size);
+  height: var(--otp-size);
+  margin: calc(var(--otp-size) / -2) 0 0 calc(var(--otp-size) / -2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.5);
+}
+.otp-input.is-success .otp-input__seal {
+  animation: otpSealIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.32s forwards;
+}
+@keyframes otpSealIn { to { opacity: 1; transform: scale(1); } }
+
+.otp-input__seal-box {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  border: 2px solid #EF4444;
+  background: rgba(16, 16, 18, 0.9);
+}
+.otp-input.is-success .otp-input__seal-box {
+  animation: otpSealGreen 0.4s ease 0.62s forwards;
+}
+@keyframes otpSealGreen {
+  to {
+    border-color: #22C55E;
+    background: rgba(22, 101, 52, 0.55);
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15), 0 0 26px rgba(34, 197, 94, 0.45);
+  }
+}
+.otp-input--light .otp-input__seal-box { background: #FFFFFF; color: #15803D; }
+@keyframes otpSealGreenLight {
+  to { border-color: #22C55E; background: #ECFDF5; box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15); }
+}
+.otp-input--light.is-success .otp-input__seal-box { animation-name: otpSealGreenLight; }
+
+/* the check draws itself */
+.otp-input__check {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+}
+.otp-input.is-success .otp-input__check {
+  animation: otpCheck 0.42s ease 0.8s forwards;
+}
+@keyframes otpCheck { to { stroke-dashoffset: 0; } }
+
+/* green radar rings */
+.otp-input__ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--otp-r) * 2 + var(--otp-size) * 0.6);
+  height: calc(var(--otp-r) * 2 + var(--otp-size) * 0.6);
+  margin: calc((var(--otp-r) * 2 + var(--otp-size) * 0.6) / -2) 0 0 calc((var(--otp-r) * 2 + var(--otp-size) * 0.6) / -2);
+  border-radius: 50%;
+  border: 2px solid rgba(34, 197, 94, 0.75);
+  box-shadow: 0 0 22px rgba(34, 197, 94, 0.35), inset 0 0 22px rgba(34, 197, 94, 0.18);
+  opacity: 0;
+  transform: scale(0.3);
+}
+.otp-input.is-success .otp-input__ring--1 { animation: otpRing 1.4s ease-out 0.62s infinite; }
+.otp-input.is-success .otp-input__ring--2 { animation: otpRing 1.4s ease-out 1.32s infinite; }
+@keyframes otpRing {
+  0% { opacity: 0.9; transform: scale(0.3); }
+  100% { opacity: 0; transform: scale(1.05); }
+}
+
+/* ---------- wrong code: red edges and a short shake ---------- */
+.otp-input.is-error .otp-input__box {
+  border-color: #EF4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.14) !important;
+  color: #B91C1C;
+}
+.otp-input--dark.is-error .otp-input__box {
+  background:
+    linear-gradient(160deg, rgba(48, 22, 22, 0.95), rgba(20, 14, 14, 0.96)) padding-box,
+    linear-gradient(140deg, #F87171, #EF4444) border-box !important;
+  color: #FCA5A5;
+}
+.otp-input.is-shaking .otp-input__track { animation: otpShake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+@keyframes otpShake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-7px); }
+  40%, 60% { transform: translateX(7px); }
+}
+
+/* older success look (light boxes without the panel) */
+.otp-input--light.is-success:not(.is-verifying) .otp-input__seal { display: flex; }
+
+@media (prefers-reduced-motion: reduce) {
+  .otp-input,
+  .otp-input__cell,
+  .otp-input__cell.is-filled .otp-input__box,
+  .otp-input.is-shaking .otp-input__track,
+  .otp-input.is-verifying .otp-input__track,
+  .otp-input__cell.is-active::after,
+  .otp-input__ring {
+    animation: none !important;
+    transition: none !important;
+  }
+  .otp-input__cell { opacity: 1; transform: none; }
+  .otp-input.is-verifying .otp-input__cell { transform: none; }
+  .otp-input.is-verifying,
+  .otp-input.is-success { height: var(--otp-h); }
+  .otp-input.is-success .otp-input__seal,
+  .otp-input.is-success .otp-input__seal-box,
+  .otp-input.is-success .otp-input__check { animation-duration: 0.01s !important; animation-delay: 0s !important; }
+  .otp-input__ring { display: none; }
+}

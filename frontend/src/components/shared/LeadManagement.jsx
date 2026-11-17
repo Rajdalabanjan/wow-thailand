@@ -49,7 +49,7 @@ const NEXT_ACTION_PRESETS = [
 function SourceBadge({ source }) {
   const configs = {
     'Hotel Enquiries': { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe', icon: Building },
-    'Vehicle Rental': { bg: '#fff7ed', color: '#ea580c', border: '#fed7aa', icon: Car },
+    'Vehicle Rental': { bg: '#fff7ed', color: '#B8860B', border: '#fed7aa', icon: Car },
     'Vendor Onboarding': { bg: '#f5f3ff', color: '#7c3aed', border: '#ddd6fe', icon: Shield },
     'Custom Trips': { bg: '#ecfdf5', color: '#059669', border: '#a7f3d0', icon: Sparkles },
     'AI Planner': { bg: '#faf5ff', color: '#9333ea', border: '#e9d5ff', icon: Sparkles },
@@ -886,7 +886,7 @@ export default function LeadManagement({ usersList = [], currentUser }) {
             style={{ fontSize: '0.82rem', color: '#475569' }}
             title="Fetch latest leads immediately"
           >
-            <RefreshCw size={13} className={isSyncing ? 'animate-spin' : ''} style={{ color: '#FF6333' }} />
+            <RefreshCw size={13} className={isSyncing ? 'animate-spin' : ''} style={{ color: '#B8860B' }} />
             <span>{isSyncing ? 'Syncing...' : (secondsAgo <= 3 ? 'Synced just now' : `Synced ${secondsAgo}s ago`)}</span>
           </button>
 
@@ -919,8 +919,8 @@ export default function LeadManagement({ usersList = [], currentUser }) {
 
               <button 
                 onClick={() => setShowAddModal(true)}
-                className="btn px-3 py-2 rounded-3 fw-bold d-flex align-items-center gap-2 shadow-sm text-white" 
-                style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', fontSize: '0.82rem', border: 'none' }}
+                className="btn px-3 py-2 rounded-3 fw-bold d-flex align-items-center gap-2 shadow-sm text-dark" 
+                style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', fontSize: '0.82rem', border: 'none' }}
               >
                 <Plus size={16} /> Add Manual Lead
               </button>
@@ -1157,8 +1157,8 @@ export default function LeadManagement({ usersList = [], currentUser }) {
                           {isSuperAdmin && (
                             <button 
                               onClick={() => handleOpenAssignModal(item)}
-                              className="btn btn-sm px-2 py-0.5 rounded-pill fw-bold text-white shadow-none"
-                              style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', fontSize: '0.68rem' }}
+                              className="btn btn-sm px-2 py-0.5 rounded-pill fw-bold text-dark shadow-none"
+                              style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', fontSize: '0.68rem' }}
                             >
                               Assign
                             </button>
@@ -1275,8 +1275,8 @@ export default function LeadManagement({ usersList = [], currentUser }) {
             {!isSubAdmin && (
               <button 
                 onClick={() => setShowAddModal(true)}
-                className="btn btn-sm px-4 py-2 rounded-pill fw-bold text-white shadow-sm"
-                style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)' }}
+                className="btn btn-sm px-4 py-2 rounded-pill fw-bold text-dark shadow-sm"
+                style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)' }}
               >
                 + Create First Lead
               </button>
@@ -1305,7 +1305,7 @@ export default function LeadManagement({ usersList = [], currentUser }) {
                 onClick={(e) => handleOpenPreview(selectedLead, e)}
                 title="Preview Complete Itinerary & Trip Plan"
               >
-                <Eye size={13} style={{ color: '#FF8A00' }} /> Preview Trip Plan
+                <Eye size={13} style={{ color: '#B8860B' }} /> Preview Trip Plan
               </button>
               <button className="btn p-1 border-0 text-white-50 hover-text-white" onClick={() => setSelectedLead(null)}><X size={18} /></button>
             </div>
@@ -1535,7 +1535,7 @@ export default function LeadManagement({ usersList = [], currentUser }) {
                                 color: isUser ? '#0f172a' : '#fff'
                               }}
                             >
-                              <div className="fw-bold mb-0.5" style={{ fontSize: '0.65rem', color: isUser ? '#2563eb' : '#FF8A00' }}>
+                              <div className="fw-bold mb-0.5" style={{ fontSize: '0.65rem', color: isUser ? '#2563eb' : '#E5A826' }}>
                                 {isUser ? (selectedLead.name || 'Customer') : 'Luzia AI'}
                               </div>
                               <div>{m.content}</div>
@@ -1660,7 +1660,7 @@ export default function LeadManagement({ usersList = [], currentUser }) {
             <div className="rounded-3 p-3 mb-3" style={{ background: '#f8fafc', border: '1px solid rgba(0,0,0,0.08)' }}>
               <div className="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
                 <span className="fw-bold text-dark text-uppercase d-flex align-items-center gap-1.5" style={{ fontSize: '0.74rem' }}>
-                  <MessageSquare size={13} style={{ color: '#FF6333' }} /> LEAD COMMUNICATION & DISCUSSION ({comments.length})
+                  <MessageSquare size={13} style={{ color: '#B8860B' }} /> LEAD COMMUNICATION & DISCUSSION ({comments.length})
                 </span>
                 <button onClick={() => loadComments(selectedLead.id, true)} disabled={loadingComments} className="btn btn-sm btn-link p-0 text-muted" title="Refresh discussion">
                   <RefreshCw size={12} className={loadingComments ? 'animate-spin' : ''} />
@@ -1703,7 +1703,7 @@ export default function LeadManagement({ usersList = [], currentUser }) {
                       }}
                     >
                       <div className="d-flex align-items-center justify-content-between gap-2 mb-1">
-                        <span className="fw-bold" style={{ fontSize: '0.72rem', color: isAdm ? '#FF8A00' : '#7c3aed' }}>
+                        <span className="fw-bold" style={{ fontSize: '0.72rem', color: isAdm ? '#E5A826' : '#7c3aed' }}>
                           {c.user_name} ({c.user_role === 'subadmin' ? 'Sub-Admin Response' : c.user_role})
                         </span>
                         <div className="d-flex align-items-center gap-1.5">
@@ -1744,8 +1744,8 @@ export default function LeadManagement({ usersList = [], currentUser }) {
                 <button 
                   type="submit" 
                   disabled={sendingComment || !newCommentText.trim()}
-                  className="btn btn-sm text-white px-3 fw-bold d-flex align-items-center gap-1"
-                  style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', border: 'none', whiteSpace: 'nowrap' }}
+                  className="btn btn-sm text-dark px-3 fw-bold d-flex align-items-center gap-1"
+                  style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', border: 'none', whiteSpace: 'nowrap' }}
                 >
                   <Send size={13} /> {isSubAdmin ? 'Send Response to Admin' : 'Send'}
                 </button>
@@ -1761,7 +1761,7 @@ export default function LeadManagement({ usersList = [], currentUser }) {
           <div className="rounded-4 shadow-lg overflow-hidden animate__animated animate__fadeInUp" style={{ width: '100%', maxWidth: '460px', background: '#fff' }}>
             <div className="px-4 py-3 d-flex align-items-center justify-content-between" style={{ background: '#0D1B2E', color: '#fff' }}>
               <div className="d-flex align-items-center gap-2">
-                <UserCheck size={18} style={{ color: '#FF6333' }} />
+                <UserCheck size={18} style={{ color: '#B8860B' }} />
                 <h6 className="mb-0 fw-bold">Assign Lead to Team Member</h6>
               </div>
               <button className="btn p-0 text-white-50 border-0" onClick={() => setAssignModalLead(null)}><X size={18} /></button>
@@ -1850,8 +1850,8 @@ export default function LeadManagement({ usersList = [], currentUser }) {
                 <button 
                   type="submit" 
                   disabled={assigning}
-                  className="btn text-white px-4 py-2 fw-bold d-flex align-items-center gap-2" 
-                  style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', fontSize: '0.82rem', border: 'none' }}
+                  className="btn text-dark px-4 py-2 fw-bold d-flex align-items-center gap-2" 
+                  style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', fontSize: '0.82rem', border: 'none' }}
                 >
                   <CheckCircle size={14} /> {assigning ? 'Assigning...' : 'Confirm Assignment'}
                 </button>
@@ -1867,7 +1867,7 @@ export default function LeadManagement({ usersList = [], currentUser }) {
           <div className="rounded-4 shadow-lg overflow-hidden animate__animated animate__fadeInUp" style={{ width: '100%', maxWidth: '520px', background: '#fff' }}>
             <div className="px-4 py-3 d-flex align-items-center justify-content-between" style={{ background: '#0D1B2E', color: '#fff' }}>
               <div className="d-flex align-items-center gap-2">
-                <Plus size={18} style={{ color: '#FF6333' }} />
+                <Plus size={18} style={{ color: '#B8860B' }} />
                 <h6 className="mb-0 fw-bold">Add New Multi-Channel Lead</h6>
               </div>
               <button className="btn p-0 text-white-50 border-0" onClick={() => setShowAddModal(false)}><X size={18} /></button>
@@ -1994,8 +1994,8 @@ export default function LeadManagement({ usersList = [], currentUser }) {
                 </button>
                 <button 
                   type="submit" 
-                  className="btn text-white px-4 py-2 fw-bold d-flex align-items-center gap-2" 
-                  style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', fontSize: '0.82rem', border: 'none' }}
+                  className="btn text-dark px-4 py-2 fw-bold d-flex align-items-center gap-2" 
+                  style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', fontSize: '0.82rem', border: 'none' }}
                 >
                   <CheckCircle size={14} /> Create Lead
                 </button>
@@ -2011,7 +2011,7 @@ export default function LeadManagement({ usersList = [], currentUser }) {
           <div className="rounded-4 shadow-lg overflow-hidden animate__animated animate__fadeInUp" style={{ width: '100%', maxWidth: '480px', background: '#fff' }}>
             <div className="px-4 py-3 d-flex align-items-center justify-content-between" style={{ background: '#0D1B2E', color: '#fff' }}>
               <div className="d-flex align-items-center gap-2">
-                <UserPlus size={18} style={{ color: '#FF8A00' }} />
+                <UserPlus size={18} style={{ color: '#B8860B' }} />
                 <h6 className="mb-0 fw-bold">Create Sub-Admin Login Credentials</h6>
               </div>
               <button className="btn p-0 text-white-50 border-0" onClick={() => setShowSubAdminModal(false)}><X size={18} /></button>
@@ -2139,7 +2139,7 @@ export default function LeadManagement({ usersList = [], currentUser }) {
               <div className="d-flex align-items-center gap-3">
                 <div 
                   className="rounded-circle d-flex align-items-center justify-content-center shadow-sm"
-                  style={{ width: '38px', height: '38px', background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', color: '#fff' }}
+                  style={{ width: '38px', height: '38px', background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', color: '#06101E' }}
                 >
                   <Sparkles size={18} />
                 </div>
@@ -2260,7 +2260,7 @@ export default function LeadManagement({ usersList = [], currentUser }) {
                 <div className="p-3 rounded-3 mb-3 bg-white shadow-xs border">
                   <div className="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
                     <span className="fw-bold text-dark d-flex align-items-center gap-1.5" style={{ fontSize: '0.78rem' }}>
-                      <Sparkles size={14} style={{ color: '#FF6333' }} /> AI CHATBOT CONVERSATION TRANSCRIPT
+                      <Sparkles size={14} style={{ color: '#B8860B' }} /> AI CHATBOT CONVERSATION TRANSCRIPT
                     </span>
                     <span className="badge rounded-pill bg-light text-muted border" style={{ fontSize: '0.68rem' }}>
                       Luzia AI Assistant
@@ -2290,7 +2290,7 @@ export default function LeadManagement({ usersList = [], currentUser }) {
                               color: isUser ? '#0f172a' : '#fff'
                             }}
                           >
-                            <div className="fw-bold mb-0.5" style={{ fontSize: '0.66rem', color: isUser ? '#2563eb' : '#FF8A00' }}>
+                            <div className="fw-bold mb-0.5" style={{ fontSize: '0.66rem', color: isUser ? '#2563eb' : '#E5A826' }}>
                               {isUser ? (previewLead.name || 'Customer') : 'Luzia AI'}
                             </div>
                             <div>{m.content}</div>
@@ -2644,7 +2644,7 @@ export default function LeadManagement({ usersList = [], currentUser }) {
                       <div className="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
                         <div>
                           <h6 className="fw-bold text-dark mb-0 font-heading d-flex align-items-center gap-2">
-                            <Sparkles size={18} style={{ color: '#FF6333' }} />
+                            <Sparkles size={18} style={{ color: '#B8860B' }} />
                             <span>AI Travel Consultation Overview</span>
                           </h6>
                           <span className="text-muted small">Inquiry consultation details for {previewLead.name}</span>

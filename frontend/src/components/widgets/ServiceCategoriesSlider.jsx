@@ -23,7 +23,7 @@ const SERVICE_CATEGORIES = [
     image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1000&q=85',
     fallbackImage: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1000&q=85',
     highlights: [
-      { text: '5-Star Beachfront', dotColor: '#FF9F1C' },
+      { text: '5-Star Beachfront', dotColor: '#F5C518' },
       { text: 'Bangkok & Phuket', dotColor: '#38BDF8' },
       { text: 'Free Daily Breakfast', dotColor: '#34D399' },
       { text: 'Private Pool Access', dotColor: '#F472B6' }
@@ -43,7 +43,7 @@ const SERVICE_CATEGORIES = [
     image: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1000&q=85',
     fallbackImage: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1000&q=85',
     highlights: [
-      { text: 'BKK / DMK / HKT Transfers', dotColor: '#FF9F1C' },
+      { text: 'BKK / DMK / HKT Transfers', dotColor: '#F5C518' },
       { text: 'VIP Vans & Sedans', dotColor: '#38BDF8' },
       { text: 'Chauffeur Operated', dotColor: '#34D399' },
       { text: 'Flight Tracking Included', dotColor: '#F472B6' }
@@ -63,7 +63,7 @@ const SERVICE_CATEGORIES = [
     image: 'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=1000&q=85',
     fallbackImage: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1000&q=85',
     highlights: [
-      { text: 'Phi Phi & Maya Bay Tours', dotColor: '#FF9F1C' },
+      { text: 'Phi Phi & Maya Bay Tours', dotColor: '#F5C518' },
       { text: 'Scuba Diving & Coral Reefs', dotColor: '#38BDF8' },
       { text: 'Ethical Elephant Sanctuaries', dotColor: '#34D399' },
       { text: 'Chao Phraya Sunset Cruise', dotColor: '#F472B6' }

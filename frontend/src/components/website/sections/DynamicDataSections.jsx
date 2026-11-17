@@ -29,7 +29,7 @@ export default function FeaturedHotelsSection({ section, liveData = {}, onAction
 
   hotels = hotels.slice(0, p.limit || 6);
 
-  const primary = p.primaryColor || 'var(--wb-primary, #FF6333)';
+  const primary = p.primaryColor || 'var(--wb-primary, #F5C518)';
 
   const bgStyle = p.sectionBg
     ? { background: p.sectionBg }
@@ -121,8 +121,8 @@ function HotelCard({ hotel, primary, layout, onBook, onView }) {
         {hotel.featured && (
           <div style={{
             position: 'absolute', top: '12px', right: '12px',
-            background: 'linear-gradient(135deg, #FF6333, #FF8A00)',
-            color: '#fff', padding: '4px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: 700
+            background: 'linear-gradient(135deg, #F5C518, #E5A826)',
+            color: '#06101E', padding: '4px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: 700
           }}>
             FEATURED
           </div>
@@ -162,7 +162,7 @@ function HotelCardContent({ hotel, stars, price, primary, onBook, onView }) {
         <button
           onClick={onBook}
           style={{
-            padding: '9px 20px', background: `linear-gradient(135deg, ${primary}, #FF8A00)`,
+            padding: '9px 20px', background: `linear-gradient(135deg, ${primary}, #E5A826)`,
             color: '#fff', border: 'none', borderRadius: '8px',
             fontSize: '13px', fontWeight: 700, cursor: 'pointer'
           }}
@@ -207,7 +207,7 @@ export function FeaturedVehiclesSection({ section, liveData = {}, onAction }) {
 
   vehicles = vehicles.slice(0, p.limit || 8);
   
-  const primary = p.primaryColor || 'var(--wb-primary, #FF6333)';
+  const primary = p.primaryColor || 'var(--wb-primary, #F5C518)';
 
   const bgStyle = p.sectionBg
     ? { background: p.sectionBg }
@@ -276,7 +276,7 @@ function VehicleCard({ vehicle, primary, onBook }) {
             <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: '3px' }}>/day</span>
           </div>
           <button onClick={onBook} style={{
-            padding: '8px 16px', background: `linear-gradient(135deg, ${primary}, #FF8A00)`,
+            padding: '8px 16px', background: `linear-gradient(135deg, ${primary}, #E5A826)`,
             color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer'
           }}>Book</button>
         </div>
@@ -312,7 +312,7 @@ export function PackagesSection({ section, liveData = {}, onAction }) {
 
   packages = packages.slice(0, p.limit || 6);
 
-  const primary = p.primaryColor || 'var(--wb-primary, #FF6333)';
+  const primary = p.primaryColor || 'var(--wb-primary, #F5C518)';
 
   const bgStyle = p.sectionBg
     ? { background: p.sectionBg }
@@ -367,7 +367,7 @@ function PackageCard({ pkg, primary, onBook }) {
         {pkg.duration && (
           <div style={{
             position: 'absolute', top: '12px', right: '12px',
-            background: 'rgba(255,99,51,0.9)', color: '#fff',
+            background: 'rgba(245, 197, 24, 0.9)', color: '#fff',
             padding: '5px 12px', borderRadius: '100px', fontSize: '12px', fontWeight: 700
           }}>
             {pkg.duration}
@@ -390,7 +390,7 @@ function PackageCard({ pkg, primary, onBook }) {
             <div style={{ fontSize: '22px', fontWeight: 800, color: primary }}>฿{Number(price).toLocaleString('en-US')}</div>
           </div>
           <button onClick={onBook} style={{
-            padding: '10px 24px', background: `linear-gradient(135deg, ${primary}, #FF8A00)`,
+            padding: '10px 24px', background: `linear-gradient(135deg, ${primary}, #E5A826)`,
             color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: 'pointer'
           }}>Book Now</button>
         </div>

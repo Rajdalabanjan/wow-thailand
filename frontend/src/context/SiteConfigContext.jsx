@@ -12,7 +12,7 @@ export const DEFAULT_CONFIG = {
   isDraft: true,
 
   theme: {
-    primaryColor: '#FF6333',
+    primaryColor: '#F5C518',
     secondaryColor: '#0D1B2E',
     accentColor: '#FFB347',
     backgroundColor: '#ffffff',

@@ -59,7 +59,7 @@ export default function CustomerReviewsSection({ className = '' }) {
         <div className="text-center max-w-2xl mx-auto mb-5">
           <div
             className="d-inline-flex align-items-center gap-1.5 px-3 py-1 rounded-pill mb-2 fw-bold text-xs"
-            style={{ background: '#FFF7ED', color: '#EA580C', border: '1px solid #FFEDD5' }}
+            style={{ background: '#FFF7ED', color: '#B8860B', border: '1px solid #FFEDD5' }}
           >
             <Sparkles size={13} />
             <span>Verified Customer Experiences</span>

@@ -88,7 +88,7 @@ export default function PMSCreateBooking({ currentUser, vendorHotels, onComplete
 
             {/* Hotel & Dates */}
             <div className="card border-0 rounded-4 shadow-sm p-4 mb-4" style={{ background: '#fff' }}>
-              <h6 className="fw-bold mb-3" style={{ color: '#1a2b4a', borderBottom: '2px solid #FF6333', paddingBottom: '8px', display: 'inline-block' }}>
+              <h6 className="fw-bold mb-3" style={{ color: '#1a2b4a', borderBottom: '2px solid #F5C518', paddingBottom: '8px', display: 'inline-block' }}>
                 <Building size={15} className="me-2" />Property & Dates
               </h6>
               <div className="row g-3">
@@ -126,7 +126,7 @@ export default function PMSCreateBooking({ currentUser, vendorHotels, onComplete
 
             {/* Guest Info */}
             <div className="card border-0 rounded-4 shadow-sm p-4 mb-4" style={{ background: '#fff' }}>
-              <h6 className="fw-bold mb-3" style={{ color: '#1a2b4a', borderBottom: '2px solid #FF6333', paddingBottom: '8px', display: 'inline-block' }}>
+              <h6 className="fw-bold mb-3" style={{ color: '#1a2b4a', borderBottom: '2px solid #F5C518', paddingBottom: '8px', display: 'inline-block' }}>
                 <Users size={15} className="me-2" />Guest Information
               </h6>
               <div className="row g-3">
@@ -139,7 +139,7 @@ export default function PMSCreateBooking({ currentUser, vendorHotels, onComplete
 
             {/* Pricing */}
             <div className="card border-0 rounded-4 shadow-sm p-4 mb-4" style={{ background: '#fff' }}>
-              <h6 className="fw-bold mb-3" style={{ color: '#1a2b4a', borderBottom: '2px solid #FF6333', paddingBottom: '8px', display: 'inline-block' }}>
+              <h6 className="fw-bold mb-3" style={{ color: '#1a2b4a', borderBottom: '2px solid #F5C518', paddingBottom: '8px', display: 'inline-block' }}>
                 <DollarSign size={15} className="me-2" />Pricing & Payment
               </h6>
               <div className="row g-3">

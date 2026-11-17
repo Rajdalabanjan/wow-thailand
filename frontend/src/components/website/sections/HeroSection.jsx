@@ -69,7 +69,7 @@ export default function HeroSection({ section, liveData = {}, onAction }) {
         {p.badge && (
           <div style={{
             display: 'inline-block',
-            background: 'rgba(255,99,51,0.9)',
+            background: 'rgba(245, 197, 24, 0.9)',
             color: '#fff',
             padding: '6px 16px',
             borderRadius: '100px',
@@ -119,15 +119,15 @@ export default function HeroSection({ section, liveData = {}, onAction }) {
               })}
               style={{
                 padding: '14px 36px',
-                background: 'linear-gradient(135deg, #FF6333, #FF8A00)',
-                color: '#fff',
+                background: 'linear-gradient(135deg, #F5C518, #E5A826)',
+                color: '#06101E',
                 border: 'none',
                 borderRadius: '8px',
                 fontSize: '16px',
                 fontWeight: 700,
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
-                boxShadow: '0 4px 20px rgba(255,99,51,0.4)'
+                boxShadow: '0 4px 20px rgba(245, 197, 24, 0.4)'
               }}
             >
               {p.buttonText}
@@ -166,7 +166,7 @@ export default function HeroSection({ section, liveData = {}, onAction }) {
           }}>
             {p.stats.map((stat, i) => (
               <div key={i} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '32px', fontWeight: 800, color: '#FF6333' }}>{stat.value}</div>
+                <div style={{ fontSize: '32px', fontWeight: 800, color: '#B8860B' }}>{stat.value}</div>
                 <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginTop: '4px' }}>{stat.label}</div>
               </div>
             ))}

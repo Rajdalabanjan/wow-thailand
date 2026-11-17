@@ -407,8 +407,8 @@ export default function Vehicle360Viewer({
             <div 
               className="badge rounded-pill px-3 py-1.5 d-flex align-items-center gap-1.5 shadow-sm text-xs fw-bold"
               style={{ 
-                background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', 
-                color: '#FFFFFF',
+                background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', 
+                color: '#06101E',
                 letterSpacing: '0.4px'
               }}
             >
@@ -468,7 +468,7 @@ export default function Vehicle360Viewer({
                 width: 18,
                 height: 18,
                 background: '#FFF3ED',
-                color: '#FF6333',
+                color: '#B8860B',
                 transform: `rotate(${Math.round(currentDegEstimate)}deg)`,
                 transition: 'transform 0.15s ease-out'
               }}
@@ -759,9 +759,9 @@ export default function Vehicle360Viewer({
                   key={`${preset.deg}-${preset.label}`}
                   type="button"
                   className={`btn btn-sm rounded-pill px-2.5 py-1 text-xxs fw-bold transition-all position-relative ${
-                    isMatch ? 'btn-warning text-white shadow-xs' : 'btn-light border text-secondary'
+                    isMatch ? 'btn-warning text-dark shadow-xs' : 'btn-light border text-secondary'
                   }`}
-                  style={isMatch ? { background: '#FF6333', borderColor: '#FF6333', color: '#FFFFFF' } : {}}
+                  style={isMatch ? { background: '#F5C518', borderColor: '#F5C518', color: '#06101E' } : {}}
                   onClick={() => jumpToAngle(preset.deg, preset.keyName, preset.photoIndex)}
                   title={`View ${preset.keyName} (${preset.deg}°)`}
                 >

@@ -175,7 +175,7 @@ export default function PMSPaymentVerification({ currentUser, vendorHotels, onNa
               <div className="modal-body py-4">
                 {verificationType === 'approve' ? (
                   <div>
-                    <div className="alert border-0 rounded-3 d-flex align-items-center gap-3" style={{ background: 'rgba(0,184,217,0.1)' }}>
+                    <div className="alert border-0 rounded-3 d-flex align-items-center gap-3" style={{ background: 'rgba(245, 197, 24, 0.1)' }}>
                       <AlertCircle size={24} className="text-info flex-shrink-0" />
                       <div className="small text-info-emphasis">
                         By confirming, you acknowledge that <strong>฿{selectedBooking.total_amount?.toLocaleString()}</strong> has been successfully credited to your {selectedBooking.payment_method} account.

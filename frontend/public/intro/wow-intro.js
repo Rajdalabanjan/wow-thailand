@@ -16,7 +16,7 @@
   if (!intro) return;
 
   // ---- Settings ---------------------------------------------------------
-  var PLAY_ONCE_PER_TAB = false;   // false = plays every time the home page is opened
+  var PLAY_ONCE_PER_TAB = false;   // false = plays on every visit and every refresh of the home page
   var AUTO_MS = 5200;              // full intro, from the first frame of animation
   var REDUCED_MS = 1800;           // calm version for "reduce motion" users
   var FONT_WAIT_MS = 1400;         // longest wait for the Cinzel font
@@ -25,6 +25,16 @@
   var EXIT_MS = 1050;              // golden sweep + fade (matches the CSS)
   var DESTINATIONS = ['Bangkok', 'Phuket', 'Krabi', 'Pattaya', 'Chiang Mai', 'Koh Samui', 'Hua Hin'];
   var SEEN_KEY = 'wow_intro_seen';
+
+  // Cinematic video intro. If the video cannot play (autoplay blocked, very slow
+  // network, "reduce motion" turned on) the animated golden temple plays instead.
+  var USE_VIDEO = true;            // false = always use the animated golden temple
+  // Both are re-encoded from wow-intro.mp4 (H.264, faststart, no audio): 2.2 MB and 1.1 MB
+  var VIDEO_SRC_HD = '/intro/wow-intro-720.mp4';  // laptops / desktops
+  var VIDEO_SRC_SD = '/intro/wow-intro-540.mp4';  // phones / small screens / slow connections
+  var VIDEO_POSTER = '/intro/wow-intro-poster.jpg';
+  var VIDEO_WAIT_MS = 7000;        // video still not ready after this: use the animated intro
+  var BUFFER_WAIT_MS = 2500;       // wait this long for the whole clip to buffer before playing anyway
 
   // The home page is "/" or "/hotels" without specific search params
   function isHomePage() {
@@ -173,20 +183,37 @@
       '</svg>';
   }
 
-  if (templeBox) templeBox.innerHTML = templeSvg();
-  if (reflectionBox) {
-    // Same tiers, flipped by CSS; uses the gradients defined in the temple above
-    reflectionBox.innerHTML = '<svg viewBox="0 0 240 300" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false">' +
-      templeTiers() + '</svg>';
+  // The animated scene is only built when it is actually shown (not behind the video)
+  function buildScene() {
+    if (templeBox) templeBox.innerHTML = templeSvg();
+    if (reflectionBox) {
+      // Same tiers, flipped by CSS; uses the gradients defined in the temple above
+      reflectionBox.innerHTML = '<svg viewBox="0 0 240 300" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false">' +
+        templeTiers() + '</svg>';
+    }
+
+    // Destinations drifting along the horizon (two copies = seamless loop)
+    if (ribbon) {
+      var row = DESTINATIONS.map(function (d) { return '<span>' + d + '</span><b>✦</b>'; }).join('');
+      ribbon.innerHTML = '<div class="wow-intro__ribbon-track">' + row + row + '</div>';
+    }
+
+    // Rising gold dust
+    if (!reduced && dustBox) {
+      var dustFrag = document.createDocumentFragment();
+      for (var m = 0; m < (small ? 12 : 22); m++) {
+        var mote = document.createElement('span');
+        mote.className = 'wow-intro__mote';
+        var ms = rand(1, 2.4).toFixed(1) + 'px';
+        mote.style.cssText = 'left:' + rand(28, 72).toFixed(1) + '%;width:' + ms + ';height:' + ms +
+          ';--dx:' + rand(-50, 50).toFixed(0) + 'px;--dur:' + rand(3.8, 6.5).toFixed(1) + 's;--delay:' + rand(1.8, 4.2).toFixed(2) + 's';
+        dustFrag.appendChild(mote);
+      }
+      dustBox.appendChild(dustFrag);
+    }
   }
 
-  // ---- Destinations drifting along the horizon (two copies = seamless loop) ----
-  if (ribbon) {
-    var row = DESTINATIONS.map(function (d) { return '<span>' + d + '</span><b>✦</b>'; }).join('');
-    ribbon.innerHTML = '<div class="wow-intro__ribbon-track">' + row + row + '</div>';
-  }
-
-  // ---- Stars and rising gold dust ---------------------------------------
+  // ---- Stars (behind the video too: they show above and below it on phones) ----
   if (!reduced && starsBox) {
     var starFrag = document.createDocumentFragment();
     for (var s = 0; s < (small ? 36 : 70); s++) {
@@ -199,19 +226,6 @@
       starFrag.appendChild(star);
     }
     starsBox.appendChild(starFrag);
-  }
-
-  if (!reduced && dustBox) {
-    var dustFrag = document.createDocumentFragment();
-    for (var m = 0; m < (small ? 12 : 22); m++) {
-      var mote = document.createElement('span');
-      mote.className = 'wow-intro__mote';
-      var ms = rand(1, 2.4).toFixed(1) + 'px';
-      mote.style.cssText = 'left:' + rand(28, 72).toFixed(1) + '%;width:' + ms + ';height:' + ms +
-        ';--dx:' + rand(-50, 50).toFixed(0) + 'px;--dur:' + rand(3.8, 6.5).toFixed(1) + 's;--delay:' + rand(1.8, 4.2).toFixed(2) + 's';
-      dustFrag.appendChild(mote);
-    }
-    dustBox.appendChild(dustFrag);
   }
 
   // ---- Gold-leaf flakes fly in and become the temple -----------------------
@@ -385,14 +399,157 @@
 
   // ---- Timeline (starts once the display font is ready) --------------------
   var started = false;
+  var videoMode = false;
   function start() {
-    if (started || exiting || entering) return;
+    if (started || exiting || entering || videoMode) return;
     started = true;
     var total = reduced ? REDUCED_MS : AUTO_MS;
     intro.style.setProperty('--total', total + 'ms'); // bottom progress line
     intro.classList.add('is-playing');
     if (!reduced) launchFlakes();
     revealTimer = window.setTimeout(revealWhenSiteReady, total);
+  }
+
+  // ---- Cinematic video ------------------------------------------------------
+  function canPlayVideo() {
+    if (!USE_VIDEO || reduced) return false;
+    try {
+      var probe = document.createElement('video');
+      return typeof probe.canPlayType === 'function' && probe.canPlayType('video/mp4; codecs="avc1.640028"') !== '';
+    } catch (e) { return false; }
+  }
+
+  function setupVideo() {
+    var video = document.createElement('video');
+    video.className = 'wow-intro__video';
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.setAttribute('muted', '');
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
+    video.setAttribute('aria-hidden', 'true');
+    video.setAttribute('disablepictureinpicture', '');
+    // critical: preload=auto tells the browser to buffer the WHOLE file
+    video.preload = 'auto';
+    // hardware decode hint for Chromium
+    video.setAttribute('x-webkit-airplay', 'deny');
+    video.poster = VIDEO_POSTER;
+
+    // 720p on wider screens, the lighter 540p on phones or when the connection is slow.
+    // (No <link rel=preload>: Chrome ignores as="video", and a crossorigin mismatch with
+    // the <video> made other browsers download the clip twice, which caused the stutter.)
+    var slowNet = false;
+    try {
+      var conn = navigator.connection;
+      slowNet = !!(conn && (conn.saveData || /(^|-)2g|3g/.test(conn.effectiveType || '')));
+    } catch (e) { /* ignore */ }
+    var src = (window.innerWidth >= 768 && !slowNet) ? VIDEO_SRC_HD : VIDEO_SRC_SD;
+    var blobUrl = '';
+
+    var shade = document.createElement('div');
+    shade.className = 'wow-intro__shade';
+    shade.setAttribute('aria-hidden', 'true');
+
+    var after = starsBox || intro.firstChild;
+    intro.insertBefore(shade, after ? after.nextSibling : intro.firstChild);
+    intro.insertBefore(video, shade);
+    intro.classList.add('wow-intro--video');
+
+    var failTimer = 0;
+
+    // Video could not play: the animated golden temple takes over
+    function fallBack() {
+      if (!videoMode || started || exiting || entering) return;
+      videoMode = false;
+      window.clearTimeout(failTimer);
+      try { video.pause(); video.removeAttribute('src'); video.load(); } catch (e) { /* ignore */ }
+      if (blobUrl) { try { URL.revokeObjectURL(blobUrl); } catch (e) { /* ignore */ } blobUrl = ''; }
+      if (video.parentNode) video.parentNode.removeChild(video);
+      if (shade.parentNode) shade.parentNode.removeChild(shade);
+      intro.classList.remove('wow-intro--video');
+      buildScene();
+      start();
+    }
+
+    // Poster appears as soon as it has loaded (it is the video's first frame)
+    var posterImg = new Image();
+    posterImg.onload = function () { if (videoMode) video.classList.add('is-shown'); };
+    posterImg.src = VIDEO_POSTER;
+
+    video.addEventListener('playing', function () {
+      if (!videoMode || exiting) return;
+      window.clearTimeout(failTimer);
+      intro.classList.remove('is-buffering');
+      video.classList.add('is-shown');
+      if (started || entering) return;
+      started = true;
+      var left = (isFinite(video.duration) ? video.duration - video.currentTime : 10) * 1000;
+      var total = Math.max(1500, Math.round(left));
+      intro.style.setProperty('--total', total + 'ms');
+      intro.classList.add('is-playing');
+      // The 'ended' event leaves the intro; this timer is only a safety net, so a
+      // brief network stall no longer cuts the clip off before its last frames
+      revealTimer = window.setTimeout(revealWhenSiteReady, total + 4000);
+    });
+    // Network stall: hold the progress line until frames arrive again
+    video.addEventListener('waiting', function () {
+      if (started && !exiting) intro.classList.add('is-buffering');
+    });
+    video.addEventListener('ended', revealWhenSiteReady);
+    video.addEventListener('error', fallBack);
+
+    // Start only once the whole clip can play through without stopping (the poster,
+    // which is the first frame, shows meanwhile). On a slow line, start anyway after
+    // BUFFER_WAIT_MS if there is enough data to begin.
+    var playRequested = false;
+    function playWhenBuffered() {
+      if (playRequested) return;
+      playRequested = true;
+      window.clearTimeout(bufferTimer);
+      play();
+    }
+    var bufferTimer = 0;
+    video.addEventListener('canplaythrough', playWhenBuffered);
+    function checkBuffer() {
+      if (playRequested) return;
+      if (video.readyState >= 3) playWhenBuffered();          // HAVE_FUTURE_DATA
+      else bufferTimer = window.setTimeout(checkBuffer, 250);
+    }
+    bufferTimer = window.setTimeout(checkBuffer, BUFFER_WAIT_MS);
+
+    function play() {
+      if (!videoMode || exiting || entering) return;
+      try {
+        var playing = video.play();
+        if (playing && typeof playing.catch === 'function') {
+          playing.catch(function (err) {
+            // Only fall back if autoplay was truly blocked (NotAllowedError).
+            // Other transient errors (AbortError when src changes) are ignored.
+            if (err && err.name === 'NotAllowedError') fallBack();
+          });
+        }
+      } catch (e) { fallBack(); }
+    }
+
+    // Free the downloaded clip once the intro has gone
+    window.addEventListener('wow:intro-revealing', function () {
+      window.setTimeout(function () {
+        if (blobUrl) { try { URL.revokeObjectURL(blobUrl); } catch (e) { /* ignore */ } blobUrl = ''; }
+      }, EXIT_MS + 800);
+    });
+
+    failTimer = window.setTimeout(fallBack, VIDEO_WAIT_MS);
+
+    // Setting .src starts the download (preload = auto); playback begins in playWhenBuffered
+    video.src = src;
+  }
+
+  if (canPlayVideo()) {
+    videoMode = true;
+    setupVideo();
+  } else {
+    buildScene();
   }
 
   try {

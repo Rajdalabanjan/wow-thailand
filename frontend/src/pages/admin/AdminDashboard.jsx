@@ -610,8 +610,8 @@ export default function AdminDashboard({
     return (
       <>
         {/* Top Header Card */}
-        <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(255, 99, 51, 0.1)' }}>
-          <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #FF8A00 0%, transparent 70%)', pointerEvents: 'none' }}></div>
+        <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(245, 197, 24, 0.1)' }}>
+          <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #E5A826 0%, transparent 70%)', pointerEvents: 'none' }}></div>
           <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 position-relative z-1">
             <div>
               <h4 className="fw-extrabold mb-2 text-dark font-heading" style={{ letterSpacing: '0.5px' }}>Registered Operators ({vendors.length})</h4>
@@ -621,7 +621,7 @@ export default function AdminDashboard({
             </div>
             <button 
               type="button"
-              className="btn px-4 py-2.5 rounded-pill fw-bold text-white shadow hover-scale d-flex align-items-center gap-2"
+              className="btn px-4 py-2.5 rounded-pill fw-bold text-dark shadow hover-scale d-flex align-items-center gap-2"
               onClick={() => {
                 setEditingVendorId(null);
                 setVendorName('');
@@ -633,7 +633,7 @@ export default function AdminDashboard({
                 setVendorPassword('');
                 setShowVendorForm(true);
               }}
-              style={{ background: 'linear-gradient(90deg, #FF6333, #FF8A00)', border: 'none' }}
+              style={{ background: 'linear-gradient(90deg, #F5C518, #E5A826)', border: 'none' }}
             >
               <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>+</span> Add New Vendor
             </button>
@@ -904,8 +904,8 @@ export default function AdminDashboard({
   const renderBookingsTab = () => (
     <div className="text-start mt-2">
       {/* Top Header Card */}
-      <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(255, 99, 51, 0.1)' }}>
-        <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #FF8A00 0%, transparent 70%)', pointerEvents: 'none' }}></div>
+      <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(245, 197, 24, 0.1)' }}>
+        <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #E5A826 0%, transparent 70%)', pointerEvents: 'none' }}></div>
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 position-relative z-1">
           <div>
             <h4 className="fw-extrabold mb-2 text-dark font-heading" style={{ letterSpacing: '0.5px' }}>Live Reservations Log</h4>
@@ -1028,8 +1028,8 @@ export default function AdminDashboard({
   const renderFlightTab = () => (
     <div className="mt-2" style={{ fontFamily: "'Inter', 'Poppins', sans-serif" }}>
       {/* Top Header Card */}
-      <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(255, 99, 51, 0.1)' }}>
-        <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #FF8A00 0%, transparent 70%)', pointerEvents: 'none' }}></div>
+      <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(245, 197, 24, 0.1)' }}>
+        <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #E5A826 0%, transparent 70%)', pointerEvents: 'none' }}></div>
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 position-relative z-1">
           <div>
             <h4 className="fw-extrabold mb-2 text-dark font-heading" style={{ letterSpacing: '0.5px' }}>Live Flight Inventory</h4>
@@ -1054,7 +1054,7 @@ export default function AdminDashboard({
               <input type="date" className="form-control border-0 bg-light p-2 shadow-none text-dark" value={flightDate} onChange={(e) => setFlightDate(e.target.value)} />
             </div>
             <div>
-              <button type="submit" disabled={isSearchingFlights} className="btn text-white px-4 py-2 rounded-3 fw-bold d-flex align-items-center justify-content-center" style={{ background: '#FF6333', height: '42px', minWidth: '120px' }}>
+              <button type="submit" disabled={isSearchingFlights} className="btn text-dark px-4 py-2 rounded-3 fw-bold d-flex align-items-center justify-content-center" style={{ background: '#F5C518', height: '42px', minWidth: '120px' }}>
                 {isSearchingFlights ? <span className="spinner-border spinner-border-sm"></span> : 'Search API'}
               </button>
             </div>
@@ -1117,7 +1117,7 @@ export default function AdminDashboard({
               </div>
               
               <div className="d-flex flex-column align-items-end text-end min-w-150 border-start ps-4">
-                <h3 className="fw-bold mb-1" style={{ color: '#FF6333' }}>฿{flight.price.toLocaleString()}</h3>
+                <h3 className="fw-bold mb-1" style={{ color: '#B8860B' }}>฿{flight.price.toLocaleString()}</h3>
                 <button className="btn btn-sm btn-outline-primary rounded-pill px-4 fw-bold mt-2">Select</button>
                 <button className="btn btn-sm btn-success rounded-pill px-4 fw-bold mt-2" onClick={() => handleAddMasterFlight(flight)}>Save to Master</button>
               </div>
@@ -1268,8 +1268,8 @@ export default function AdminDashboard({
   const renderPaymentManagementTab = () => (
     <div className="mt-2 text-start" style={{ fontFamily: "'Inter', 'Poppins', sans-serif" }}>
       {/* Top Header Card */}
-      <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(255, 99, 51, 0.1)' }}>
-        <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #FF8A00 0%, transparent 70%)', pointerEvents: 'none' }}></div>
+      <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(245, 197, 24, 0.1)' }}>
+        <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #E5A826 0%, transparent 70%)', pointerEvents: 'none' }}></div>
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 position-relative z-1">
           <div>
             <h4 className="fw-extrabold mb-2 text-dark font-heading" style={{ letterSpacing: '0.5px' }}>Payment Management</h4>
@@ -1408,8 +1408,8 @@ export default function AdminDashboard({
   const renderAiLeadsTab = () => (
     <div className="mt-2 text-start">
       {/* Top Header Card */}
-      <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(255, 99, 51, 0.1)' }}>
-        <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #FF8A00 0%, transparent 70%)', pointerEvents: 'none' }}></div>
+      <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(245, 197, 24, 0.1)' }}>
+        <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #E5A826 0%, transparent 70%)', pointerEvents: 'none' }}></div>
         <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 position-relative z-1">
           <div>
             <h4 className="fw-extrabold mb-2 text-dark font-heading" style={{ letterSpacing: '0.5px' }}>AI Chatbot Leads</h4>
@@ -1525,8 +1525,8 @@ export default function AdminDashboard({
   const renderHotelTab = () => (
     <div className="mt-2 text-start">
       {/* Top Header Card */}
-      <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(255, 99, 51, 0.1)' }}>
-        <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #FF8A00 0%, transparent 70%)', pointerEvents: 'none' }}></div>
+      <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(245, 197, 24, 0.1)' }}>
+        <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #E5A826 0%, transparent 70%)', pointerEvents: 'none' }}></div>
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 position-relative z-1">
           <div>
             <h4 className="fw-extrabold mb-2 text-dark font-heading" style={{ letterSpacing: '0.5px' }}>Hotel Search Management</h4>
@@ -1580,10 +1580,10 @@ export default function AdminDashboard({
         </div>
         <div className="col-md-2 ms-auto">
           <button 
-            className="btn text-white px-4 py-2 rounded-3 fw-bold d-flex align-items-center justify-content-center w-100"
+            className="btn text-dark px-4 py-2 rounded-3 fw-bold d-flex align-items-center justify-content-center w-100"
             onClick={handleSearchLiveHotels}
             disabled={isSearchingHotels}
-            style={{ background: '#FF6333', height: '42px' }}
+            style={{ background: '#F5C518', height: '42px' }}
           >
             {isSearchingHotels ? <span className="spinner-border spinner-border-sm"></span> : 'Search'}
           </button>
@@ -1663,8 +1663,8 @@ export default function AdminDashboard({
 
     return (
       <div className="mt-2">
-        <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(255, 99, 51, 0.1)' }}>
-          <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #FF8A00 0%, transparent 70%)', pointerEvents: 'none' }}></div>
+        <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(245, 197, 24, 0.1)' }}>
+          <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #E5A826 0%, transparent 70%)', pointerEvents: 'none' }}></div>
           <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 position-relative z-1">
             <div>
               <h4 className="fw-extrabold mb-2 text-dark font-heading" style={{ letterSpacing: '0.5px' }}>Flight Master Table</h4>
@@ -1730,8 +1730,8 @@ export default function AdminDashboard({
 
     return (
       <div className="mt-2">
-        <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(255, 99, 51, 0.1)' }}>
-          <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #FF8A00 0%, transparent 70%)', pointerEvents: 'none' }}></div>
+        <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(245, 197, 24, 0.1)' }}>
+          <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #E5A826 0%, transparent 70%)', pointerEvents: 'none' }}></div>
           <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 position-relative z-1">
             <div>
               <h4 className="fw-extrabold mb-2 text-dark font-heading" style={{ letterSpacing: '0.5px' }}>Hotel Master Table</h4>
@@ -1812,8 +1812,8 @@ export default function AdminDashboard({
     return (
       <div className="mt-2 text-start">
         {/* Top Header Card */}
-        <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(255, 99, 51, 0.1)' }}>
-          <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #FF8A00 0%, transparent 70%)', pointerEvents: 'none' }}></div>
+        <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(245, 197, 24, 0.1)' }}>
+          <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #E5A826 0%, transparent 70%)', pointerEvents: 'none' }}></div>
           <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 position-relative z-1">
             <div>
               <div className="d-flex align-items-center gap-2 mb-1">
@@ -1920,8 +1920,8 @@ export default function AdminDashboard({
     return (
       <div className="mt-2 text-start">
         {/* Top Header Card */}
-        <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(255, 99, 51, 0.1)' }}>
-          <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #FF8A00 0%, transparent 70%)', pointerEvents: 'none' }}></div>
+        <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(245, 197, 24, 0.1)' }}>
+          <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #E5A826 0%, transparent 70%)', pointerEvents: 'none' }}></div>
           <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 position-relative z-1">
             <div>
               <h4 className="fw-extrabold mb-2 text-dark font-heading" style={{ letterSpacing: '0.5px' }}>Admin Billing Details</h4>

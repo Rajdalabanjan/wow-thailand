@@ -9,7 +9,7 @@ export default function VendorStorefrontLeadModal({
   vendorSlug = '',
   vendorId = '',
   vendorType = 'vehicle',
-  primaryColor = '#FF6333',
+  primaryColor = '#F5C518',
   onLeadCaptured = null
 }) {
   const [name, setName] = useState(() => {

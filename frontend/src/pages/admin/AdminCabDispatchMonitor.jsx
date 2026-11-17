@@ -869,8 +869,8 @@ export default function AdminCabDispatchMonitor({ currentUser }) {
                 <button
                   type="submit"
                   disabled={actionLoading || !assignDriverId}
-                  className="btn btn-sm text-white rounded-2 px-4 fw-bold"
-                  style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }}
+                  className="btn btn-sm text-dark rounded-2 px-4 fw-bold"
+                  style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}
                 >
                   {actionLoading ? 'Assigning...' : 'Confirm Assignment'}
                 </button>

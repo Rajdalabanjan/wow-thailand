@@ -18,7 +18,7 @@ export default function BookingWidgetSection({ section, liveData = {}, onAction 
   });
 
   const tabBg = p.backgroundColor || '#ffffff';
-  const primary = p.primaryColor || 'var(--wb-primary, #FF6333)';
+  const primary = p.primaryColor || 'var(--wb-primary, #F5C518)';
 
   return (
     <section id="search-widget" style={{
@@ -103,10 +103,10 @@ function SearchBtn({ label, primary, onClick }) {
     <button
       onClick={onClick}
       style={{
-        padding: '12px 28px', background: `linear-gradient(135deg, ${primary}, #FF8A00)`,
+        padding: '12px 28px', background: `linear-gradient(135deg, ${primary}, #E5A826)`,
         color: '#fff', border: 'none', borderRadius: '10px', fontSize: '15px',
         fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
-        boxShadow: `0 4px 15px rgba(255,99,51,0.3)`, alignSelf: 'flex-end'
+        boxShadow: `0 4px 15px rgba(245, 197, 24, 0.3)`, alignSelf: 'flex-end'
       }}
     >
       {label}

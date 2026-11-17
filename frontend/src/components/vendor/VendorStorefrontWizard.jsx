@@ -7,7 +7,7 @@ import {
 import { fetchVendorWebsite, saveVendorWebsite } from '../../services/api';
 
 const THEME_PRESETS = [
-  { id: 'sunset', name: 'Thailand Sunset', primary: '#FF6333', bg: '#0D1B2E', desc: 'Vibrant sunset coral & tropical energy' },
+  { id: 'sunset', name: 'Thailand Sunset', primary: '#F5C518', bg: '#0D1B2E', desc: 'Vibrant sunset coral & tropical energy' },
   { id: 'ocean', name: 'Ocean Breeze', primary: '#0284C7', bg: '#0F172A', desc: 'Deep sea azure & coastal calm' },
   { id: 'luxury_gold', name: 'Royal Gold & Dark', primary: '#D97706', bg: '#0B0F19', desc: 'Luxury VIP styling for premium fleet' },
   { id: 'emerald', name: 'Emerald Palms', primary: '#059669', bg: '#064E3B', desc: 'Lush tropical greenery & clean vibes' },
@@ -66,7 +66,7 @@ export default function VendorStorefrontWizard({
     logo_url: '',
     banner_url: DEFAULT_BANNER_OPTIONS[0].url,
     theme_preset: 'sunset',
-    primary_color: '#FF6333',
+    primary_color: '#F5C518',
     style_mode: 'light',
     base_address: '',
     city_region: 'Thailand',

@@ -86,7 +86,13 @@ export async function updateJobStatus(req, res, next) {
 
 export async function getDriverProfile(req, res, next) {
   try {
-    const driverId = req.query.id || req.query.driver_id || req.user?.id || 'usr-driver-somchai';
+    // A driver only ever gets their own profile; staff pick one with ?id=
+    const driverId = req.user?.role === 'driver'
+      ? (await resolveDriverId(req.user)) || req.user.id
+      : (req.query.id || req.query.driver_id);
+    if (!driverId) {
+      return res.status(400).json({ success: false, error: 'Driver id is required.' });
+    }
     const drivers = await query(
       `SELECT d.*, u.username, u.email, u.phone as user_phone
        FROM drivers d
@@ -127,19 +133,30 @@ export async function getVendorDrivers(req, res, next) {
       return res.status(403).json({ success: false, error: 'Staff or Vendor authorization required.' });
     }
 
-    let sql = 'SELECT * FROM drivers';
+    // Include the driver's active vehicle size so dispatchers can see who fits a group
+    let sql = `
+      SELECT d.*,
+             v.category AS active_vehicle_category,
+             v.seating_capacity AS active_vehicle_seats,
+             v.luggage_capacity AS active_vehicle_bags,
+             v.verification_status AS active_vehicle_status,
+             v.is_available AS active_vehicle_available,
+             v.is_maintenance AS active_vehicle_maintenance
+      FROM drivers d
+      LEFT JOIN cab_vehicles v ON v.id = d.active_vehicle_id
+    `;
     const params = [];
 
     if (!ADMIN_ROLES.has(req.user.role)) {
       const resolvedVendor = await resolveVendorId(req.user);
-      sql += ' WHERE vendor_id = ?';
+      sql += ' WHERE d.vendor_id = ?';
       params.push(resolvedVendor || 'vnd-cabs-01');
     } else if (req.query.vendor_id) {
-      sql += ' WHERE vendor_id = ?';
+      sql += ' WHERE d.vendor_id = ?';
       params.push(req.query.vendor_id);
     }
 
-    sql += ' ORDER BY created_at DESC';
+    sql += ' ORDER BY d.created_at DESC';
     const drivers = await query(sql, params);
 
     res.json({
@@ -307,6 +324,10 @@ export async function deleteVendorDriver(req, res, next) {
     }
 
     await query('DELETE FROM drivers WHERE id = ?', [id]);
+    // The removed chauffeur's driver-portal login must stop working too
+    if (drv.user_id) {
+      await query("UPDATE users SET status = 'suspended' WHERE id = ? AND role = 'driver'", [drv.user_id]);
+    }
 
     res.json({
       success: true,

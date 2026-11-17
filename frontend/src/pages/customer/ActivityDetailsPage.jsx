@@ -148,7 +148,7 @@ export default function ActivityDetailsPage({
             type="button"
             onClick={handleBookNowClick}
             className="btn btn-warning text-dark btn-sm rounded-pill px-3.5 py-1.5 fw-bold d-none d-md-flex align-items-center gap-1.5 shadow-sm font-heading hover-scale"
-            style={{ background: '#FF6333', borderColor: '#FF6333', color: '#FFFFFF' }}
+            style={{ background: '#F5C518', borderColor: '#F5C518', color: '#06101E' }}
           >
             <span>{actionLabel || 'Book Experience'}</span>
             <ChevronRight size={15} />
@@ -412,7 +412,7 @@ export default function ActivityDetailsPage({
                 type="button"
                 onClick={handleBookNowClick}
                 className="btn btn-primary btn-lg w-100 rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 hover-scale font-heading"
-                style={{ background: '#FF6333', borderColor: '#FF6333', padding: '12px 20px', fontSize: '15px' }}
+                style={{ background: '#F5C518', borderColor: '#F5C518', padding: '12px 20px', fontSize: '15px' }}
               >
                 <span>{actionLabel || 'Book Experience'}</span>
                 <ChevronRight size={18} />
@@ -437,7 +437,7 @@ export default function ActivityDetailsPage({
           <span className="text-muted text-xxs d-block">
             {isCraftMyTrip ? `Total (${currentGuests} ${currentGuests === 1 ? 'guest' : 'guests'})` : 'Total Payable'}
           </span>
-          <div className="fw-black font-heading fs-5 mb-0" style={{ color: '#FF6333' }}>
+          <div className="fw-black font-heading fs-5 mb-0" style={{ color: '#B8860B' }}>
             ฿{totalAmount.toLocaleString('en-US')}
           </div>
         </div>
@@ -445,7 +445,7 @@ export default function ActivityDetailsPage({
           type="button"
           onClick={handleBookNowClick}
           className="btn btn-primary rounded-pill px-4 py-2 fw-bold d-flex align-items-center gap-1.5 shadow-sm font-heading hover-scale"
-          style={{ background: '#FF6333', borderColor: '#FF6333', color: '#FFFFFF' }}
+          style={{ background: '#F5C518', borderColor: '#F5C518', color: '#06101E' }}
         >
           <span>{actionLabel || 'Book Experience'}</span>
           <ChevronRight size={16} />

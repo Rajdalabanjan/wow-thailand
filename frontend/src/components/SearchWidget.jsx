@@ -18,7 +18,8 @@ import {
   Plane,
   AlertCircle,
   Binoculars,
-  Wand2
+  Wand2,
+  Sparkles
 } from 'lucide-react';
 import { getTodayDateStr, getNextDayDateStr, validateBookingDates } from '../utils/dateUtils';
 import UnifiedFilterPopover, { countActiveTabFilters } from './common/UnifiedFilterPopover';
@@ -2296,7 +2297,7 @@ function RoomsGuestsPopoverContent({ rooms, setRooms, adults, setAdults, childre
       <button
         type="button"
         className="btn btn-primary btn-sm w-100 py-2 mt-3 fw-bold"
-        style={{ background: '#FF6333', borderColor: '#FF6333', borderRadius: '8px' }}
+        style={{ background: '#F5C518', borderColor: '#F5C518', borderRadius: '8px' }}
         onClick={onDone}
       >
         Done
@@ -2372,7 +2373,7 @@ function FlightPassengersPopoverContent({ adults, setAdults, childrenCount, setC
       <button
         type="button"
         className="btn btn-primary btn-sm w-100 py-2 mt-2 fw-bold"
-        style={{ background: '#FF6333', borderColor: '#FF6333', borderRadius: '8px' }}
+        style={{ background: '#F5C518', borderColor: '#F5C518', borderRadius: '8px' }}
         onClick={onDone}
       >
         Done

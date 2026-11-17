@@ -659,7 +659,7 @@ export default function ThreeVehicleViewer({
                 style={{
                   width: `${loadingProgress}%`,
                   transition: 'width 0.2s ease',
-                  background: 'linear-gradient(90deg, #FF6333 0%, #FF8A00 100%)'
+                  background: 'linear-gradient(90deg, #F5C518 0%, #E5A826 100%)'
                 }}
               />
             </div>

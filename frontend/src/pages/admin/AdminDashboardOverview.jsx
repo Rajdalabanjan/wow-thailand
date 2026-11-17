@@ -213,7 +213,7 @@ export default function AdminDashboardOverview({
       label: 'Holiday Packages', 
       value: (allPackages || []).length, 
       icon: <Compass size={16} />, 
-      color: '#ea580c',
+      color: '#B8860B',
       sub: 'Itineraries & tours',
       onClick: () => onNavigate?.('packages')
     },
@@ -275,7 +275,7 @@ export default function AdminDashboardOverview({
               <div className="fw-bold" style={{ color: '#0D1B2E', fontSize: '13px' }}>Weekly Revenue Trend</div>
               <span style={{ color: '#22c55e', fontSize: '0.72rem', fontWeight: 700 }}>Live DB Pipeline</span>
             </div>
-            <MiniChart data={weeklyRevenue} color="#FF6333" />
+            <MiniChart data={weeklyRevenue} color="#B8860B" />
             <div className="d-flex justify-content-between mt-2">
               {last7DaysLabels.map((d, i) => (
                 <span key={i} style={{ fontSize: '0.62rem', color: '#94a3b8' }}>{d}</span>

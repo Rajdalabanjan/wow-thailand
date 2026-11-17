@@ -559,8 +559,8 @@ export default function PMSAvailabilityCalendar({
               }}
               className="btn btn-sm rounded-pill px-3 py-1 d-flex align-items-center gap-1.5 border-0 fw-bold shadow-xs"
               style={{
-                background: '#FF6333',
-                color: '#fff',
+                background: '#F5C518',
+                color: '#06101E',
                 fontSize: '0.76rem',
                 letterSpacing: '0.2px'
               }}
@@ -620,9 +620,9 @@ export default function PMSAvailabilityCalendar({
                           height: '30px',
                           margin: 'auto',
                           fontSize: '0.74rem',
-                          background: isSel ? '#FF6333' : (isTod ? '#FFF5F2' : 'transparent'),
-                          color: isSel ? '#fff' : (isTod ? '#FF6333' : '#1e293b'),
-                          border: isSel ? '1px solid #FF6333' : (isTod ? '1px dashed #FF6333' : 'none')
+                          background: isSel ? '#F5C518' : (isTod ? '#FFF5F2' : 'transparent'),
+                          color: isSel ? '#fff' : (isTod ? '#F5C518' : '#1e293b'),
+                          border: isSel ? '1px solid #F5C518' : (isTod ? '1px dashed #F5C518' : 'none')
                         }}
                       >
                         {d}
@@ -641,9 +641,9 @@ export default function PMSAvailabilityCalendar({
               className="btn btn-sm rounded-pill px-3 py-1 fw-bold d-flex align-items-center gap-1.5 shadow-sm transition-all"
               style={{
                 fontSize: '0.74rem',
-                background: isDaySelected(today.getDate()) && viewMonth === today.getMonth() && viewYear === today.getFullYear() ? '#FF6333' : '#fff',
-                color: isDaySelected(today.getDate()) && viewMonth === today.getMonth() && viewYear === today.getFullYear() ? '#fff' : '#FF6333',
-                border: '1px solid #FF6333'
+                background: isDaySelected(today.getDate()) && viewMonth === today.getMonth() && viewYear === today.getFullYear() ? '#F5C518' : '#fff',
+                color: isDaySelected(today.getDate()) && viewMonth === today.getMonth() && viewYear === today.getFullYear() ? '#fff' : '#F5C518',
+                border: '1px solid #F5C518'
               }}
               title="Refresh / Reset calendar back to Today's date"
             >
@@ -670,7 +670,7 @@ export default function PMSAvailabilityCalendar({
 
         {/* Action Panel for Blocking / Price Overrides */}
         {actionPanel && (
-          <div className="border rounded-4 p-3 mt-3 bg-light animate-fade-in" style={{ border: '1.5px solid #FF6333' }}>
+          <div className="border rounded-4 p-3 mt-3 bg-light animate-fade-in" style={{ border: '1.5px solid #F5C518' }}>
             <div className="d-flex align-items-center justify-content-between mb-2">
               <h6 className="fw-bold mb-0 text-dark text-xs">
                 Apply Availability / Rate Changes {selectedDates.length > 0 ? `to ${selectedDates.length} Selected Date(s)` : '(Select dates on calendar below)'}
@@ -754,20 +754,20 @@ export default function PMSAvailabilityCalendar({
                     style={{
                       minHeight: '100px',
                       background: isSelected ? '#FFF5F2' : (isToday ? '#fffaf8' : (hasBookings ? '#f8fafc' : (dayOverride?.status === 'Blocked' ? '#fff0f0' : '#fff'))),
-                      border: isSelected ? '2px solid #FF6333' : (isToday ? '1px dashed #FF6333' : (hasBookings ? '1.5px solid #93c5fd' : (dayOverride?.status === 'Blocked' ? '1px solid #fca5a5' : '1px solid #e2e8f0'))),
+                      border: isSelected ? '2px solid #F5C518' : (isToday ? '1px dashed #F5C518' : (hasBookings ? '1.5px solid #93c5fd' : (dayOverride?.status === 'Blocked' ? '1px solid #fca5a5' : '1px solid #e2e8f0'))),
                       cursor: 'pointer',
                       overflow: 'hidden',
-                      boxShadow: isSelected ? '0 0 0 1px #FF6333, 0 4px 12px rgba(255,99,51,0.18)' : 'none',
+                      boxShadow: isSelected ? '0 0 0 1px #F5C518, 0 4px 12px rgba(245, 197, 24, 0.18)' : 'none',
                       transform: isSelected ? 'scale(1.01)' : 'none'
                     }}
                     title={`Click to focus on ${day} ${MONTH_NAMES[viewMonth]}`}
                   >
                     {/* Day Number Header */}
                     <div className="d-flex align-items-center justify-content-between mb-1">
-                      <span className="fw-bold d-flex align-items-center gap-1" style={{ fontSize: '0.82rem', color: isSelected || isToday ? '#FF6333' : '#0D1B2E' }}>
+                      <span className="fw-bold d-flex align-items-center gap-1" style={{ fontSize: '0.82rem', color: isSelected || isToday ? '#F5C518' : '#0D1B2E' }}>
                         {day}
                         {isToday && <span className="badge bg-danger p-0 px-1" style={{ fontSize: '0.58rem' }}>TODAY</span>}
-                        {isSelected && !isToday && <span className="badge p-0 px-1" style={{ fontSize: '0.55rem', background: '#FF6333', color: '#fff' }}>ACTIVE</span>}
+                        {isSelected && !isToday && <span className="badge p-0 px-1" style={{ fontSize: '0.55rem', background: '#F5C518', color: '#06101E' }}>ACTIVE</span>}
                       </span>
 
                       <div className="d-flex align-items-center gap-1">
@@ -775,8 +775,8 @@ export default function PMSAvailabilityCalendar({
                           <span
                             className="badge rounded-pill shadow-xs"
                             style={{
-                              background: isSelected ? '#FF6333' : '#2563eb',
-                              color: '#fff',
+                              background: isSelected ? '#F5C518' : '#2563eb',
+                              color: '#06101E',
                               fontSize: '0.62rem',
                               padding: '2px 6px'
                             }}
@@ -883,7 +883,7 @@ export default function PMSAvailabilityCalendar({
         <div
           ref={dayDetailsRef}
           className="card border-0 rounded-4 shadow-sm p-4 mb-4 animate-fade-in"
-          style={{ background: '#fff', borderLeft: '4px solid #FF6333' }}
+          style={{ background: '#fff', borderLeft: '4px solid #F5C518' }}
         >
           <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
             <div className="d-flex align-items-center gap-3 flex-wrap">

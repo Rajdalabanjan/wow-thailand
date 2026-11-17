@@ -22,7 +22,7 @@ function getAmenityMeta(name = '') {
     return { icon: <Wind size={17} />, color: '#2563eb', bg: '#eff6ff' };
   }
   if (lower.includes('food') || lower.includes('restaurant') || lower.includes('dining') || lower.includes('kitchen') || lower.includes('meal')) {
-    return { icon: <Utensils size={17} />, color: '#ea580c', bg: '#fff7ed' };
+    return { icon: <Utensils size={17} />, color: '#B8860B', bg: '#fff7ed' };
   }
   if (lower.includes('bar') || lower.includes('lounge') || lower.includes('cocktail') || lower.includes('wine') || lower.includes('beer')) {
     return { icon: <Wine size={17} />, color: '#e11d48', bg: '#fff1f2' };

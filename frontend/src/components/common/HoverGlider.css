@@ -25,33 +25,45 @@
 
 .hover-glider--sidebar-active {
   border-radius: 0.5rem;
-  background: linear-gradient(90deg, #ff6333, #ff8a00);
-  box-shadow: 0 6px 16px rgba(255, 99, 51, 0.35);
+  background: linear-gradient(90deg, #F5C518, #E5A826);
+  box-shadow: 0 6px 16px rgba(245, 197, 24, 0.35);
+}
+
+/* Brand gold sidebar (vehicle vendor console): navy text sits on the gold */
+.hover-glider--sidebar-gold {
+  border-radius: 10px;
+  background: rgba(245, 197, 24, 0.1);
+  box-shadow: inset 3px 0 0 rgba(245, 197, 24, 0.7);
+}
+.hover-glider--sidebar-active-gold {
+  border-radius: 0.5rem;
+  background: linear-gradient(90deg, #f5c518, #e5a826);
+  box-shadow: 0 6px 16px rgba(245, 197, 24, 0.28);
 }
 
 /* Flight vendor (cyan) and hotel vendor (rounded pill) sidebars */
 .hover-glider--sidebar-cyan {
   border-radius: 10px;
-  background: linear-gradient(90deg, rgba(0, 184, 217, 0.22) 0%, rgba(0, 144, 184, 0.05) 100%);
-  box-shadow: inset 3px 0 0 #00b8d9, 0 6px 18px rgba(0, 184, 217, 0.15);
+  background: linear-gradient(90deg, rgba(245, 197, 24, 0.22) 0%, rgba(245, 197, 24, 0.05) 100%);
+  box-shadow: inset 3px 0 0 #F5C518, 0 6px 18px rgba(245, 197, 24, 0.15);
 }
 
 .hover-glider--sidebar-active-cyan {
   border-radius: 0.5rem;
-  background: linear-gradient(90deg, #00b8d9, #0090b8);
-  box-shadow: 0 6px 16px rgba(0, 184, 217, 0.35);
+  background: linear-gradient(90deg, #F5C518, #E5A826);
+  box-shadow: 0 6px 16px rgba(245, 197, 24, 0.35);
 }
 
 .hover-glider--sidebar-pill {
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(255, 138, 0, 0.2) 0%, rgba(255, 99, 51, 0.06) 100%);
-  box-shadow: 0 6px 18px rgba(255, 99, 51, 0.16);
+  background: linear-gradient(90deg, rgba(245, 197, 24, 0.2) 0%, rgba(245, 197, 24, 0.06) 100%);
+  box-shadow: 0 6px 18px rgba(245, 197, 24, 0.16);
 }
 
 .hover-glider--sidebar-active-pill {
   border-radius: 999px;
-  background: linear-gradient(90deg, #ff6333, #ff8a00);
-  box-shadow: 0 6px 16px rgba(255, 99, 51, 0.35);
+  background: linear-gradient(90deg, #F5C518, #E5A826);
+  box-shadow: 0 6px 16px rgba(245, 197, 24, 0.35);
 }
 
 /* Light screens (B2B partner portal, customer portal, driver app) */
@@ -132,8 +144,8 @@
 /* Warm glow bar for the dark admin sidebars */
 .hover-glider--sidebar {
   border-radius: 10px;
-  background: linear-gradient(90deg, rgba(255, 138, 0, 0.2) 0%, rgba(255, 99, 51, 0.06) 100%);
-  box-shadow: inset 3px 0 0 #ff8a00, 0 6px 18px rgba(255, 99, 51, 0.16);
+  background: linear-gradient(90deg, rgba(245, 197, 24, 0.2) 0%, rgba(245, 197, 24, 0.06) 100%);
+  box-shadow: inset 3px 0 0 #E5A826, 0 6px 18px rgba(245, 197, 24, 0.16);
 }
 
 .sidebar-glide [data-glide] {

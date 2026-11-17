@@ -313,7 +313,7 @@ export default function VendorCancellationPolicyManager({ currentUser, serviceTy
       <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
         <div>
           <div className="d-flex align-items-center gap-2">
-            <div className="p-2 rounded-3 text-white" style={{ background: 'linear-gradient(135deg, #FF6333, #FF8A00)' }}>
+            <div className="p-2 rounded-3 text-dark" style={{ background: 'linear-gradient(135deg, #F5C518, #E5A826)' }}>
               <ShieldAlert size={22} />
             </div>
             <h4 className="fw-bold text-dark mb-0 font-heading">Cancellation Policy Management</h4>
@@ -324,8 +324,8 @@ export default function VendorCancellationPolicyManager({ currentUser, serviceTy
         </div>
         <button
           onClick={handleOpenCreate}
-          className="btn text-white fw-bold px-4 py-2 rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2"
-          style={{ background: 'linear-gradient(90deg, #FF6333, #FF8A00)', fontSize: '0.88rem' }}
+          className="btn text-dark fw-bold px-4 py-2 rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2"
+          style={{ background: 'linear-gradient(90deg, #F5C518, #E5A826)', fontSize: '0.88rem' }}
         >
           <Plus size={16} /> Create Cancellation Policy
         </button>
@@ -372,8 +372,8 @@ export default function VendorCancellationPolicyManager({ currentUser, serviceTy
           <div>
             <button
               onClick={handleOpenCreate}
-              className="btn btn-primary px-4 py-2 rounded-pill fw-bold text-white shadow-sm"
-              style={{ background: 'linear-gradient(90deg, #FF6333, #FF8A00)', border: 'none' }}
+              className="btn btn-primary px-4 py-2 rounded-pill fw-bold text-dark shadow-sm"
+              style={{ background: 'linear-gradient(90deg, #F5C518, #E5A826)', border: 'none' }}
             >
               Configure Policy Now
             </button>
@@ -743,8 +743,8 @@ export default function VendorCancellationPolicyManager({ currentUser, serviceTy
                     <button
                       type="submit"
                       disabled={saving}
-                      className="btn text-white rounded-pill px-5 text-xs fw-bold shadow-sm"
-                      style={{ background: 'linear-gradient(90deg, #FF6333, #FF8A00)' }}
+                      className="btn text-dark rounded-pill px-5 text-xs fw-bold shadow-sm"
+                      style={{ background: 'linear-gradient(90deg, #F5C518, #E5A826)' }}
                     >
                       {saving ? 'Saving...' : 'Save & Publish Policy'}
                     </button>

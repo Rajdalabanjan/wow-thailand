@@ -146,8 +146,8 @@ export default function ReactivationRequestModal({ isOpen, onClose, wallet, vend
             </button>
             <button
               type="submit"
-              className="btn btn-sm text-white px-4 fw-bold d-flex align-items-center gap-1.5"
-              style={{ background: 'linear-gradient(90deg, #FF6333, #FF8A00)', border: 'none' }}
+              className="btn btn-sm text-dark px-4 fw-bold d-flex align-items-center gap-1.5"
+              style={{ background: 'linear-gradient(90deg, #F5C518, #E5A826)', border: 'none' }}
               disabled={submitting}
             >
               {submitting ? 'Submitting...' : (

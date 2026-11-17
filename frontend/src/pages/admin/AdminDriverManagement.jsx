@@ -377,8 +377,8 @@ export default function AdminDriverManagement({ currentUser, bookings = [], onRe
           </button>
           <button
             type="button"
-            className="btn fw-bold text-white d-flex align-items-center gap-2 rounded-3 shadow-sm"
-            style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)', fontSize: '0.85rem' }}
+            className="btn fw-bold text-dark d-flex align-items-center gap-2 rounded-3 shadow-sm"
+            style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', fontSize: '0.85rem' }}
             onClick={() => setShowAssignModal(true)}
           >
             <Car size={15} /> Assign Driver
@@ -535,13 +535,13 @@ export default function AdminDriverManagement({ currentUser, bookings = [], onRe
                               src={d.profile_photo}
                               alt={d.name}
                               className="rounded-circle object-fit-cover shadow-sm flex-shrink-0"
-                              style={{ width: '38px', height: '38px', border: '2px solid #FF6333' }}
+                              style={{ width: '38px', height: '38px', border: '2px solid #F5C518' }}
                               onError={(e) => { e.target.style.display = 'none'; }}
                             />
                           ) : (
                             <div
                               className="rounded-circle d-flex align-items-center justify-content-center fw-bold text-dark flex-shrink-0"
-                              style={{ width: '38px', height: '38px', background: 'linear-gradient(135deg,#FFC107,#FF8A00)', fontSize: '14px' }}
+                              style={{ width: '38px', height: '38px', background: 'linear-gradient(135deg,#FFC107,#E5A826)', fontSize: '14px' }}
                             >
                               {initial}
                             </div>
@@ -704,7 +704,7 @@ export default function AdminDriverManagement({ currentUser, bookings = [], onRe
               <div className="d-flex align-items-center gap-3">
                 <div
                   className="rounded-circle d-flex align-items-center justify-content-center fw-bold text-dark"
-                  style={{ width: '42px', height: '42px', background: 'linear-gradient(135deg,#FFC107,#FF8A00)', fontSize: '16px' }}
+                  style={{ width: '42px', height: '42px', background: 'linear-gradient(135deg,#FFC107,#E5A826)', fontSize: '16px' }}
                 >
                   {(selectedDriverDetails.driver?.name?.[0] || 'D').toUpperCase()}
                 </div>
@@ -774,7 +774,7 @@ export default function AdminDriverManagement({ currentUser, bookings = [], onRe
                 const isPaid = pStatus === 'PAID';
 
                 return (
-                  <div className="card border-0 shadow-sm rounded-3 p-3.5 mb-4" style={{ background: '#fff', borderLeft: '4px solid #FF6333' }}>
+                  <div className="card border-0 shadow-sm rounded-3 p-3.5 mb-4" style={{ background: '#fff', borderLeft: '4px solid #F5C518' }}>
                     <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
                       <div>
                         <h6 className="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
@@ -1263,8 +1263,8 @@ export default function AdminDriverManagement({ currentUser, bookings = [], onRe
                 </button>
                 <button
                   type="submit"
-                  className="btn btn-sm px-4 fw-bold text-white shadow-sm"
-                  style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }}
+                  className="btn btn-sm px-4 fw-bold text-dark shadow-sm"
+                  style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}
                   disabled={actionLoading || !assignDriverId || !selectedBookingForAssign}
                 >
                   {actionLoading ? 'Assigning...' : 'Confirm Assignment'}

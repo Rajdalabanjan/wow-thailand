@@ -88,12 +88,12 @@ export default function DynamicPopularPackages({ config, packages = [], onBook, 
                   <div className="d-flex align-items-center justify-content-between pt-3" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
                     <div>
                       <div className="text-muted" style={{ fontSize: '0.72rem' }}>Starting from</div>
-                      <div className="fw-black text-primary" style={{ fontSize: '1.25rem', color: '#FF6333' }}>฿{parseFloat(pkg.price).toLocaleString()}</div>
+                      <div className="fw-black text-primary" style={{ fontSize: '1.25rem', color: '#B8860B' }}>฿{parseFloat(pkg.price).toLocaleString()}</div>
                     </div>
                     <div>
                       <button 
                         className="btn btn-primary btn-sm rounded-pill px-3.5 py-1.5 fw-bold d-inline-flex align-items-center gap-1.5 shadow-sm" 
-                        style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', borderColor: '#FF6333' }} 
+                        style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', borderColor: '#F5C518' }} 
                         onClick={() => handleView(pkg)}
                         title={`View details of ${pkg.name}`}
                       >

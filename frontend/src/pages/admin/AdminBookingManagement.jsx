@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import * as api from '../../services/api';
 import BookingVoucher from '../../components/common/BookingVoucher';
+import TopScrollbar from '../../components/common/TopScrollbar';
 import { validateVehicleBookingEligibility } from '../../utils/dateUtils';
 
 // ─── Classification & Formatting Helpers ───
@@ -1370,7 +1371,7 @@ export default function AdminBookingManagement({
 
       {/* Bookings Table */}
       <div className="card border-0 shadow-sm rounded-3 overflow-hidden" style={{ background: '#fff' }}>
-        <div className="table-responsive">
+        <TopScrollbar>
           <table className="table table-hover align-middle mb-0" style={{ fontSize: '0.83rem', minWidth: '1240px' }}>
             <thead className="table-light text-muted fw-semibold" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               <tr>
@@ -1681,7 +1682,7 @@ export default function AdminBookingManagement({
               )}
             </tbody>
           </table>
-        </div>
+        </TopScrollbar>
       </div>
 
       {/* CREATE BOOKING MODAL */}
@@ -2790,8 +2791,8 @@ export default function AdminBookingManagement({
                             <span className="text-muted small">No driver assigned yet.</span>
                             <button
                               type="button"
-                              className="btn btn-sm text-white fw-bold px-3 py-1 rounded-pill shadow-sm"
-                              style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)', fontSize: '0.75rem' }}
+                              className="btn btn-sm text-dark fw-bold px-3 py-1 rounded-pill shadow-sm"
+                              style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', fontSize: '0.75rem' }}
                               onClick={() => {
                                 setAssigningBooking(viewBooking);
                                 setViewBooking(null);
@@ -2937,8 +2938,8 @@ export default function AdminBookingManagement({
                   </button>
                   <button
                     type="submit"
-                    className="btn btn-sm px-4 fw-bold text-white shadow-sm"
-                    style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }}
+                    className="btn btn-sm px-4 fw-bold text-dark shadow-sm"
+                    style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}
                     disabled={actionLoading || !selectedDriverId}
                   >
                     {actionLoading ? 'Assigning...' : 'Confirm Assignment'}

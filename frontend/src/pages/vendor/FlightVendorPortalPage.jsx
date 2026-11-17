@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import TempleMark from '../../components/common/TempleMark';
 import HoverGlider, { useEnterAnimation } from '../../components/common/HoverGlider';
 import {
   Compass, LogOut, LayoutDashboard, Plane, PlusCircle,
@@ -106,7 +107,7 @@ function SidebarGroup({ group, activeTab, onSelect, defaultOpen }) {
                   transition: 'all 0.15s ease'
                 }}
               >
-                <span style={{ color: isActive ? '#fff' : '#00B8D9', flexShrink: 0 }}>{item.icon}</span>
+                <span style={{ color: isActive ? '#fff' : '#F5C518', flexShrink: 0 }}>{item.icon}</span>
                 <span className="text-truncate">{item.label}</span>
               </button>
             );
@@ -156,15 +157,15 @@ function FlightDashboard({ flights, bookings, onNavigate }) {
         className="rounded-4 p-3 p-md-4 mb-4 text-white shadow-sm"
         style={{
           background: 'linear-gradient(135deg,#0D1B2E 0%,#1a3050 100%)',
-          border: '1px solid rgba(0,184,217,0.2)'
+          border: '1px solid rgba(245, 197, 24, 0.2)'
         }}
       >
         <div className="d-flex align-items-center gap-3">
           <div
             className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-            style={{ width: '52px', height: '52px', background: 'rgba(0,184,217,0.15)', border: '1px solid rgba(0,184,217,0.3)' }}
+            style={{ width: '52px', height: '52px', background: 'rgba(245, 197, 24, 0.15)', border: '1px solid rgba(245, 197, 24, 0.3)' }}
           >
-            <Plane size={26} style={{ color: '#00B8D9' }} />
+            <Plane size={26} style={{ color: '#B8860B' }} />
           </div>
           <div className="min-w-0">
             <h4 className="fw-bold mb-1 text-truncate" style={{ fontSize: '1.25rem' }}>Flight Operations Dashboard</h4>
@@ -178,7 +179,7 @@ function FlightDashboard({ flights, bookings, onNavigate }) {
       {/* Stats Grid */}
       <div className="row g-2 g-md-3 mb-4">
         <div className="col-6 col-md-3">
-          <StatCard label="Active Routes" value={flights.length} color="#00B8D9" icon={<Plane size={18} />} />
+          <StatCard label="Active Routes" value={flights.length} color="#B8860B" icon={<Plane size={18} />} />
         </div>
         <div className="col-6 col-md-3">
           <StatCard label="Total Bookings" value={bookings.length} color="#059669" icon={<BookOpen size={18} />} />
@@ -198,8 +199,8 @@ function FlightDashboard({ flights, bookings, onNavigate }) {
             <h6 className="fw-bold mb-3" style={{ fontSize: '13px', color: '#0D1B2E' }}>Quick Actions</h6>
             <div className="d-flex flex-column gap-2">
               <button
-                className="btn d-flex align-items-center justify-content-between fw-bold text-white px-3 py-2.5"
-                style={{ background: 'linear-gradient(90deg,#00B8D9,#0090b8)', fontSize: '0.85rem', borderRadius: '8px' }}
+                className="btn d-flex align-items-center justify-content-between fw-bold text-dark px-3 py-2.5"
+                style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', fontSize: '0.85rem', borderRadius: '8px' }}
                 onClick={() => onNavigate('add_flight')}
               >
                 <span className="d-flex align-items-center gap-2"><PlusCircle size={16} /> Add New Flight Route</span>
@@ -324,8 +325,8 @@ function MyRoutes({ flights, onDelete, onEditClick, onNavigate }) {
         </div>
         <div className="d-flex gap-2">
           <button
-            className="btn fw-bold text-white d-flex align-items-center gap-2 px-3 py-2"
-            style={{ background: 'linear-gradient(90deg,#00B8D9,#0090b8)', fontSize: '0.82rem', borderRadius: '8px' }}
+            className="btn fw-bold text-dark d-flex align-items-center gap-2 px-3 py-2"
+            style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', fontSize: '0.82rem', borderRadius: '8px' }}
             onClick={() => onNavigate('add_flight')}
           >
             <PlusCircle size={15} /> Add Route
@@ -356,8 +357,8 @@ function MyRoutes({ flights, onDelete, onEditClick, onNavigate }) {
             <p className="mb-2">No matching flight routes found.</p>
             {flights.length === 0 && (
               <button
-                className="btn btn-sm text-white fw-bold px-3 py-1.5"
-                style={{ background: '#00B8D9', borderRadius: '6px' }}
+                className="btn btn-sm text-dark fw-bold px-3 py-1.5"
+                style={{ background: '#F5C518', borderRadius: '6px' }}
                 onClick={() => onNavigate('add_flight')}
               >
                 Add Your First Route
@@ -397,9 +398,9 @@ function MyRoutes({ flights, onDelete, onEditClick, onNavigate }) {
                       </span>
                     </td>
                     <td className="px-3 py-2.5 text-nowrap">
-                      <span className="fw-bold" style={{ color: '#00B8D9' }}>{f.from_loc}</span>
+                      <span className="fw-bold" style={{ color: '#B8860B' }}>{f.from_loc}</span>
                       <span className="mx-2 text-muted">→</span>
-                      <span className="fw-bold" style={{ color: '#00B8D9' }}>{f.to_loc}</span>
+                      <span className="fw-bold" style={{ color: '#B8860B' }}>{f.to_loc}</span>
                     </td>
                     <td className="px-3 py-2.5 text-nowrap">
                       <div style={{ fontSize: '0.75rem', color: '#475569' }}>
@@ -575,12 +576,12 @@ function AddRouteForm({ onAdd, onUpdate, editingFlight, onCancelEdit, onNavigate
     <div className="p-3 p-md-4">
       <div
         className="rounded-4 p-3 p-md-4 mb-4 shadow-sm"
-        style={{ background: 'linear-gradient(135deg,#e0f7fa 0%,#b2ebf2 100%)', border: '1px solid rgba(0,184,217,0.25)' }}
+        style={{ background: 'linear-gradient(135deg,#e0f7fa 0%,#b2ebf2 100%)', border: '1px solid rgba(245, 197, 24, 0.25)' }}
       >
         <div className="d-flex align-items-center gap-3">
           <span
             className="rounded-circle d-flex align-items-center justify-content-center shadow-sm flex-shrink-0"
-            style={{ width: '48px', height: '48px', background: '#fff', color: '#00B8D9' }}
+            style={{ width: '48px', height: '48px', background: '#fff', color: '#B8860B' }}
           >
             <Plane size={24} />
           </span>
@@ -752,8 +753,8 @@ function AddRouteForm({ onAdd, onUpdate, editingFlight, onCancelEdit, onNavigate
             <button
               type="submit"
               disabled={submitting}
-              className="btn fw-bold text-white px-4 py-2"
-              style={{ background: 'linear-gradient(90deg,#00B8D9,#0090b8)', borderRadius: '8px' }}
+              className="btn fw-bold text-dark px-4 py-2"
+              style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', borderRadius: '8px' }}
             >
               <CheckCircle size={16} className="me-1.5 inline" />
               {submitting ? 'Saving Route...' : editingFlight ? 'Update Route' : 'Publish Route'}
@@ -775,7 +776,7 @@ function AddRouteForm({ onAdd, onUpdate, editingFlight, onCancelEdit, onNavigate
   );
 }
 
-function FlightBookings({ bookings, onUpdateStatus }) {
+function FlightBookings({ bookings, onUpdateStatus, currentUser }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [updatingId, setUpdatingId] = useState(null);
@@ -890,10 +891,10 @@ function FlightBookings({ bookings, onUpdateStatus }) {
                 <button
                   key={st}
                   type="button"
-                  className={`btn btn-sm px-2.5 py-1 rounded-pill fw-bold ${statusFilter === st ? 'text-white' : 'text-secondary'}`}
+                  className={`btn btn-sm px-2.5 py-1 rounded-pill fw-bold ${statusFilter === st ? 'text-dark' : 'text-secondary'}`}
                   style={{
                     fontSize: '0.72rem',
-                    background: statusFilter === st ? '#00B8D9' : '#f1f5f9',
+                    background: statusFilter === st ? '#F5C518' : '#f1f5f9',
                     border: 'none'
                   }}
                   onClick={() => setStatusFilter(st)}
@@ -948,7 +949,7 @@ function FlightBookings({ bookings, onUpdateStatus }) {
                       <td className="px-3 py-2.5" style={{ color: '#64748b', fontSize: '0.78rem' }}>
                         {b.phone || 'N/A'}
                       </td>
-                      <td className="px-3 py-2.5 fw-bold" style={{ color: '#00B8D9' }}>
+                      <td className="px-3 py-2.5 fw-bold" style={{ color: '#B8860B' }}>
                         {b.item_name || 'Scheduled Route'}
                       </td>
                       <td className="px-3 py-2.5 fw-bold text-nowrap" style={{ color: '#16a34a' }}>
@@ -1327,7 +1328,7 @@ function VendorProfile({ currentUser }) {
           <div className="card p-4 border-0 shadow-sm rounded-3 text-center h-100" style={{ background: '#fff' }}>
             <div
               className="mx-auto mb-3 rounded-circle d-flex align-items-center justify-content-center"
-              style={{ width: '70px', height: '70px', background: 'rgba(0,184,217,0.15)', color: '#00B8D9' }}
+              style={{ width: '70px', height: '70px', background: 'rgba(245, 197, 24, 0.15)', color: '#B8860B' }}
             >
               <Plane size={36} />
             </div>
@@ -1454,8 +1455,8 @@ function FlightSettings() {
 
           <button
             type="submit"
-            className="btn fw-bold text-white px-4 py-2"
-            style={{ background: 'linear-gradient(90deg,#00B8D9,#0090b8)', borderRadius: '8px' }}
+            className="btn fw-bold text-dark px-4 py-2"
+            style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', borderRadius: '8px' }}
           >
             Save Preferences
           </button>
@@ -1658,16 +1659,16 @@ export default function FlightVendorPortalPage({
         <div className="text-center p-4 p-md-5">
           <div
             className="mx-auto mb-4 rounded-circle d-flex align-items-center justify-content-center shadow-lg"
-            style={{ width: '90px', height: '90px', background: 'rgba(0,184,217,0.15)', border: '2px solid rgba(0,184,217,0.3)' }}
+            style={{ width: '90px', height: '90px', background: 'rgba(245, 197, 24, 0.15)', border: '2px solid rgba(245, 197, 24, 0.3)' }}
           >
-            <Plane size={42} style={{ color: '#00B8D9' }} />
+            <Plane size={42} style={{ color: '#B8860B' }} />
           </div>
           <h3 className="fw-bold text-white mb-2">Flight Vendor Console</h3>
           <p className="mb-4" style={{ color: 'rgba(255,255,255,0.6)' }}>Sign in with your verified flight vendor account to continue</p>
           <button
             type="button"
-            className="btn px-5 py-2.5 fw-bold text-white rounded-pill shadow"
-            style={{ background: 'linear-gradient(90deg,#00B8D9,#0090b8)' }}
+            className="btn px-5 py-2.5 fw-bold text-dark rounded-pill shadow"
+            style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}
             onClick={triggerOpenLogin}
           >
             Sign In to Flight Console
@@ -1705,7 +1706,7 @@ export default function FlightVendorPortalPage({
       case 'pricing':
         return <PricingFares flights={myFlights} />;
       case 'all_bookings':
-        return <FlightBookings bookings={myBookings} onUpdateStatus={handleUpdateBookingStatus} />;
+        return <FlightBookings bookings={myBookings} onUpdateStatus={handleUpdateBookingStatus} currentUser={currentUser} />;
       case 'passengers':
         return <PassengerDirectory bookings={myBookings} />;
       case 'wallet':
@@ -1764,10 +1765,10 @@ export default function FlightVendorPortalPage({
         {/* Brand Header */}
         <div className="px-3 py-3 d-flex align-items-center justify-content-between flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <div className="d-flex align-items-center gap-2 min-w-0">
-            <Compass size={22} style={{ color: '#00B8D9', flexShrink: 0 }} />
+            <TempleMark size={26} style={{ color: '#F5C518', flexShrink: 0, filter: 'drop-shadow(0 2px 6px rgba(245, 197, 24, 0.4))' }} />
             <div className="min-w-0">
-              <div className="fw-extrabold text-white text-truncate" style={{ fontSize: '15px' }}>WOW THAILAND</div>
-              <div className="fw-bold text-uppercase text-truncate" style={{ fontSize: '0.55rem', letterSpacing: '1.5px', color: '#00B8D9' }}>Flight Operator PMS</div>
+              <div className="brand-wordmark text-white text-truncate" style={{ fontSize: '15px' }}>WOW <span className="brand-gold">THAILAND</span></div>
+              <div className="fw-bold text-uppercase text-truncate" style={{ fontSize: '0.55rem', letterSpacing: '1.5px', color: 'rgba(255, 255, 255, 0.55)' }}>Flight Operator PMS</div>
             </div>
           </div>
           {isMobile && (
@@ -1800,7 +1801,7 @@ export default function FlightVendorPortalPage({
           <button
             onClick={onLogout}
             className="btn w-100 d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3 text-truncate"
-            style={{ background: 'rgba(0,184,217,0.1)', color: '#00B8D9', fontSize: '0.85rem', fontWeight: 600 }}
+            style={{ background: 'rgba(245, 197, 24, 0.1)', color: '#B8860B', fontSize: '0.85rem', fontWeight: 600 }}
           >
             <LogOut size={15} className="flex-shrink-0" />
             <span>Sign Out</span>
@@ -1837,7 +1838,7 @@ export default function FlightVendorPortalPage({
           <div className="d-flex align-items-center gap-2 gap-md-3 flex-shrink-0">
             <span
               className="d-none d-sm-flex align-items-center gap-1 px-3 py-1 rounded-pill"
-              style={{ background: 'rgba(0,184,217,0.1)', color: '#00B8D9', fontSize: '0.7rem', fontWeight: 700 }}
+              style={{ background: 'rgba(245, 197, 24, 0.1)', color: '#B8860B', fontSize: '0.7rem', fontWeight: 700 }}
             >
               <span className="rounded-circle" style={{ width: '6px', height: '6px', background: '#00e676', display: 'inline-block' }}></span>
               Online
@@ -1847,7 +1848,7 @@ export default function FlightVendorPortalPage({
             <div className="position-relative">
               <button
                 className="btn p-0 rounded-circle d-flex align-items-center justify-content-center"
-                style={{ width: '36px', height: '36px', border: '2px solid #00B8D9', background: 'linear-gradient(135deg,#00B8D9,#0090b8)' }}
+                style={{ width: '36px', height: '36px', border: '2px solid #F5C518', background: 'linear-gradient(135deg,#F5C518,#E5A826)' }}
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
                 aria-label="User profile"
               >
@@ -1873,7 +1874,7 @@ export default function FlightVendorPortalPage({
                     <div className="fw-bold text-white text-truncate" style={{ fontSize: '13px' }}>
                       {currentUser?.username || 'flight_vendor'}
                     </div>
-                    <span className="badge mt-1" style={{ background: 'rgba(0,184,217,0.15)', color: '#00B8D9', fontSize: '0.65rem' }}>
+                    <span className="badge mt-1" style={{ background: 'rgba(245, 197, 24, 0.15)', color: '#B8860B', fontSize: '0.65rem' }}>
                       FLIGHT VENDOR
                     </span>
                   </div>
@@ -1895,7 +1896,7 @@ export default function FlightVendorPortalPage({
                     <hr className="my-1" style={{ borderColor: 'rgba(255,255,255,0.08)' }} />
                     <button
                       className="btn w-100 d-flex align-items-center gap-2 py-2 px-2 rounded fw-bold"
-                      style={{ color: '#00B8D9', background: 'rgba(0,184,217,0.1)', fontSize: '0.82rem' }}
+                      style={{ color: '#B8860B', background: 'rgba(245, 197, 24, 0.1)', fontSize: '0.82rem' }}
                       onClick={() => { setShowProfileDropdown(false); onLogout(); }}
                     >
                       <LogOut size={13} /> Sign Out

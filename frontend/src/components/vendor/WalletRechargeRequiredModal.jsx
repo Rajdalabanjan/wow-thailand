@@ -129,9 +129,9 @@ export default function WalletRechargeRequiredModal({
           </button>
           <button
             type="button"
-            className="btn flex-grow-1 py-2.5 fw-black text-white rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-1.5"
+            className="btn flex-grow-1 py-2.5 fw-black text-dark rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-1.5"
             style={{
-              background: 'linear-gradient(90deg, #FF6333 0%, #FF8A00 100%)',
+              background: 'linear-gradient(90deg, #F5C518 0%, #E5A826 100%)',
               fontSize: '0.88rem'
             }}
             onClick={handleAddMoneyClick}

@@ -7,6 +7,7 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { query, default as pool } from './db.js';
+import { runFleetMigrations } from './migrate_fleet.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -58,6 +59,9 @@ export async function runCabMigrations() {
 
   // Associate test chauffeur drv-bkk-01 with cab vendor vnd-bangkok-cabs if unassigned
   await query(`UPDATE drivers SET vendor_id = 'vnd-bangkok-cabs' WHERE id = 'drv-bkk-01'`);
+
+  // Run Fleet & Vehicle Assignment migrations
+  await runFleetMigrations();
 
   console.log('✅ Cab & Transfer Database Migrations completed successfully.');
 }

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { lockScroll, unlockScroll } from '../utils/scrollLock';
 import * as api from '../services/api';
+import OtpVerifyPanel from './common/OtpVerifyPanel';
 
 export default function ForgotPasswordModal({ 
   isOpen, 
@@ -34,7 +35,8 @@ export default function ForgotPasswordModal({
   useEffect(() => {
     if (isOpen) {
       lockScroll('forgot-password-modal');
-      if (initialIdentifier && !identifier) {
+      // Start from what is in the sign-in form now (not a value left from an earlier visit)
+      if (initialIdentifier) {
         setIdentifier(initialIdentifier);
       }
       return () => {
@@ -43,6 +45,7 @@ export default function ForgotPasswordModal({
     } else {
       // Reset state when closed
       setStep(1);
+      setOtpStatus('idle');
       setErrorMsg('');
       setOtp('');
       setResetToken('');
@@ -71,6 +74,19 @@ export default function ForgotPasswordModal({
     }
   }, [step]);
 
+  // Escape closes the window
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
+
+  // Where to go after a successful reset: the backend says what the sign-in form will
+  // recognise (e.g. "+66 81 234 5678" when "0812345678" was typed here)
+  const [loginId, setLoginId] = useState('');
+  const [otpStatus, setOtpStatus] = useState('idle'); // idle | verifying | success | error
+
   if (!isOpen) return null;
 
   // Step 1: Request OTP
@@ -90,6 +106,8 @@ export default function ForgotPasswordModal({
         setMaskedTarget(res.masked_target || cleanId);
         setResetToken(res.reset_token || '');
         setDevOtp(res.dev_otp || '');
+        setOtp('');
+        setOtpStatus('idle');
         setStep(2);
         setResendCountdown(30);
       } else {
@@ -124,25 +142,35 @@ export default function ForgotPasswordModal({
   };
 
   // Step 2: Verify OTP
-  const handleVerifyOtp = async (e) => {
+  // codeOverride: the code handed over by the OTP boxes when the last digit lands
+  // (the otp state has not updated yet at that moment)
+  const handleVerifyOtp = async (e, codeOverride) => {
     if (e) e.preventDefault();
-    const cleanOtp = otp.trim();
-    if (!cleanOtp || cleanOtp.length < 4) {
+    if (loading || otpStatus === 'verifying' || otpStatus === 'success') return;
+    const cleanOtp = (typeof codeOverride === 'string' ? codeOverride : otp).trim();
+    if (!cleanOtp || cleanOtp.length < 6) {
       setErrorMsg('Please enter the 6-digit verification code.');
+      setOtpStatus('error');
       return;
     }
 
     setLoading(true);
     setErrorMsg('');
+    setOtpStatus('verifying');
     try {
       const res = await api.verifyResetOtp(identifier.trim(), cleanOtp, resetToken);
       if (res && res.success) {
-        setStep(3);
+        // one-time token that authorises the new password
+        if (res.reset_token) setResetToken(res.reset_token);
+        // the panel plays "verified", then moves to the new-password step (onSuccessDone)
+        setOtpStatus('success');
       } else {
         setErrorMsg(res.error || 'Invalid or expired verification code.');
+        setOtpStatus('error');
       }
     } catch (err) {
       setErrorMsg(err.message || 'Invalid or expired verification code.');
+      setOtpStatus('error');
     } finally {
       setLoading(false);
     }
@@ -171,6 +199,7 @@ export default function ForgotPasswordModal({
         confirmPassword.trim()
       );
       if (res && res.success) {
+        setLoginId(res.login_id || '');
         setStep(4);
       } else {
         setErrorMsg(res.error || 'Failed to update password.');
@@ -212,9 +241,18 @@ export default function ForgotPasswordModal({
         backdropFilter: 'blur(10px)', 
         zIndex: 100000 
       }}
-      onClick={onClose}
+      onClick={(e) => {
+        // This window sits inside the sign-in window, and React passes clicks up through
+        // portals: without this, a click outside here also closed the sign-in window
+        e.stopPropagation();
+        // a stray tap must not throw away a half-finished reset (code or new password typed)
+        if (step === 1 || step === 4) onClose();
+      }}
     >
       <div 
+        role="dialog"
+        aria-modal="true"
+        aria-label="Reset your password"
         className="card border-0 rounded-4 shadow-2xl overflow-hidden animate-fade-in-up"
         style={{ 
           maxWidth: '460px', 
@@ -229,7 +267,7 @@ export default function ForgotPasswordModal({
           className="p-4 text-white position-relative"
           style={{ 
             background: 'linear-gradient(135deg, #0B192C 0%, #1E3E62 100%)',
-            borderBottom: '3px solid #FF6500'
+            borderBottom: '3px solid #F5C518'
           }}
         >
           <button 
@@ -239,16 +277,16 @@ export default function ForgotPasswordModal({
             aria-label="Close"
           />
 
-          <div className="d-flex align-items-center gap-3">
+          <div className="d-flex align-items-center gap-3 pe-4">
             <div 
-              className="rounded-circle d-flex align-items-center justify-content-center shadow-sm"
+              className="rounded-circle d-flex align-items-center justify-content-center shadow-sm flex-shrink-0"
               style={{ 
                 width: '46px', 
                 height: '46px', 
-                background: 'linear-gradient(135deg, #FF6500 0%, #FF8A00 100%)' 
+                background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)' 
               }}
             >
-              <KeyRound size={22} className="text-white" />
+              <KeyRound size={22} style={{ color: '#06101E' }} />
             </div>
             <div>
               <h5 className="mb-0 fw-bold font-heading text-white">Reset Account Password</h5>
@@ -266,15 +304,15 @@ export default function ForgotPasswordModal({
             <div className="d-flex gap-1.5 mt-3 pt-2">
               <div 
                 className="flex-fill rounded-pill" 
-                style={{ height: '4px', background: step >= 1 ? '#FF6500' : 'rgba(255,255,255,0.2)', transition: 'all 0.3s' }} 
+                style={{ height: '4px', background: step >= 1 ? '#F5C518' : 'rgba(255,255,255,0.2)', transition: 'all 0.3s' }} 
               />
               <div 
                 className="flex-fill rounded-pill" 
-                style={{ height: '4px', background: step >= 2 ? '#FF6500' : 'rgba(255,255,255,0.2)', transition: 'all 0.3s' }} 
+                style={{ height: '4px', background: step >= 2 ? '#F5C518' : 'rgba(255,255,255,0.2)', transition: 'all 0.3s' }} 
               />
               <div 
                 className="flex-fill rounded-pill" 
-                style={{ height: '4px', background: step >= 3 ? '#FF6500' : 'rgba(255,255,255,0.2)', transition: 'all 0.3s' }} 
+                style={{ height: '4px', background: step >= 3 ? '#F5C518' : 'rgba(255,255,255,0.2)', transition: 'all 0.3s' }} 
               />
             </div>
           )}
@@ -282,7 +320,7 @@ export default function ForgotPasswordModal({
 
         {/* Modal Body */}
         <div className="p-4">
-          {errorMsg && (
+          {errorMsg && step !== 2 && (
             <div className="alert alert-danger d-flex align-items-center gap-2 p-2.5 rounded-3 mb-3 text-xs border-0 shadow-sm" style={{ background: '#FEE2E2', color: '#991B1B' }}>
               <AlertCircle size={16} className="flex-shrink-0" />
               <div className="flex-grow-1">{errorMsg}</div>
@@ -293,7 +331,7 @@ export default function ForgotPasswordModal({
           {step === 1 && (
             <form onSubmit={handleRequestOtp}>
               <p className="text-muted text-xs mb-3">
-                Enter your registered <b>Email address</b>, <b>Mobile phone number</b>, or <b>Username</b>. We will send a secure 6-digit verification code to reset your password.
+                Enter the <b>email</b>, <b>mobile number</b> or <b>username</b> of your account. We will email a 6-digit code to the email address saved on that account.
               </p>
 
               <div className="mb-4">
@@ -307,7 +345,7 @@ export default function ForgotPasswordModal({
                   <input
                     type="text"
                     className="form-control border-0 py-2.5 text-sm"
-                    placeholder="e.g. user@domain.com or 9876543210"
+                    placeholder="Email, mobile or username"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     autoFocus
@@ -327,10 +365,8 @@ export default function ForgotPasswordModal({
                 <button
                   type="submit"
                   disabled={loading || !identifier.trim()}
-                  className="btn flex-grow-1 text-white fw-bold py-2.5 rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2"
+                  className="btn btn-brand flex-grow-1 fw-bold py-2.5 rounded-pill d-flex align-items-center justify-content-center gap-2"
                   style={{
-                    background: 'linear-gradient(135deg, #FF6500 0%, #FF8A00 100%)',
-                    border: 'none',
                     opacity: (loading || !identifier.trim()) ? 0.7 : 1
                   }}
                 >
@@ -341,7 +377,8 @@ export default function ForgotPasswordModal({
                     </>
                   ) : (
                     <>
-                      <span>Send Verification Code</span>
+                      <span className="d-none d-sm-inline">Send Verification Code</span>
+                      <span className="d-sm-none">Send Code</span>
                       <ArrowRight size={16} />
                     </>
                   )}
@@ -351,106 +388,50 @@ export default function ForgotPasswordModal({
           )}
 
           {/* ================= STEP 2: VERIFY OTP ================= */}
+          {/* Glassy OTP panel: boxes orbit while the code is checked, then merge into a green seal */}
           {step === 2 && (
-            <form onSubmit={handleVerifyOtp}>
-              <div className="mb-3 text-center">
-                <span className="badge bg-light text-dark border px-3 py-1.5 rounded-pill text-xs fw-normal mb-2 d-inline-block">
-                  Code sent to: <b>{maskedTarget || identifier}</b>
-                </span>
-                <p className="text-muted text-xs mb-0">
-                  Please enter the 6-digit code sent to your registered contact. Code expires in 15 minutes.
-                </p>
-              </div>
-
-              {/* Dev Test Quick Fill Helper */}
-              {devOtp && (
-                <div 
-                  className="p-2 mb-3 rounded-3 text-center cursor-pointer select-none border border-warning"
-                  style={{ background: '#FFFBEB' }}
-                  onClick={() => setOtp(devOtp)}
-                  title="Click to auto-fill development OTP"
-                >
-                  <span className="text-xs fw-bold text-amber-800 d-inline-flex align-items-center gap-1.5">
-                    <Sparkles size={14} className="text-warning" />
-                    <span>Dev Preview OTP: <b>{devOtp}</b> (Click to fill)</span>
-                  </span>
-                </div>
-              )}
-
-              <div className="mb-3">
-                <label className="form-label text-xs fw-bold text-uppercase text-secondary mb-1.5 text-center d-block">
-                  Enter 6-Digit OTP
-                </label>
-                <div className="d-flex justify-content-center">
-                  <input
-                    ref={otpInputRef}
-                    type="text"
-                    maxLength={6}
-                    className="form-control text-center fw-bold fs-4 rounded-3 border py-2"
-                    style={{ 
-                      maxWidth: '220px', 
-                      letterSpacing: '0.45rem', 
-                      borderColor: '#CBD5E1',
-                      background: '#F8FAFC' 
-                    }}
-                    placeholder="••••••"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="text-center mb-4">
-                <span className="text-xs text-muted">Didn't receive the code? </span>
-                {resendCountdown > 0 ? (
-                  <span className="text-xs text-muted fw-bold">Resend in {resendCountdown}s</span>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn btn-link p-0 text-xs fw-bold text-decoration-none"
-                    style={{ color: '#FF6500' }}
-                    onClick={handleResendOtp}
-                    disabled={loading}
-                  >
-                    Resend Code Now
-                  </button>
-                )}
-              </div>
-
-              <div className="d-flex align-items-center gap-2">
+            <OtpVerifyPanel
+              length={6}
+              value={otp}
+              onChange={(code) => { setOtp(code); if (otpStatus === 'error') { setOtpStatus('idle'); setErrorMsg(''); } }}
+              onComplete={(code) => handleVerifyOtp(null, code)}
+              onSubmit={(code) => handleVerifyOtp(null, code)}
+              status={otpStatus}
+              errorMessage={errorMsg}
+              onSuccessDone={() => { setOtpStatus('idle'); setStep(3); }}
+              subtitle="If this matches an account, a 6-digit code is on its way to the email saved on it. Check spam too. It works for 10 minutes."
+              successSubtitle="Code confirmed. Now choose your new password."
+              successLabel="Verified & Secured"
+              resendSeconds={resendCountdown}
+              onResend={handleResendOtp}
+              label="6-digit reset code"
+              footer={(
                 <button
                   type="button"
-                  className="btn btn-light rounded-pill px-3 py-2 text-xs fw-bold text-muted d-flex align-items-center gap-1"
-                  onClick={() => { setStep(1); setErrorMsg(''); }}
+                  className="btn rounded-3 px-3 d-flex align-items-center gap-1 fw-bold"
+                  style={{ minHeight: '46px', fontSize: '0.82rem' }}
+                  onClick={() => { setStep(1); setErrorMsg(''); setOtpStatus('idle'); }}
                 >
-                  <ArrowLeft size={14} />
-                  <span>Back</span>
+                  <ArrowLeft size={14} /> Back
                 </button>
+              )}
+            >
+              <span className="d-inline-block px-3 py-1 rounded-pill" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                Account: <b className="text-white">{maskedTarget || identifier}</b>
+              </span>
+              {/* Local testing only: the backend sends the code back only on this computer */}
+              {devOtp && (
                 <button
-                  type="submit"
-                  disabled={loading || otp.length < 4}
-                  className="btn flex-grow-1 text-white fw-bold py-2.5 rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2"
-                  style={{
-                    background: 'linear-gradient(135deg, #FF6500 0%, #FF8A00 100%)',
-                    border: 'none',
-                    opacity: (loading || otp.length < 4) ? 0.7 : 1
-                  }}
+                  type="button"
+                  className="d-block mx-auto mt-2 border-0 rounded-pill px-3 py-1 fw-bold"
+                  style={{ background: 'rgba(245,197,24,0.12)', color: '#F5C518', fontSize: '0.74rem' }}
+                  onClick={() => { setOtp(devOtp); handleVerifyOtp(null, devOtp); }}
+                  title="Click to fill and check the development code"
                 >
-                  {loading ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
-                      <span>Verifying...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Verify Code</span>
-                      <ArrowRight size={16} />
-                    </>
-                  )}
+                  <Sparkles size={12} className="me-1" /> Dev code: {devOtp} (click to fill)
                 </button>
-              </div>
-            </form>
+              )}
+            </OtpVerifyPanel>
           )}
 
           {/* ================= STEP 3: NEW PASSWORD ================= */}
@@ -605,15 +586,11 @@ export default function ForgotPasswordModal({
 
               <button
                 type="button"
-                className="btn w-100 text-white fw-bold py-2.5 rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2"
-                style={{
-                  background: 'linear-gradient(135deg, #FF6500 0%, #FF8A00 100%)',
-                  border: 'none'
-                }}
+                className="btn btn-brand w-100 fw-bold py-2.5 rounded-pill d-flex align-items-center justify-content-center gap-2"
                 onClick={() => {
                   onClose();
                   if (onSuccessReturnToLogin) {
-                    onSuccessReturnToLogin(identifier);
+                    onSuccessReturnToLogin(loginId || identifier);
                   }
                 }}
               >

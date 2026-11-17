@@ -258,7 +258,7 @@ export default function CustomerWalletTab({ currentUser, onNavigateTab, onNaviga
       {wallet.nearest_expiring && countdown && (
         <div style={{ borderRadius: 12, background: '#fff7ed', border: '1.5px solid #fed7aa', padding: '14px 18px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 36, height: 36, borderRadius: 8, background: '#fff', border: '1.5px solid #fdba74', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Clock size={16} style={{ color: '#ea580c' }} />
+            <Clock size={16} style={{ color: '#B8860B' }} />
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700, fontSize: '0.87rem', color: '#c2410c' }}>
@@ -277,7 +277,7 @@ export default function CustomerWalletTab({ currentUser, onNavigateTab, onNaviga
                   onNavigateHome();
                 }
               }}
-              style={{ padding: '7px 14px', borderRadius: 8, background: '#ea580c', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, whiteSpace: 'nowrap' }}
+              style={{ padding: '7px 14px', borderRadius: 8, background: '#CA8A04', color: '#06101E', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, whiteSpace: 'nowrap' }}
             >
               Book Now
             </button>

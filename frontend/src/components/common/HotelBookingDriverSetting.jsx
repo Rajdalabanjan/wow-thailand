@@ -85,7 +85,7 @@ export default function HotelBookingDriverSetting({
       <div className="d-flex align-items-center justify-content-between mb-3">
         <div>
           <h6 className="fw-bold mb-1 d-flex align-items-center gap-2" style={{ color: '#0D1B2E', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            <Hotel size={18} style={{ color: '#FF6333' }} /> {title}
+            <Hotel size={18} style={{ color: '#B8860B' }} /> {title}
           </h6>
           {subtitle && <p className="text-muted mb-0" style={{ fontSize: '0.82rem' }}>{subtitle}</p>}
         </div>

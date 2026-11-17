@@ -82,7 +82,7 @@ async function runCabTests() {
   const customerToken = createToken({
     id: 'cust-cab-01',
     username: 'cust_somkiat',
-    email: 'somkiat@thailand.com',
+    email: 'somkiat@example.com',
     phone: '+66 81 234 5678',
     role: 'customer'
   });
@@ -110,7 +110,7 @@ async function runCabTests() {
   // Seed test users
   await query(
     `INSERT INTO users (id, username, email, phone, role, password_hash)
-     VALUES ('cust-cab-01', 'cust_somkiat', 'somkiat@thailand.com', '+66 81 234 5678', 'customer', '$2a$10$dummyhash')
+     VALUES ('cust-cab-01', 'cust_somkiat', 'somkiat@example.com', '+66 81 234 5678', 'customer', '$2a$10$dummyhash')
      ON DUPLICATE KEY UPDATE username = 'cust_somkiat'`
   );
   await query(
@@ -179,7 +179,7 @@ async function runCabTests() {
     const bookingRes = await postJson('/api/v1/cabs/book', {
       customer_name: 'Khun Somkiat',
       customer_phone: '+66 81 234 5678',
-      customer_email: 'somkiat@thailand.com',
+      customer_email: 'somkiat@example.com',
       pickup_address: 'Suvarnabhumi Airport (BKK) Terminal 2',
       dropoff_address: 'Banyan Tree Bangkok Sathorn',
       pickup_datetime: '2026-11-05 14:30:00',

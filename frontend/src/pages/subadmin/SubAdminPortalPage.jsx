@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import TempleMark from '../../components/common/TempleMark';
 import { 
   Shield, Lock, User, LogOut, MessageSquare, CheckCircle, AlertCircle, Sparkles, 
   Phone, Mail, MessageCircle, PhoneCall, RefreshCw, Send, X, Users, Tag, Building, Car, Calendar, Search, Filter, ArrowUpRight,
@@ -232,14 +233,14 @@ export default function SubAdminPortalPage({ currentUser: propCurrentUser, onLog
         }}
       >
         {/* Glow Effects */}
-        <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(255, 99, 51, 0.15)', filter: 'blur(80px)' }} />
+        <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(245, 197, 24, 0.15)', filter: 'blur(80px)' }} />
         <div style={{ position: 'absolute', bottom: '-10%', left: '-10%', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(124, 58, 237, 0.15)', filter: 'blur(80px)' }} />
 
         <div className="w-100" style={{ maxWidth: '420px', zIndex: 2 }}>
           <div className="text-center mb-4">
             <div 
               className="d-inline-flex align-items-center justify-content-center rounded-circle p-3 mb-3 shadow-lg"
-              style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', width: '64px', height: '64px' }}
+              style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', width: '64px', height: '64px' }}
             >
               <Shield size={32} color="#fff" />
             </div>
@@ -298,7 +299,7 @@ export default function SubAdminPortalPage({ currentUser: propCurrentUser, onLog
                 <a
                   href="#forgot"
                   className="text-decoration-none fw-semibold cursor-pointer"
-                  style={{ fontSize: '0.8rem', color: '#FF6333' }}
+                  style={{ fontSize: '0.8rem', color: '#B8860B' }}
                   onClick={(e) => {
                     e.preventDefault();
                     setShowForgotPassword(true);
@@ -311,8 +312,8 @@ export default function SubAdminPortalPage({ currentUser: propCurrentUser, onLog
               <button
                 type="submit"
                 disabled={loading}
-                className="btn w-100 py-2.5 rounded-3 fw-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-2 mb-2"
-                style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', border: 'none' }}
+                className="btn w-100 py-2.5 rounded-3 fw-bold text-dark shadow-sm d-flex align-items-center justify-content-center gap-2 mb-2"
+                style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', border: 'none' }}
               >
                 {loading ? 'Authenticating...' : 'Login to Sub-Admin Portal'}
               </button>
@@ -372,12 +373,10 @@ export default function SubAdminPortalPage({ currentUser: propCurrentUser, onLog
         {/* Brand Section */}
         <div className="p-3 d-flex align-items-center justify-content-between border-bottom" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
           <div className="d-flex align-items-center gap-2.5 overflow-hidden">
-            <div className="p-2 rounded-3 shadow-sm d-flex align-items-center justify-content-center" style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)' }}>
-              <Shield size={20} color="#fff" />
-            </div>
+            <TempleMark size={28} style={{ color: '#F5C518', flexShrink: 0, filter: 'drop-shadow(0 2px 6px rgba(245, 197, 24, 0.4))' }} />
             {!sidebarCollapsed && (
               <div>
-                <h6 className="mb-0 fw-bold font-heading text-white tracking-wide" style={{ fontSize: '0.95rem' }}>WOW THAILAND</h6>
+                <h6 className="mb-0 brand-wordmark text-white" style={{ fontSize: '0.95rem' }}>WOW <span className="brand-gold">THAILAND</span></h6>
                 <span className="text-warning font-monospace fw-semibold" style={{ fontSize: '0.68rem' }}>SUB-ADMIN DESK</span>
               </div>
             )}
@@ -389,10 +388,10 @@ export default function SubAdminPortalPage({ currentUser: propCurrentUser, onLog
           <button
             onClick={() => setActiveSidebarTab('assigned_leads')}
             className={`w-100 text-start btn border-0 py-2.5 px-3 rounded-3 mb-2 d-flex align-items-center justify-content-between text-decoration-none transition-all ${
-              activeSidebarTab === 'assigned_leads' ? 'fw-bold text-white shadow-sm' : 'text-white-50 hover-bg-white-10'
+              activeSidebarTab === 'assigned_leads' ? 'fw-bold text-dark shadow-sm' : 'text-white-50 hover-bg-white-10'
             }`}
             style={{
-              background: activeSidebarTab === 'assigned_leads' ? 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)' : 'transparent',
+              background: activeSidebarTab === 'assigned_leads' ? 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)' : 'transparent',
               fontSize: '0.84rem'
             }}
           >
@@ -642,7 +641,7 @@ export default function SubAdminPortalPage({ currentUser: propCurrentUser, onLog
                 className="card shadow-lg border rounded-4 p-3 d-flex flex-row align-items-start gap-3 animate__animated animate__fadeInUp"
                 style={{
                   background: 'linear-gradient(135deg, #0D1B2E 0%, #1e293b 100%)',
-                  borderColor: 'rgba(255, 99, 51, 0.4)',
+                  borderColor: 'rgba(245, 197, 24, 0.4)',
                   color: '#fff',
                   boxShadow: '0 12px 36px rgba(0, 0, 0, 0.45)',
                   minWidth: '320px'
@@ -650,7 +649,7 @@ export default function SubAdminPortalPage({ currentUser: propCurrentUser, onLog
               >
                 <div 
                   className="rounded-circle p-2 flex-shrink-0 d-flex align-items-center justify-content-center"
-                  style={{ background: 'rgba(255, 99, 51, 0.2)', color: '#FF6333' }}
+                  style={{ background: 'rgba(245, 197, 24, 0.2)', color: '#B8860B' }}
                 >
                   <Bell size={18} />
                 </div>

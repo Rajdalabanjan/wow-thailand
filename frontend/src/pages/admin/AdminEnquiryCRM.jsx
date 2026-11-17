@@ -443,7 +443,7 @@ export default function AdminEnquiryCRM({ usersList = [], currentUser }) {
                                     style={{
                                       maxWidth: '85%',
                                       fontSize: '11.5px',
-                                      background: isUser ? '#FF6B35' : '#f1f5f9',
+                                      background: isUser ? '#F5C518' : '#f1f5f9',
                                       color: isUser ? '#fff' : '#0f172a'
                                     }}
                                   >

@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import HoverGlider, { useEnterAnimation } from '../../components/common/HoverGlider';
+import TempleMark from '../../components/common/TempleMark';
+import OtpVerifyPanel from '../../components/common/OtpVerifyPanel';
+import GlassCard from '../../components/common/GlassCard';
 import {
-  Compass, LayoutDashboard, Calendar, Car, Users, Wallet,
+  LayoutDashboard, Calendar, Car, Users, Wallet,
   Gift, CreditCard, Bell, User, HelpCircle, LogOut, Menu,
   X, ChevronDown, ChevronRight, ArrowLeft, ArrowRight,
   Shield, Phone, CheckCircle2, AlertCircle, Eye, Download,
@@ -143,6 +146,8 @@ export default function CustomerPortalPage({
   const [otpNotice, setOtpNotice] = useState('');
   const [needsEmailInput, setNeedsEmailInput] = useState(false);
   const [otpCode, setOtpCode] = useState('');
+  const [otpStatus, setOtpStatus] = useState('idle'); // idle | verifying | success | error
+  const pendingLogin = React.useRef(null);
   const [generatedOtp, setGeneratedOtp] = useState('8520');
   const [otpExpiry, setOtpExpiry] = useState(null);
   const [otpTimer, setOtpTimer] = useState(45);
@@ -539,7 +544,7 @@ export default function CustomerPortalPage({
         setMaskedEmail(res.masked_email || res.email);
         setOtpNotice(res.message || '');
         setOtpStep('otp');
-        setOtpCode('');
+        setOtpCode(''); setOtpStatus('idle');
         setOtpTimer(45);
         setLoginError('');
       } else if (res && res.needs_email) {
@@ -557,7 +562,7 @@ export default function CustomerPortalPage({
             setMaskedEmail(retryRes.masked_email || retryRes.email);
             setOtpNotice(retryRes.message || '');
             setOtpStep('otp');
-            setOtpCode('');
+            setOtpCode(''); setOtpStatus('idle');
             setOtpTimer(45);
             setLoginError('');
           } else {
@@ -572,44 +577,68 @@ export default function CustomerPortalPage({
     }
   };
 
-  const handleVerifyOtp = async (e) => {
+  // codeOverride: handed over by the OTP boxes when the 6th digit lands (state not updated yet)
+  const handleVerifyOtp = async (e, codeOverride) => {
     if (e && e.preventDefault) e.preventDefault();
+    if (checkingPhone || otpStatus === 'verifying' || otpStatus === 'success') return;
     const isIndian = (selectedCountry?.code || 'IN') === 'IN';
     const parsed = parsePhoneNumber(loginPhone, selectedCountry?.code || 'IN');
     const rawDigits = String(loginPhone || '').replace(/\D/g, '');
     const phoneToSend = parsed.e164 || (rawDigits ? (isIndian ? `+91${rawDigits.slice(-10)}` : `+${rawDigits}`) : '');
-    const entered = otpCode.trim();
+    const entered = (typeof codeOverride === 'string' ? codeOverride : otpCode).trim();
 
-    if (!entered) {
+    if (entered.length < 6) {
       setLoginError('Please enter the 6-digit verification code.');
+      setOtpStatus('error');
       return;
     }
 
     setCheckingPhone(true);
     setLoginError('');
+    setOtpStatus('verifying');
 
     try {
       const res = await api.verifyCustomerOtp(phoneToSend, loginEmail.trim(), entered);
       if (res && res.success && res.customer) {
-        setCustomerUser(res.customer);
-        try {
-          localStorage.setItem('customerUser', JSON.stringify(res.customer));
-          if (res.token) {
-            localStorage.setItem('customer_token', res.token);
-          }
-          sessionStorage.removeItem('customer_login_phone');
-        } catch (err) {}
-        setLoginError('');
-        setOtpStep('phone');
-        refreshCustomerBookings(phoneToSend || res.customer.phone);
+        // the panel plays "verified", then finishCustomerLogin() opens the dashboard
+        pendingLogin.current = { customer: res.customer, token: res.token, phone: phoneToSend };
+        setOtpStatus('success');
       } else {
-        setLoginError(res?.error || 'Incorrect verification code. Please check your email or SMS.');
+        const msg = res?.error || 'Incorrect verification code. Please check your email or SMS.';
+        setLoginError(msg);
+        setOtpStatus('error');
+        // The server threw this code away (too many tries / expired): retyping cannot work,
+        // so let the person ask for a new code right away instead of waiting out the timer
+        if (/new code|request a new|invalidated|expired|too many/i.test(msg)) {
+          setOtpTimer(0);
+          setOtpCode('');
+        }
       }
     } catch (err) {
       setLoginError('Unable to verify OTP. Please try again.');
+      setOtpStatus('error');
     } finally {
       setCheckingPhone(false);
     }
+  };
+
+  // Called by the OTP panel once its "Verified" animation has played
+  const finishCustomerLogin = () => {
+    const p = pendingLogin.current;
+    pendingLogin.current = null;
+    setOtpStatus('idle');
+    if (!p) return;
+    setCustomerUser(p.customer);
+    try {
+      localStorage.setItem('customerUser', JSON.stringify(p.customer));
+      if (p.token) {
+        localStorage.setItem('customer_token', p.token);
+      }
+      sessionStorage.removeItem('customer_login_phone');
+    } catch (err) {}
+    setLoginError('');
+    setOtpStep('phone');
+    refreshCustomerBookings(p.phone || p.customer.phone);
   };
 
   const handleCustomerLogout = () => {
@@ -620,7 +649,7 @@ export default function CustomerPortalPage({
     } catch (e) {}
     setCustomerUser(null);
     setOtpStep('phone');
-    setOtpCode('');
+    setOtpCode(''); setOtpStatus('idle');
     setLoginError('');
     if (onLogout) onLogout();
   };
@@ -1035,10 +1064,10 @@ export default function CustomerPortalPage({
   const customerUnreadCount = customerNotificationItems.filter(n => !n.is_read).length;
 
   return (
-    <div className="min-vh-100 bg-light d-flex flex-column" style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
+    <div className={`min-vh-100 d-flex flex-column ${customerUser ? 'bg-light' : 'cp-signed-out'}`} style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif' }}>
       
       {/* ─── 1. TOP FULL-WIDTH NAVBAR ─── */}
-      <header className="sticky-top bg-white border-bottom shadow-xs customer-portal-header" style={{ zIndex: 1030, ...(selectedBookingDetails ? { display: 'none' } : {}) }}>
+      <header className={`sticky-top customer-portal-header ${customerUser ? 'bg-white border-bottom shadow-xs' : 'customer-portal-header--dark'}`} style={{ zIndex: 1030, ...(selectedBookingDetails ? { display: 'none' } : {}) }}>
         <div className="container-fluid px-3 px-md-4 px-xl-5" style={{ maxWidth: '1440px' }}>
           <div className="d-flex align-items-center justify-content-between py-2.5" style={{ minHeight: '68px' }}>
             
@@ -1055,13 +1084,13 @@ export default function CustomerPortalPage({
                 className="d-flex align-items-center gap-2 text-decoration-none"
               >
                 <div className="bg-warning text-dark rounded-circle p-1.5 d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style={{ width: '36px', height: '36px' }}>
-                  <Compass size={22} className="animate-spin-slow" />
+                  <TempleMark size={20} />
                 </div>
                 <div>
-                  <div className="fw-black tracking-wider text-dark font-heading" style={{ fontSize: '18px', lineHeight: 1.1 }}>
-                    WOW <span className="text-warning">THAILAND</span>
+                  <div className={`brand-wordmark ${customerUser ? 'brand-wordmark--on-light text-dark' : 'text-white'}`} style={{ fontSize: '18px', lineHeight: 1.1 }}>
+                    WOW <span className="brand-gold">THAILAND</span>
                   </div>
-                  <span className="badge bg-dark text-warning text-xxs tracking-wider text-uppercase px-2 py-0.5 rounded-pill fw-bold" style={{ fontSize: '9px' }}>
+                  <span className={`badge ${customerUser ? 'bg-dark' : 'cp-badge-glass'} text-warning text-xxs tracking-wider text-uppercase px-2 py-0.5 rounded-pill fw-bold`} style={{ fontSize: '9px' }}>
                     CUSTOMER PORTAL
                   </span>
                 </div>
@@ -1116,7 +1145,7 @@ export default function CustomerPortalPage({
                     onNavigateHome();
                   }
                 }}
-                className="btn btn-outline-dark btn-sm rounded-pill px-3 py-1.5 text-xs d-none d-xl-flex align-items-center gap-1.5 fw-bold"
+                className={`btn ${customerUser ? 'btn-outline-dark' : 'btn-outline-light cp-storefront-glass'} btn-sm rounded-pill px-3 py-1.5 text-xs d-none d-xl-flex align-items-center gap-1.5 fw-bold`}
               >
                 <span>Storefront</span>
                 <ArrowRight size={13} />
@@ -1218,7 +1247,7 @@ export default function CustomerPortalPage({
                                     }
                                   }}
                                 >
-                                  <div className="rounded-circle mt-1.5 flex-shrink-0" style={{ width: '8px', height: '8px', background: unread ? '#FF6333' : '#cbd5e1' }}></div>
+                                  <div className="rounded-circle mt-1.5 flex-shrink-0" style={{ width: '8px', height: '8px', background: unread ? '#F5C518' : '#cbd5e1' }}></div>
                                   <div className="flex-grow-1 overflow-hidden pe-1">
                                     <div className="d-flex flex-wrap align-items-center gap-1.5 mb-0.5">
                                       <span
@@ -1381,10 +1410,10 @@ export default function CustomerPortalPage({
             <div className="p-3 border-bottom d-flex align-items-center justify-content-between bg-dark text-white">
               <div className="d-flex align-items-center gap-2">
                 <div className="bg-warning text-dark rounded-circle p-1 d-flex align-items-center justify-content-center">
-                  <Compass size={18} />
+                  <TempleMark size={18} />
                 </div>
-                <div className="fw-black text-white font-heading text-sm">
-                  WOW <span className="text-warning">THAILAND</span>
+                <div className="brand-wordmark text-white text-sm">
+                  WOW <span className="brand-gold">THAILAND</span>
                 </div>
               </div>
               <button 
@@ -1501,45 +1530,42 @@ export default function CustomerPortalPage({
       <div className="flex-grow-1 d-flex flex-column w-100">
 
         {/* Tab Body Content */}
-        <main ref={contentRef} className="flex-grow-1 p-3 p-md-4 p-xl-5" style={{ background: '#F8FAFC' }}>
+        <main ref={contentRef} className={`flex-grow-1 ${customerUser ? 'p-3 p-md-4 p-xl-5' : 'p-0'}`} style={{ background: customerUser ? '#F8FAFC' : 'transparent' }}>
           <div className="container-fluid px-0" style={{ maxWidth: '1300px' }}>
             
             {!customerUser ? (
-              <div className="card border-0 shadow-lg rounded-4 p-4 p-md-5 mx-auto bg-white text-center animate-fade-in" style={{ maxWidth: '500px', border: '1px solid #eef2f6' }}>
-                <div className="rounded-circle p-3 bg-warning text-dark d-inline-flex mx-auto mb-3 shadow-sm">
-                  <Compass size={32} />
-                </div>
-
+              /* Sign-in: both steps (phone number, then the code) use the same glassy card */
+              <div className="glass-stage glass-stage--full animate-fade-in">
                 {otpStep === 'phone' ? (
-                  <>
-                    <h4 className="fw-black text-dark mb-1 font-heading">Customer Portal Login</h4>
-                    <p className="text-muted text-xs mb-4">
-                      Enter the mobile number you provided during booking to receive a verification OTP and access your trip dashboard.
+                  <GlassCard>
+                    <div className="otp-panel__icon" aria-hidden="true">
+                      <TempleMark size={22} />
+                    </div>
+                    <h3 className="otp-panel__title">Customer <span className="otp-panel__accent">Portal</span></h3>
+                    <p className="otp-panel__subtitle">
+                      Enter the mobile number you used when booking. We'll send a verification code to open your trip dashboard.
                     </p>
 
                     {sessionStorage.getItem('customer_login_phone') && (
-                      <div className="alert alert-warning bg-warning bg-opacity-10 border-0 py-2 px-3 text-xs mb-3 rounded-3 text-start d-flex align-items-center gap-2">
-                        <span className="badge bg-warning text-dark fw-bold">Recent Booking</span>
-                        <span className="text-dark">Mobile number detected from your recent booking</span>
+                      <div className="glass-alert glass-alert--gold d-flex align-items-center gap-2">
+                        <span className="badge bg-warning text-dark fw-bold">Recent booking</span>
+                        <span>Mobile number filled in from your recent booking</span>
                       </div>
                     )}
 
                     {loginError && (
-                      <div className="alert alert-danger py-2 px-3 text-xs mb-3 rounded-3 text-start">
-                        {loginError}
-                      </div>
+                      <div className="glass-alert" role="alert">{loginError}</div>
                     )}
 
-                    <form onSubmit={handleSendOtp}>
-                      <div className="mb-3 text-start">
-                        <label className="form-label text-xs fw-bold text-muted d-flex justify-content-between align-items-center mb-1">
-                          <span>Registered Mobile Number *</span>
-                          <span className="text-muted fw-normal" style={{ fontSize: '11px' }}>
-                            {selectedCountry?.name || 'India'} ({selectedCountry?.dialCode || '+91'})
-                          </span>
+                    <form onSubmit={handleSendOtp} className="glass-form">
+                      <div className="mb-3">
+                        <label className="glass-label" htmlFor="customer-login-phone">
+                          <span>Registered mobile number *</span>
+                          <small>{selectedCountry?.name || 'India'} ({selectedCountry?.dialCode || '+91'})</small>
                         </label>
                         <InternationalPhoneInput
                           id="customer-login-phone"
+                          className="glass-phone"
                           value={loginPhone}
                           onChange={(val) => {
                             const str = val ? String(val) : '';
@@ -1558,108 +1584,76 @@ export default function CustomerPortalPage({
                         />
                       </div>
 
-                      <div className="mb-3 text-start">
-                        <label className="form-label text-xs fw-bold text-muted d-flex justify-content-between">
-                          <span>Gmail / Email (Optional for dual delivery)</span>
-                          {needsEmailInput && <span className="text-danger fw-bold">* Required</span>}
+                      <div className="mb-3">
+                        <label className="glass-label" htmlFor="customer-login-email">
+                          <span>Email {needsEmailInput ? '' : '(optional)'}</span>
+                          {needsEmailInput && <small style={{ color: '#FCA5A5' }}>Required</small>}
                         </label>
-                        <input 
+                        <input
+                          id="customer-login-email"
                           type="email"
-                          className="form-control text-sm rounded-3 py-2"
-                          placeholder="e.g. yourname@gmail.com"
+                          className="glass-input"
+                          placeholder="you@email.com"
                           value={loginEmail}
                           onChange={(e) => setLoginEmail(e.target.value)}
                           required={needsEmailInput}
+                          autoComplete="email"
                         />
-                        <span className="text-muted" style={{ fontSize: '0.68rem' }}>
-                          OTP is sent via SMS to your mobile, and also to Gmail if provided.
+                        <span className="glass-note">
+                          The code is sent by SMS to your mobile, and also by email if you add one.
                         </span>
                       </div>
 
-                      <button 
-                        type="submit"
-                        disabled={checkingPhone}
-                        className="btn btn-warning text-dark fw-bold rounded-pill w-100 py-2.5 text-xs shadow-sm mb-3 d-flex align-items-center justify-content-center gap-2"
-                      >
+                      <button type="submit" disabled={checkingPhone} className="otp-panel__btn w-100 mt-1">
                         {checkingPhone ? (
                           <>
                             <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                            <span>Sending Verification Code...</span>
+                            <span>Sending code…</span>
                           </>
                         ) : (
                           <>
                             <span>Send Verification Code</span>
-                            <ArrowRight size={14} />
+                            <ArrowRight size={15} />
                           </>
                         )}
                       </button>
                     </form>
-                  </>
+
+                    <div className="glass-secure">🔒 Secure, encrypted customer portal · WOW THAILAND</div>
+                  </GlassCard>
                 ) : (
                   <>
-                    <h4 className="fw-black text-dark mb-1 font-heading">Enter Verification Code</h4>
-                    <p className="text-muted text-xs mb-4">
-                      {otpNotice ? otpNotice : (
-                        <>We sent a 6-digit verification code to <strong className="text-dark">{maskedEmail || loginEmail || (loginPhone ? (loginPhone.startsWith('+') ? loginPhone : `+91 ${loginPhone}`) : 'your mobile')}</strong></>
+                    {/* Glassy OTP panel: boxes orbit while the code is checked, then merge into a green seal */}
+                    <OtpVerifyPanel
+                      length={6}
+                      value={otpCode}
+                      onChange={(code) => { setOtpCode(code); if (otpStatus === 'error') { setOtpStatus('idle'); setLoginError(''); } }}
+                      onComplete={(code) => handleVerifyOtp(null, code)}
+                      onSubmit={(code) => handleVerifyOtp(null, code)}
+                      status={otpStatus}
+                      errorMessage={loginError}
+                      onSuccessDone={finishCustomerLogin}
+                      subtitle={otpNotice ? otpNotice : (
+                        <>We sent a 6-digit code to <strong className="text-white">{maskedEmail || loginEmail || (loginPhone ? (loginPhone.startsWith('+') ? loginPhone : `+91 ${loginPhone}`) : 'your mobile')}</strong></>
                       )}
-                      {' '}<button type="button" onClick={() => { setOtpStep('phone'); setLoginError(''); }} className="btn btn-link p-0 text-warning text-xs fw-bold">Change</button>
-                    </p>
-
-                    {loginError && (
-                      <div className="alert alert-danger py-2 px-3 text-xs mb-3 rounded-3 text-start">
-                        {loginError}
-                      </div>
-                    )}
-
-                    <form onSubmit={handleVerifyOtp}>
-                      <div className="mb-3 text-start">
-                        <label className="form-label text-xs fw-bold text-muted">6-Digit OTP Code</label>
-                        <input 
-                          type="text"
-                          maxLength={6}
-                          className="form-control form-control-lg text-center fw-black text-dark tracking-widest rounded-3 font-heading"
-                          style={{ fontSize: '24px', letterSpacing: '8px' }}
-                          placeholder="••••"
-                          value={otpCode}
-                          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                          autoFocus
-                          required
-                        />
-                      </div>
-
-                      <button 
-                        type="submit"
-                        className="btn btn-warning text-dark fw-bold rounded-pill w-100 py-2.5 text-xs shadow-sm mb-3 d-flex align-items-center justify-content-center gap-2"
+                      successSubtitle="Code confirmed. Opening your trip dashboard…"
+                      submitLabel="Verify & Sign In"
+                      resendSeconds={otpTimer}
+                      onResend={handleSendOtp}
+                      label="6-digit sign-in code"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => { setOtpStep('phone'); setLoginError(''); setOtpStatus('idle'); }}
+                        className="border-0 bg-transparent p-0 fw-bold"
+                        style={{ color: '#F5C518', fontSize: '0.78rem', textDecoration: 'underline', textUnderlineOffset: '3px' }}
                       >
-                        <span>Verify & Access Customer Dashboard →</span>
+                        Change number or email
                       </button>
-                    </form>
-
-                    <div className="text-center text-xs text-muted pt-1">
-                      {otpTimer > 0 ? (
-                        <div className="d-flex align-items-center justify-content-center gap-1.5 text-muted">
-                          <Clock size={13} className="text-muted" />
-                          <span>Resend OTP in <strong className="text-dark fw-bold">{otpTimer}s</strong></span>
-                        </div>
-                      ) : (
-                        <div className="d-flex align-items-center justify-content-center gap-1">
-                          <span>Didn't receive code?</span>
-                          <button
-                            type="button"
-                            onClick={handleSendOtp}
-                            className="btn btn-link p-0 text-warning text-xs fw-bold text-decoration-none"
-                          >
-                            Resend OTP
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    </OtpVerifyPanel>
+                    <div className="glass-stage__foot">🔒 Secure, encrypted customer portal · WOW THAILAND</div>
                   </>
                 )}
-
-                <div className="text-xxs text-muted mt-4 pt-3 border-top">
-                  🔒 Secure 256-bit Encrypted Customer Portal • WOW THAILAND
-                </div>
               </div>
             ) : activeDetailItem ? (
               <div className="active-details-view animate-fade-in">

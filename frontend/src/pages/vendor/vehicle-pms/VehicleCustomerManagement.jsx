@@ -108,25 +108,36 @@ export default function VehicleCustomerManagement({ bookings = [] }) {
       {/* Summary Cards */}
       <div className="row g-3 mb-4">
         <div className="col-12 col-md-4">
-          <div className="rounded-3 p-3 text-center shadow-sm" style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.07)' }}>
-            <div className="fw-bold" style={{ fontSize: '1.4rem', color: '#2563eb' }}>{customersList.length}</div>
-            <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>Total Customers</div>
+          <div className="rounded-3 p-3 shadow-sm d-flex align-items-center gap-3" style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.07)' }}>
+            <div className="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '44px', height: '44px', background: 'rgba(245, 197, 24, 0.16)', color: '#A16207' }}>
+              <Users size={20} />
+            </div>
+            <div>
+              <div className="fw-bold font-heading" style={{ fontSize: '1.4rem', lineHeight: 1.15, color: '#0B192C' }}>{customersList.length}</div>
+              <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>Total Customers</div>
+            </div>
           </div>
         </div>
         <div className="col-12 col-md-4">
-          <div className="rounded-3 p-3 text-center shadow-sm" style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.07)' }}>
-            <div className="fw-bold" style={{ fontSize: '1.4rem', color: '#16a34a' }}>
-              {(bookings || []).filter(b => b.status !== 'Cancelled').length}
+          <div className="rounded-3 p-3 shadow-sm d-flex align-items-center gap-3" style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.07)' }}>
+            <div className="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '44px', height: '44px', background: 'rgba(11, 25, 44, 0.07)', color: '#0B192C' }}>
+              <Calendar size={20} />
             </div>
-            <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>Active Bookings</div>
+            <div>
+              <div className="fw-bold font-heading" style={{ fontSize: '1.4rem', lineHeight: 1.15, color: '#0B192C' }}>{(bookings || []).filter(b => b.status !== 'Cancelled').length}</div>
+              <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>Active Bookings</div>
+            </div>
           </div>
         </div>
         <div className="col-12 col-md-4">
-          <div className="rounded-3 p-3 text-center shadow-sm" style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.07)' }}>
-            <div className="fw-bold" style={{ fontSize: '1.4rem', color: '#FF6333' }}>
-              ฿{customersList.reduce((acc, c) => acc + c.total_spent, 0).toLocaleString()}
+          <div className="rounded-3 p-3 shadow-sm d-flex align-items-center gap-3" style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.07)' }}>
+            <div className="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '44px', height: '44px', background: 'rgba(22, 163, 74, 0.1)', color: '#15803D' }}>
+              <DollarSign size={20} />
             </div>
-            <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>Total Customer Revenue</div>
+            <div>
+              <div className="fw-bold font-heading" style={{ fontSize: '1.4rem', lineHeight: 1.15, color: '#15803D' }}>฿{customersList.reduce((acc, c) => acc + c.total_spent, 0).toLocaleString()}</div>
+              <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>Total Customer Revenue</div>
+            </div>
           </div>
         </div>
       </div>
@@ -136,7 +147,8 @@ export default function VehicleCustomerManagement({ bookings = [] }) {
         <div className="position-relative" style={{ maxWidth: '420px' }}>
           <Search size={14} className="position-absolute" style={{ top: '50%', left: '12px', transform: 'translateY(-50%)', color: '#94a3b8' }} />
           <input
-            className="form-control form-control-sm rounded-pill ps-4"
+            className="form-control form-control-sm rounded-pill"
+            style={{ paddingLeft: '34px' }}
             placeholder="Search by customer name, phone, or email..."
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -159,7 +171,7 @@ export default function VehicleCustomerManagement({ bookings = [] }) {
               <tr key={c.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
                 <td className="px-3 py-3">
                   <div className="d-flex align-items-center gap-2">
-                    <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white" style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg,#FF6333,#FF8A00)', fontSize: '14px', flexShrink: 0 }}>
+                    <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '36px', height: '36px', background: '#0B192C', color: '#F5C518', fontSize: '14px', flexShrink: 0 }}>
                       {(c.name || 'C')[0].toUpperCase()}
                     </div>
                     <div>
@@ -188,8 +200,8 @@ export default function VehicleCustomerManagement({ bookings = [] }) {
                 </td>
                 <td className="px-3 py-3">
                   <span className="badge rounded-pill fw-bold px-2.5 py-1" style={{ 
-                    background: c.carTier?.tier === 'Platinum' ? '#f3e8ff' : c.carTier?.tier === 'Gold' ? '#fef9c3' : c.carTier?.tier === 'Silver' ? '#f1f5f9' : '#ffedd5',
-                    color: c.carTier?.tier === 'Platinum' ? '#7e22ce' : c.carTier?.tier === 'Gold' ? '#a16207' : c.carTier?.tier === 'Silver' ? '#475569' : '#c2410c',
+                    background: c.carTier?.tier === 'Platinum' ? '#EDE9FE' : c.carTier?.tier === 'Gold' ? '#FEF3C7' : c.carTier?.tier === 'Silver' ? '#f1f5f9' : '#F4EBE1',
+                    color: c.carTier?.tier === 'Platinum' ? '#7e22ce' : c.carTier?.tier === 'Gold' ? '#a16207' : c.carTier?.tier === 'Silver' ? '#475569' : '#8A5A2B',
                     fontSize: '0.7rem' 
                   }}>
                     🚗 {c.carTier?.tier || 'Bronze'} ({c.carTier?.count || 0} Trips)
@@ -201,10 +213,10 @@ export default function VehicleCustomerManagement({ bookings = [] }) {
                     <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>DL: {c.license}</div>
                   )}
                 </td>
-                <td className="px-3 py-3 text-center fw-bold" style={{ color: '#2563eb', fontSize: '0.88rem' }}>
+                <td className="px-3 py-3 text-center fw-bold" style={{ color: '#0B192C', fontSize: '0.88rem' }}>
                   {c.total_bookings}
                 </td>
-                <td className="px-3 py-3 fw-bold" style={{ color: '#16a34a', fontSize: '0.85rem' }}>
+                <td className="px-3 py-3 fw-bold" style={{ color: '#15803D', fontSize: '0.85rem' }}>
                   ฿{c.total_spent.toLocaleString()}
                 </td>
                 <td className="px-3 py-3">
@@ -216,7 +228,7 @@ export default function VehicleCustomerManagement({ bookings = [] }) {
                   <button
                     onClick={() => setSelectedCustomer(c)}
                     className="btn btn-sm px-2 py-1 rounded-2 d-flex align-items-center gap-1"
-                    style={{ background: '#dbeafe', color: '#2563eb', fontSize: '0.72rem', fontWeight: 600 }}
+                    style={{ background: '#fff', color: '#0B192C', border: '1px solid #CBD5E1', fontSize: '0.72rem', fontWeight: 600 }}
                   >
                     <Eye size={12} /> View History
                   </button>
@@ -246,7 +258,7 @@ export default function VehicleCustomerManagement({ bookings = [] }) {
           <div className="flex-grow-1 overflow-auto p-4">
             {/* Header Profile */}
             <div className="text-center mb-4 pb-3 border-bottom">
-              <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white mx-auto mb-2" style={{ width: '60px', height: '60px', background: 'linear-gradient(135deg,#FF6333,#FF8A00)', fontSize: '22px' }}>
+              <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold mx-auto mb-2" style={{ width: '60px', height: '60px', background: '#0B192C', color: '#F5C518', fontSize: '22px' }}>
                 {(selectedCustomer.name || 'C')[0].toUpperCase()}
               </div>
               <h5 className="fw-bold mb-0" style={{ color: '#0D1B2E' }}>{selectedCustomer.name}</h5>
@@ -257,8 +269,8 @@ export default function VehicleCustomerManagement({ bookings = [] }) {
 
               {/* Strict Vehicle Tier Isolation */}
               <div className="mt-2.5 d-inline-flex align-items-center gap-1.5 px-3 py-1 rounded-pill fw-bold text-xs shadow-sm" style={{
-                background: selectedCustomer.carTier?.tier === 'Platinum' ? '#f3e8ff' : selectedCustomer.carTier?.tier === 'Gold' ? '#fef9c3' : selectedCustomer.carTier?.tier === 'Silver' ? '#f1f5f9' : '#ffedd5',
-                color: selectedCustomer.carTier?.tier === 'Platinum' ? '#7e22ce' : selectedCustomer.carTier?.tier === 'Gold' ? '#a16207' : selectedCustomer.carTier?.tier === 'Silver' ? '#475569' : '#c2410c',
+                background: selectedCustomer.carTier?.tier === 'Platinum' ? '#EDE9FE' : selectedCustomer.carTier?.tier === 'Gold' ? '#FEF3C7' : selectedCustomer.carTier?.tier === 'Silver' ? '#f1f5f9' : '#F4EBE1',
+                color: selectedCustomer.carTier?.tier === 'Platinum' ? '#7e22ce' : selectedCustomer.carTier?.tier === 'Gold' ? '#a16207' : selectedCustomer.carTier?.tier === 'Silver' ? '#475569' : '#8A5A2B',
                 border: '1px solid rgba(0,0,0,0.1)'
               }}>
                 <Crown size={13} />
@@ -270,7 +282,7 @@ export default function VehicleCustomerManagement({ bookings = [] }) {
             <div className="row g-2 mb-4">
               <div className="col-6">
                 <div className="p-2 rounded-3 text-center" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                  <div className="fw-bold" style={{ fontSize: '1.1rem', color: '#2563eb' }}>{selectedCustomer.total_bookings}</div>
+                  <div className="fw-bold" style={{ fontSize: '1.1rem', color: '#0B192C' }}>{selectedCustomer.total_bookings}</div>
                   <div style={{ fontSize: '0.68rem', color: '#64748b' }}>Total Bookings</div>
                 </div>
               </div>

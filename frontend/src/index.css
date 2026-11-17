@@ -1,8 +1,14 @@
 :root {
   --primary: #0B192C;
   --secondary: #1E3E62;
-  --accent: #FF6B35;
-  --accent-hover: #e55a2b;
+  /* Brand accent: the navbar / intro gold (was orange #F5C518).
+     Text on a gold fill is navy (--on-accent); gold-coloured text on white uses
+     the darker --accent-ink, since bright gold is too pale to read there. */
+  --accent: #F5C518;
+  --accent-hover: #E5A826;
+  --accent-ink: #A16207;
+  --on-accent: #06101E;
+  --accent-rgb: 245, 197, 24;
   --teal: #00A8CC;
   --teal-hover: #008fae;
   --light-bg: #f5f7fa;
@@ -794,7 +800,7 @@ body.voucher-modal-active {
 }
 
 .pkg-mgmt-card:hover {
-  border-color: rgba(255, 99, 51, 0.35);
+  border-color: rgba(245, 197, 24, 0.35);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
 }
 

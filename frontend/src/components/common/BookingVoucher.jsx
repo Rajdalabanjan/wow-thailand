@@ -586,7 +586,7 @@ export default function BookingVoucher({
             <span style={{ fontSize: '20px', fontWeight: 900, color: '#0B192C', letterSpacing: '-0.5px' }}>
               WOW THAILAND
             </span>
-            <span style={{ fontSize: '10px', fontWeight: 700, color: '#FF6333', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: '#B8860B', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
               • Mobility & Holidays
             </span>
           </div>

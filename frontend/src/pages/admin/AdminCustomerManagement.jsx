@@ -27,7 +27,7 @@ function RoleBadge({ role }) {
     subadmin: { bg: '#faf5ff', color: '#9333ea', border: '#e9d5ff' },
     agent: { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
     customer: { bg: '#f8fafc', color: '#475569', border: '#e2e8f0' },
-    vendor: { bg: '#fff7ed', color: '#ea580c', border: '#fed7aa' }
+    vendor: { bg: '#fff7ed', color: '#B8860B', border: '#fed7aa' }
   };
   const c = m[role?.toLowerCase()] || { bg: '#f8fafc', color: '#64748b', border: '#e2e8f0' };
   return (
@@ -1942,8 +1942,8 @@ export default function AdminCustomerManagement({ usersList = [], bookings = [],
                 className="btn btn-sm px-3 py-2 fw-bold text-capitalize border-0 rounded-top d-flex align-items-center gap-1"
                 style={{
                   fontSize: '0.78rem',
-                  borderBottom: drawerTab === tab ? '2px solid #FF6333' : 'none',
-                  color: drawerTab === tab ? '#FF6333' : '#64748b',
+                  borderBottom: drawerTab === tab ? '2px solid #F5C518' : 'none',
+                  color: drawerTab === tab ? '#F5C518' : '#64748b',
                   background: drawerTab === tab ? '#fff' : '#f8fafc'
                 }}
               >
@@ -2144,7 +2144,7 @@ export default function AdminCustomerManagement({ usersList = [], bookings = [],
           <div className="rounded-4 shadow-lg overflow-hidden animate__animated animate__fadeInUp" style={{ width: '100%', maxWidth: '780px', background: '#fff', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
             <div className="px-4 py-3 d-flex align-items-center justify-content-between" style={{ background: '#0D1B2E', color: '#fff' }}>
               <div className="d-flex align-items-center gap-2">
-                <Shield size={18} style={{ color: '#FF6333' }} />
+                <Shield size={18} style={{ color: '#B8860B' }} />
                 <h6 className="mb-0 fw-bold">User & Team Management</h6>
               </div>
               <button className="btn p-0 text-white-50 border-0" onClick={() => setShowUsersModal(false)}><X size={18} /></button>

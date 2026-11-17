@@ -125,7 +125,7 @@ function MyBookingsTab({ bookings, currentUser }) {
           <div className="text-center py-5 rounded-3" style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.07)' }}>
             <Calendar size={40} style={{ color: '#94a3b8' }} className="mb-2" />
             <div className="fw-bold mb-1" style={{ color: '#64748b' }}>No bookings found</div>
-            <a href="/" className="btn px-4 py-2 mt-2 rounded-3 fw-bold text-white" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)', fontSize: '0.83rem' }}>Start Booking</a>
+            <a href="/" className="btn px-4 py-2 mt-2 rounded-3 fw-bold text-dark" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', fontSize: '0.83rem' }}>Start Booking</a>
           </div>
         )}
       </div>
@@ -168,8 +168,8 @@ function WishlistTab() {
                 <div className="fw-bold mb-1" style={{ color: '#0D1B2E', fontSize: '14px' }}>{item.name}</div>
                 <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>📍 {item.location}</div>
                 <div className="d-flex align-items-center justify-content-between mt-2">
-                  <div className="fw-bold" style={{ color: '#FF6333', fontSize: '0.9rem' }}>{item.price}</div>
-                  <button className="btn btn-sm px-3 py-1 rounded-2 fw-bold text-white" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)', fontSize: '0.72rem' }}>
+                  <div className="fw-bold" style={{ color: '#B8860B', fontSize: '0.9rem' }}>{item.price}</div>
+                  <button className="btn btn-sm px-3 py-1 rounded-2 fw-bold text-dark" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', fontSize: '0.72rem' }}>
                     Book Now <ArrowRight size={11} className="ms-1" />
                   </button>
                 </div>
@@ -224,7 +224,7 @@ function ProfileTab({ currentUser }) {
       <div className="row g-4">
         <div className="col-md-4">
           <div className="rounded-3 p-4 text-center" style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.07)' }}>
-            <div className="rounded-circle fw-bold d-flex align-items-center justify-content-center mx-auto mb-3 text-white" style={{ width: '80px', height: '80px', background: 'linear-gradient(135deg,#FF6333,#FF8A00)', fontSize: '2rem' }}>
+            <div className="rounded-circle fw-bold d-flex align-items-center justify-content-center mx-auto mb-3 text-dark" style={{ width: '80px', height: '80px', background: 'linear-gradient(135deg,#F5C518,#E5A826)', fontSize: '2rem' }}>
               {form.name?.[0]?.toUpperCase() || 'G'}
             </div>
             <div className="fw-bold mb-1" style={{ color: '#0D1B2E', fontSize: '16px' }}>{form.name || 'Guest User'}</div>
@@ -250,7 +250,7 @@ function ProfileTab({ currentUser }) {
                   </div>
                 ))}
               </div>
-              <button type="submit" className="btn mt-4 px-5 py-2 rounded-3 fw-bold text-white d-flex align-items-center gap-2" style={{ background: saved ? '#16a34a' : 'linear-gradient(90deg,#FF6333,#FF8A00)' }}>
+              <button type="submit" className="btn mt-4 px-5 py-2 rounded-3 fw-bold text-dark d-flex align-items-center gap-2" style={{ background: saved ? '#16a34a' : 'linear-gradient(90deg,#F5C518,#E5A826)' }}>
                 <Save size={14} />{saved ? 'Saved!' : 'Save Profile'}
               </button>
             </form>
@@ -272,8 +272,8 @@ function NotificationsTab() {
       <h5 className="fw-bold mb-3" style={{ color: '#0D1B2E', fontSize: '16px' }}>Notifications</h5>
       <div className="d-flex flex-column gap-2">
         {notifs.map(n => (
-          <div key={n.id} className="rounded-3 p-3 d-flex gap-3" style={{ background: n.read ? '#fff' : '#FFF5F2', border: `1px solid ${n.read ? 'rgba(0,0,0,0.07)' : 'rgba(255,99,51,0.2)'}` }}>
-            <div className="rounded-circle flex-shrink-0 mt-1" style={{ width: '8px', height: '8px', background: n.read ? '#94a3b8' : '#FF6333' }}></div>
+          <div key={n.id} className="rounded-3 p-3 d-flex gap-3" style={{ background: n.read ? '#fff' : '#FFF5F2', border: `1px solid ${n.read ? 'rgba(0,0,0,0.07)' : 'rgba(245, 197, 24, 0.2)'}` }}>
+            <div className="rounded-circle flex-shrink-0 mt-1" style={{ width: '8px', height: '8px', background: n.read ? '#94a3b8' : '#F5C518' }}></div>
             <div>
               <div style={{ fontSize: '0.85rem', color: '#0D1B2E', fontWeight: n.read ? 400 : 700 }}>{n.msg}</div>
               <div style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: '2px' }}>{n.time}</div>
@@ -303,12 +303,12 @@ export default function CustomerDashboard({ currentUser, triggerOpenLogin, booki
     return (
       <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#0D1B2E 0%,#1a3050 100%)' }}>
         <div className="text-center p-5">
-          <div className="mx-auto mb-4 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '90px', height: '90px', background: 'rgba(255,99,51,0.15)', border: '2px solid rgba(255,99,51,0.3)' }}>
-            <User size={42} style={{ color: '#FF6333' }} />
+          <div className="mx-auto mb-4 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '90px', height: '90px', background: 'rgba(245, 197, 24, 0.15)', border: '2px solid rgba(245, 197, 24, 0.3)' }}>
+            <User size={42} style={{ color: '#B8860B' }} />
           </div>
           <h3 className="fw-bold text-white mb-2">Customer Dashboard</h3>
           <p className="mb-4" style={{ color: 'rgba(255,255,255,0.5)' }}>Sign in to manage your bookings, wallet and profile</p>
-          <button type="button" className="btn px-5 py-2 fw-bold text-white rounded-pill" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }} onClick={triggerOpenLogin}>
+          <button type="button" className="btn px-5 py-2 fw-bold text-dark rounded-pill" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }} onClick={triggerOpenLogin}>
             Sign In
           </button>
         </div>
@@ -325,7 +325,7 @@ export default function CustomerDashboard({ currentUser, triggerOpenLogin, booki
         return (
           <div className="p-4">
             <div className="rounded-3 p-4 mb-4 d-flex align-items-center gap-4" style={{ background: 'linear-gradient(135deg,#0D1B2E,#1e3a5f)' }}>
-              <div className="rounded-circle fw-bold d-flex align-items-center justify-content-center text-dark flex-shrink-0" style={{ width: '60px', height: '60px', background: 'linear-gradient(135deg,#FFC107,#FF8A00)', fontSize: '1.5rem' }}>
+              <div className="rounded-circle fw-bold d-flex align-items-center justify-content-center text-dark flex-shrink-0" style={{ width: '60px', height: '60px', background: 'linear-gradient(135deg,#FFC107,#E5A826)', fontSize: '1.5rem' }}>
                 {currentUser.username?.[0]?.toUpperCase()}
               </div>
               <div>
@@ -375,15 +375,15 @@ export default function CustomerDashboard({ currentUser, triggerOpenLogin, booki
       {/* Sidebar */}
       <div className="d-flex flex-column flex-shrink-0" style={{ width: sidebarOpen ? '240px' : '0px', minWidth: sidebarOpen ? '240px' : '0px', height: '100vh', overflowY: 'auto', overflowX: 'hidden', backgroundColor: '#0D1B2E', borderRight: '1px solid rgba(255,255,255,0.06)', transition: 'all 0.3s ease' }}>
         <div className="px-3 py-3 d-flex align-items-center gap-2 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-          <Compass size={22} style={{ color: '#FF6333' }} />
+          <Compass size={22} style={{ color: '#B8860B' }} />
           <div>
             <div className="fw-extrabold text-white" style={{ fontSize: '15px' }}>WOW THAILAND</div>
-            <div className="fw-bold text-uppercase" style={{ fontSize: '0.55rem', letterSpacing: '2px', color: '#00B8D9' }}>My Account</div>
+            <div className="fw-bold text-uppercase" style={{ fontSize: '0.55rem', letterSpacing: '2px', color: '#B8860B' }}>My Account</div>
           </div>
         </div>
         {/* User Info */}
         <div className="px-3 py-3 d-flex align-items-center gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <div className="rounded-circle fw-bold d-flex align-items-center justify-content-center text-dark flex-shrink-0" style={{ width: '38px', height: '38px', background: 'linear-gradient(135deg,#FFC107,#FF8A00)', fontSize: '15px' }}>
+          <div className="rounded-circle fw-bold d-flex align-items-center justify-content-center text-dark flex-shrink-0" style={{ width: '38px', height: '38px', background: 'linear-gradient(135deg,#FFC107,#E5A826)', fontSize: '15px' }}>
             {currentUser.username?.[0]?.toUpperCase()}
           </div>
           <div className="overflow-hidden">
@@ -393,14 +393,14 @@ export default function CustomerDashboard({ currentUser, triggerOpenLogin, booki
         </div>
         <div className="flex-grow-1 py-2 px-1">
           {NAV_ITEMS.map(item => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)} className="btn w-100 text-start d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3 mb-1" style={{ fontSize: '0.83rem', background: activeTab === item.id ? 'linear-gradient(90deg,#FF6333,#FF8A00)' : 'transparent', color: activeTab === item.id ? '#fff' : 'rgba(255,255,255,0.65)', boxShadow: activeTab === item.id ? '0 4px 12px rgba(255,99,51,0.3)' : 'none', fontWeight: activeTab === item.id ? 700 : 400 }}>
-              <span style={{ color: activeTab === item.id ? '#fff' : '#00B8D9' }}>{item.icon}</span>
+            <button key={item.id} onClick={() => setActiveTab(item.id)} className="btn w-100 text-start d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3 mb-1" style={{ fontSize: '0.83rem', background: activeTab === item.id ? 'linear-gradient(90deg,#F5C518,#E5A826)' : 'transparent', color: activeTab === item.id ? '#fff' : 'rgba(255,255,255,0.65)', boxShadow: activeTab === item.id ? '0 4px 12px rgba(245, 197, 24, 0.3)' : 'none', fontWeight: activeTab === item.id ? 700 : 400 }}>
+              <span style={{ color: activeTab === item.id ? '#fff' : '#F5C518' }}>{item.icon}</span>
               <span>{item.label}</span>
             </button>
           ))}
         </div>
         <div className="p-3 flex-shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <a href="/" className="btn w-100 d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3 mb-2" style={{ background: 'rgba(0,184,217,0.1)', color: '#00B8D9', fontSize: '0.85rem', fontWeight: 600 }}>
+          <a href="/" className="btn w-100 d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3 mb-2" style={{ background: 'rgba(245, 197, 24, 0.1)', color: '#B8860B', fontSize: '0.85rem', fontWeight: 600 }}>
             <Compass size={15} /> Go to Homepage
           </a>
           <button onClick={onLogout} className="btn w-100 d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3 text-white transition-all shadow-xs" style={{ background: 'rgba(255,255,255,0.12)', fontSize: '0.85rem', fontWeight: 600 }}>
@@ -416,7 +416,7 @@ export default function CustomerDashboard({ currentUser, triggerOpenLogin, booki
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="btn btn-sm p-1 border-0 text-white-50" style={{ background: 'transparent' }}><Menu size={20} /></button>
             <div className="fw-bold text-white" style={{ fontSize: '14px' }}>{NAV_ITEMS.find(n => n.id === activeTab)?.label || 'Dashboard'}</div>
           </div>
-          <a href="/" className="btn btn-sm px-3 py-1 rounded-pill fw-bold" style={{ background: 'rgba(255,99,51,0.15)', color: '#FF6333', fontSize: '0.75rem', border: 'none' }}>
+          <a href="/" className="btn btn-sm px-3 py-1 rounded-pill fw-bold" style={{ background: 'rgba(245, 197, 24, 0.15)', color: '#B8860B', fontSize: '0.75rem', border: 'none' }}>
             ← Back to Site
           </a>
         </header>

@@ -229,11 +229,11 @@ export default function HotelsPage({
         </div>
 
         {/* Quick Star Filter Chips */}
-        <div className="d-flex flex-wrap align-items-center gap-1.5">
+        <div className="d-flex flex-wrap flex-lg-nowrap flex-lg-shrink-0 align-items-center gap-1.5">
           <button
             type="button"
             className={`btn btn-sm rounded-pill px-3 py-1.5 text-xs fw-bold transition-all ${
-              selectedStars.length === 0 
+              selectedStars.length === 0
                 ? 'btn-dark text-white shadow-sm' 
                 : 'btn-outline-secondary bg-white text-dark'
             }`}
@@ -492,7 +492,7 @@ export default function HotelsPage({
                     <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-end gap-3 pt-3 border-top">
                       <div>
                         <span className="text-muted text-xxs text-uppercase fw-bold d-block">Starting from</span>
-                        <div className="d-flex align-items-baseline gap-2">
+                        <div className="d-flex align-items-baseline gap-2 text-nowrap">
                           <span className="text-muted text-decoration-line-through text-xs">
                             ฿{getOriginalPrice(hotel.price).toLocaleString('en-US')}
                           </span>

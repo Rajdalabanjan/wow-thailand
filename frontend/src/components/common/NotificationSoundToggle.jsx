@@ -58,7 +58,7 @@ export default function NotificationSoundToggle({
         onClick={handlePlaySoundOnly}
         className="btn btn-link p-0 text-decoration-none d-inline-flex align-items-center border-0"
         style={{
-          color: isPlaying ? '#ffc107' : (enabled ? '#00B8D9' : '#94a3b8'),
+          color: isPlaying ? '#ffc107' : (enabled ? '#F5C518' : '#94a3b8'),
           transition: 'all 0.15s ease',
           outline: 'none'
         }}

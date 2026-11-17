@@ -6,7 +6,7 @@ import {
 import { apiFetch, API_BASE } from '../../services/api';
 
 const COLORS = {
-  primary: '#FF6333',
+  primary: '#F5C518',
   dark: '#0D1B2E',
   success: '#16a34a',
   danger: '#dc2626',
@@ -143,7 +143,7 @@ function PlanFormModal({ plan, onClose, onSave }) {
 
             <div className="col-12 d-flex gap-2 justify-content-end mt-2">
               <button type="button" className="btn btn-light fw-bold px-4" onClick={onClose}>Cancel</button>
-              <button type="submit" className="btn fw-bold px-5 text-white" style={{ background: `linear-gradient(90deg,${COLORS.primary},#FF8A00)` }} disabled={saving}>
+              <button type="submit" className="btn fw-bold px-5 text-white" style={{ background: `linear-gradient(90deg,${COLORS.primary},#E5A826)` }} disabled={saving}>
                 {saving ? 'Saving...' : (form.id ? 'Update Plan' : 'Create Plan')}
               </button>
             </div>
@@ -199,7 +199,7 @@ export default function SubscriptionPlansManager() {
           <h5 className="fw-bold mb-0" style={{ color: COLORS.dark, fontSize: '16px' }}>Subscription Plans</h5>
           <p className="mb-0 mt-1" style={{ fontSize: '0.78rem', color: '#64748b' }}>Create and manage platform subscription tiers for Admin accounts</p>
         </div>
-        <button className="btn px-4 py-2 fw-bold text-white d-flex align-items-center gap-2 rounded-3" style={{ background: `linear-gradient(90deg,${COLORS.primary},#FF8A00)` }} onClick={() => { setEditPlan(null); setShowModal(true); }}>
+        <button className="btn px-4 py-2 fw-bold text-white d-flex align-items-center gap-2 rounded-3" style={{ background: `linear-gradient(90deg,${COLORS.primary},#E5A826)` }} onClick={() => { setEditPlan(null); setShowModal(true); }}>
           <Plus size={14} /> Create Plan
         </button>
       </div>
@@ -295,7 +295,7 @@ export default function SubscriptionPlansManager() {
                 <CreditCard size={40} className="mb-3" style={{ color: '#94a3b8' }} />
                 <h6 className="fw-bold" style={{ color: COLORS.dark }}>No Subscription Plans Yet</h6>
                 <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Create your first plan to start monetizing the platform.</p>
-                <button className="btn px-4 py-2 fw-bold text-white rounded-3" style={{ background: `linear-gradient(90deg,${COLORS.primary},#FF8A00)` }} onClick={() => { setEditPlan(null); setShowModal(true); }}>
+                <button className="btn px-4 py-2 fw-bold text-white rounded-3" style={{ background: `linear-gradient(90deg,${COLORS.primary},#E5A826)` }} onClick={() => { setEditPlan(null); setShowModal(true); }}>
                   <Plus size={14} className="me-1" /> Create First Plan
                 </button>
               </div>

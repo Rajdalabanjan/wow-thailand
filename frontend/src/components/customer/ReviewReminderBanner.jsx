@@ -24,9 +24,9 @@ export default function ReviewReminderBanner({
       <div className="d-flex align-items-center gap-3">
         <div
           className="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
-          style={{ width: '42px', height: '42px', background: '#FFEDD5', color: '#EA580C' }}
+          style={{ width: '42px', height: '42px', background: '#FFEDD5', color: '#B8860B' }}
         >
-          <Star size={22} fill="#EA580C" stroke="#EA580C" />
+          <Star size={22} fill="#CA8A04" stroke="#CA8A04" />
         </div>
         <div>
           <h6 className="fw-bold mb-0.5" style={{ fontSize: '14.5px', color: '#7C2D12' }}>
@@ -55,9 +55,9 @@ export default function ReviewReminderBanner({
 
         <button
           type="button"
-          className="btn btn-sm px-3.5 py-2 rounded-pill fw-bold text-white shadow-sm d-flex align-items-center gap-1.5"
+          className="btn btn-sm px-3.5 py-2 rounded-pill fw-bold text-dark shadow-sm d-flex align-items-center gap-1.5"
           style={{
-            background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)',
+            background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)',
             border: 'none',
             fontSize: '12.5px'
           }}

@@ -438,7 +438,7 @@ export default function FlightsPage({
                           <button 
                             type="button"
                             className="btn btn-primary rounded-pill px-4 py-2 fw-bold w-100 d-flex align-items-center justify-content-center gap-1.5 shadow-sm"
-                            style={{ fontSize: '14px', letterSpacing: '0.5px', background: '#FF6333', borderColor: '#FF6333' }}
+                            style={{ fontSize: '14px', letterSpacing: '0.5px', background: '#F5C518', borderColor: '#F5C518' }}
                             onClick={handleFlightAction}
                           >
                             <span>Book Now</span>

@@ -201,7 +201,7 @@ export default function VendorLoginPage({
                 <a
                   href="#forgot"
                   className="text-xs fw-bold text-decoration-none cursor-pointer"
-                  style={{ color: '#FF6500' }}
+                  style={{ color: '#B8860B' }}
                   onClick={(e) => {
                     e.preventDefault();
                     setShowForgotPassword(true);

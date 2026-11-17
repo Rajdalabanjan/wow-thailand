@@ -185,8 +185,8 @@ export default function VendorChauffeurRoster({ currentUser }) {
               });
               setShowAddModal(true);
             }}
-            className="btn btn-sm text-white rounded-3 d-flex align-items-center gap-1.5 fw-bold shadow-xs"
-            style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }}
+            className="btn btn-sm text-dark rounded-3 d-flex align-items-center gap-1.5 fw-bold shadow-xs"
+            style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}
           >
             <UserPlus size={15} />
             <span>Register Chauffeur</span>
@@ -484,8 +484,8 @@ export default function VendorChauffeurRoster({ currentUser }) {
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="btn btn-sm text-white rounded-2 px-4 fw-bold"
-                  style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }}
+                  className="btn btn-sm text-dark rounded-2 px-4 fw-bold"
+                  style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}
                 >
                   {actionLoading ? 'Registering...' : 'Confirm Registration'}
                 </button>
@@ -583,8 +583,8 @@ export default function VendorChauffeurRoster({ currentUser }) {
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="btn btn-sm text-white rounded-2 px-4 fw-bold"
-                  style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }}
+                  className="btn btn-sm text-dark rounded-2 px-4 fw-bold"
+                  style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}
                 >
                   {actionLoading ? 'Saving...' : 'Save Changes'}
                 </button>

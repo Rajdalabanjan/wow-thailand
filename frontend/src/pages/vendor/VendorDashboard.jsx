@@ -87,10 +87,10 @@ function EditVehicleModal({ vehicle, vehicleType, onClose, onSaved, onUpdateCar,
           <div className="modal-header border-0 pb-0 px-4 pt-4" style={{ background: 'linear-gradient(135deg, #0D1B2E, #1a3050)' }}>
             <div>
               <h5 className="modal-title fw-bold text-white mb-1 d-flex align-items-center gap-2">
-                <Edit2 size={18} style={{ color: '#FF8A00' }} />
+                <Edit2 size={18} style={{ color: '#B8860B' }} />
                 Edit Vehicle — {vehicle.name}
               </h5>
-              <span className="badge" style={{ background: isCar ? '#0052ff22' : '#ff990022', color: isCar ? '#60a5fa' : '#fb923c', border: `1px solid ${isCar ? '#0052ff44' : '#ff990044'}`, fontSize: '11px' }}>
+              <span className="badge" style={{ background: isCar ? '#0052ff22' : '#ff990022', color: isCar ? '#60a5fa' : '#E5A826', border: `1px solid ${isCar ? '#0052ff44' : '#ff990044'}`, fontSize: '11px' }}>
                 {isCar ? '🚗 Car' : '🏍️ Bike'}
               </span>
             </div>
@@ -777,8 +777,8 @@ export default function VendorDashboard({
             /* Active Fleet List Table */
             <div className="col-12">
               {/* Top Header Card */}
-              <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(255, 99, 51, 0.1)' }}>
-                <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #FF8A00 0%, transparent 70%)', pointerEvents: 'none' }}></div>
+              <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(245, 197, 24, 0.1)' }}>
+                <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #E5A826 0%, transparent 70%)', pointerEvents: 'none' }}></div>
                 <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 position-relative z-1">
                   <div>
                     <h4 className="fw-extrabold mb-2 text-dark font-heading" style={{ letterSpacing: '0.5px' }}>Active Fleet Listings</h4>
@@ -805,9 +805,9 @@ export default function VendorDashboard({
                     )}
                     <button
                       type="button"
-                      className="btn px-4 py-2.5 rounded-pill fw-bold text-white shadow hover-scale d-flex align-items-center gap-2"
+                      className="btn px-4 py-2.5 rounded-pill fw-bold text-dark shadow hover-scale d-flex align-items-center gap-2"
                       onClick={() => setActiveTab('add_vehicle')}
-                      style={{ background: 'linear-gradient(90deg, #FF6333, #FF8A00)', border: 'none' }}
+                      style={{ background: 'linear-gradient(90deg, #F5C518, #E5A826)', border: 'none' }}
                     >
                       <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>+</span> Add Vehicle
                     </button>
@@ -902,7 +902,7 @@ export default function VendorDashboard({
                             <td><span className="text-muted text-xs">{bike.engine} • {bike.mileage}</span></td>
                             <td>
                               {bike.location ? (
-                                <span className="d-flex align-items-center gap-1 text-xs" style={{ color: '#f97316', fontWeight: 600 }}>
+                                <span className="d-flex align-items-center gap-1 text-xs" style={{ color: '#B8860B', fontWeight: 600 }}>
                                   <MapPin size={11} /> {bike.location}
                                 </span>
                               ) : (
@@ -956,8 +956,8 @@ export default function VendorDashboard({
           {activeTab === 'bookings' && (
             <div className="col-12">
               {/* Top Header Card */}
-              <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(255, 99, 51, 0.1)' }}>
-                <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #FF8A00 0%, transparent 70%)', pointerEvents: 'none' }}></div>
+              <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(245, 197, 24, 0.1)' }}>
+                <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #E5A826 0%, transparent 70%)', pointerEvents: 'none' }}></div>
                 <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 position-relative z-1">
                   <div>
                     <h4 className="fw-extrabold mb-2 text-dark font-heading" style={{ letterSpacing: '0.5px' }}>My Vehicle Bookings</h4>
@@ -1168,8 +1168,8 @@ export default function VendorDashboard({
 
       {activeTab === 'billing' && (
         <div className="col-12 mt-2 text-start">
-          <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(255, 99, 51, 0.1)' }}>
-            <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #FF8A00 0%, transparent 70%)', pointerEvents: 'none' }}></div>
+          <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(245, 197, 24, 0.1)' }}>
+            <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #E5A826 0%, transparent 70%)', pointerEvents: 'none' }}></div>
             <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 position-relative z-1">
               <div>
                 <h4 className="fw-extrabold mb-2 text-dark font-heading" style={{ letterSpacing: '0.5px' }}>Vendor Billing Details</h4>

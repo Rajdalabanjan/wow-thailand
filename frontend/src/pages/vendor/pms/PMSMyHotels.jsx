@@ -151,7 +151,7 @@ function HotelCard({ hotel, onNavigate, onAction, vendorBookings }) {
   );
 }
 
-export default function PMSMyHotels({ currentUser, vendorHotels, vendorBookings, onNavigate, onDeleteHotel }) {
+export default function PMSMyHotels({ currentUser, vendorHotels, vendorBookings, onNavigate, onDeleteHotel, onUpdateHotel }) {
   const [actionLoading, setActionLoading] = useState(null);
   const [statusFilter, setStatusFilter] = useState('All');
 

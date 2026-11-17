@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import TempleMark from '../../components/common/TempleMark';
 import HoverGlider, { useEnterAnimation } from '../../components/common/HoverGlider';
 import {
   Compass, LogOut, Users, Settings, Shield, LayoutDashboard,
@@ -275,11 +276,11 @@ function SidebarGroup({ group, activeTab, onSelect, defaultOpen }) {
                 fontWeight: activeTab === item.id ? 700 : 400,
                 opacity: draggedItemId === item.id ? 0.4 : 1,
                 cursor: 'grab',
-                border: dragOverItemId === item.id ? '1px dashed #FF8A00' : 'none',
+                border: dragOverItemId === item.id ? '1px dashed #E5A826' : 'none',
                 transition: 'all 0.15s ease'
               }}
             >
-              <span style={{ color: activeTab === item.id ? '#fff' : '#00B8D9', flexShrink: 0 }}>{item.icon}</span>
+              <span style={{ color: activeTab === item.id ? '#fff' : '#F5C518', flexShrink: 0 }}>{item.icon}</span>
               <span className="flex-grow-1">{item.label}</span>
             </button>
           ))}
@@ -694,7 +695,7 @@ export default function SuperAdminPortalPage({
                                  pkgType.includes('package') || pkgType.includes('self_drive');
 
     if (isMultiItemOrPackage) {
-      return { tab: 'trip_bookings', type: 'Package / Holiday Booking', color: '#f97316' };
+      return { tab: 'trip_bookings', type: 'Package / Holiday Booking', color: '#B8860B' };
     }
 
     // 2. Standalone Hotel
@@ -713,7 +714,7 @@ export default function SuperAdminPortalPage({
     if (['vehicle', 'car', 'bike', 'rental'].includes(type) || b.vehicle_id || b.car_id || b.bike_id || 
         itemId.startsWith('car-') || itemId.startsWith('bike-') || itemId.startsWith('veh-') || 
         itemName.includes('thar') || itemName.includes('swift') || itemName.includes('creta') || itemName.includes('scooter') || itemName.includes('activa')) {
-      return { tab: 'vehicle_bookings', type: 'Vehicle Rental Booking', color: '#ea580c' };
+      return { tab: 'vehicle_bookings', type: 'Vehicle Rental Booking', color: '#B8860B' };
     }
 
     // 4. Standalone Sightseeing & Activity
@@ -722,7 +723,7 @@ export default function SuperAdminPortalPage({
       return { tab: 'activity_bookings', type: 'Sightseeing & Activity Booking', color: '#10b981' };
     }
 
-    return { tab: 'trip_bookings', type: 'Package / Holiday Booking', color: '#f97316' };
+    return { tab: 'trip_bookings', type: 'Package / Holiday Booking', color: '#B8860B' };
   };
 
   // Compute unified notifications from real data
@@ -857,12 +858,12 @@ export default function SuperAdminPortalPage({
     return (
       <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0D1B2E 0%, #1a3050 100%)' }}>
         <div className="text-center p-5">
-          <div className="mx-auto mb-4 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '90px', height: '90px', background: 'rgba(255,99,51,0.15)', border: '2px solid rgba(255,99,51,0.3)' }}>
-            <Shield size={42} style={{ color: '#FF6333' }} />
+          <div className="mx-auto mb-4 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '90px', height: '90px', background: 'rgba(245, 197, 24, 0.15)', border: '2px solid rgba(245, 197, 24, 0.3)' }}>
+            <Shield size={42} style={{ color: '#B8860B' }} />
           </div>
           <h3 className="fw-bold text-white mb-2">Master Console Access</h3>
           <p className="mb-4" style={{ color: 'rgba(255,255,255,0.5)' }}>This area requires Superadmin credentials</p>
-          <button type="button" className="btn px-5 py-2 fw-bold text-white rounded-pill" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }} onClick={triggerOpenLogin}>
+          <button type="button" className="btn px-5 py-2 fw-bold text-dark rounded-pill" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }} onClick={triggerOpenLogin}>
             Sign In to Master Console
           </button>
         </div>
@@ -910,10 +911,10 @@ export default function SuperAdminPortalPage({
       >
         {/* Brand */}
         <div className="px-4 py-3 d-flex align-items-center gap-2 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-          <Compass size={24} style={{ color: '#FF6333' }} />
+          <TempleMark size={28} style={{ color: '#F5C518', flexShrink: 0, filter: 'drop-shadow(0 2px 6px rgba(245, 197, 24, 0.4))' }} />
           <div>
-            <div className="fw-extrabold text-white" style={{ fontSize: '16px', letterSpacing: '0.5px' }}>WOW THAILAND</div>
-            <div className="fw-bold text-uppercase" style={{ fontSize: '0.55rem', letterSpacing: '2px', color: '#FF6333' }}>Superadmin ERP</div>
+            <div className="brand-wordmark text-white" style={{ fontSize: '16px' }}>WOW <span className="brand-gold">THAILAND</span></div>
+            <div className="fw-bold text-uppercase" style={{ fontSize: '0.55rem', letterSpacing: '2px', color: 'rgba(255, 255, 255, 0.55)' }}>Superadmin ERP</div>
           </div>
         </div>
 
@@ -944,7 +945,7 @@ export default function SuperAdminPortalPage({
 
         {/* Logout */}
         <div className="p-3 flex-shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <button onClick={onLogout} className="btn w-100 d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3" style={{ background: 'rgba(255,99,51,0.1)', color: '#FF6333', fontSize: '0.85rem', fontWeight: 600 }}>
+          <button onClick={onLogout} className="btn w-100 d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3" style={{ background: 'rgba(245, 197, 24, 0.1)', color: '#B8860B', fontSize: '0.85rem', fontWeight: 600 }}>
             <LogOut size={15} /> Sign Out
           </button>
         </div>
@@ -965,7 +966,7 @@ export default function SuperAdminPortalPage({
           </div>
           
           <div className="d-flex align-items-center gap-3">
-            <span className="d-flex align-items-center gap-1 px-3 py-1 rounded-pill d-none d-sm-flex" style={{ background: 'rgba(0,184,217,0.1)', color: '#00B8D9', fontSize: '0.7rem', fontWeight: 700 }}>
+            <span className="d-flex align-items-center gap-1 px-3 py-1 rounded-pill d-none d-sm-flex" style={{ background: 'rgba(245, 197, 24, 0.1)', color: '#B8860B', fontSize: '0.7rem', fontWeight: 700 }}>
               <span className="rounded-circle" style={{ width: '6px', height: '6px', background: '#00e676', display: 'inline-block' }}></span>
               System Online
             </span>
@@ -976,7 +977,7 @@ export default function SuperAdminPortalPage({
                 type="button"
                 className="btn p-2 rounded-circle border-0 d-flex align-items-center justify-content-center text-white"
                 style={{
-                  background: showNotificationDropdown ? 'rgba(255,99,51,0.2)' : 'rgba(255,255,255,0.08)',
+                  background: showNotificationDropdown ? 'rgba(245, 197, 24, 0.2)' : 'rgba(255,255,255,0.08)',
                   width: '36px',
                   height: '36px',
                   transition: 'all 0.2s'
@@ -988,7 +989,7 @@ export default function SuperAdminPortalPage({
                 title="Notifications"
                 aria-label="View notifications"
               >
-                <Bell size={18} style={{ color: unreadCount > 0 ? '#FF6333' : 'rgba(255,255,255,0.7)' }} />
+                <Bell size={18} style={{ color: unreadCount > 0 ? '#F5C518' : 'rgba(255,255,255,0.7)' }} />
                 {unreadCount > 0 && (
                   <span
                     className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-2 border-dark"
@@ -1068,13 +1069,13 @@ export default function SuperAdminPortalPage({
                           <div
                             key={n.id}
                             className="px-3 py-2.5 border-bottom border-secondary border-opacity-10 cursor-pointer d-flex align-items-start justify-content-between gap-2"
-                            style={{ background: isUnread ? 'rgba(255,99,51,0.08)' : 'transparent', transition: 'background 0.15s' }}
+                            style={{ background: isUnread ? 'rgba(245, 197, 24, 0.08)' : 'transparent', transition: 'background 0.15s' }}
                             onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-                            onMouseLeave={e => e.currentTarget.style.background = isUnread ? 'rgba(255,99,51,0.08)' : 'transparent'}
+                            onMouseLeave={e => e.currentTarget.style.background = isUnread ? 'rgba(245, 197, 24, 0.08)' : 'transparent'}
                             onClick={() => handleNotificationClick(n)}
                           >
                             <div className="d-flex align-items-start gap-2 flex-grow-1 overflow-hidden pe-1">
-                              <div className="rounded-circle mt-1 flex-shrink-0" style={{ width: '8px', height: '8px', background: n.color || '#FF6333' }}></div>
+                              <div className="rounded-circle mt-1 flex-shrink-0" style={{ width: '8px', height: '8px', background: n.color || '#F5C518' }}></div>
                               <div className="flex-grow-1 overflow-hidden">
                                 <div className="d-flex flex-wrap align-items-center gap-1.5 mb-0.5">
                                   <span
@@ -1131,7 +1132,7 @@ export default function SuperAdminPortalPage({
                     <button
                       type="button"
                       className="btn btn-sm w-100 text-warning fw-bold py-1 border-0"
-                      style={{ fontSize: '0.75rem', background: 'rgba(255,159,28,0.08)' }}
+                      style={{ fontSize: '0.75rem', background: 'rgba(245, 197, 24, 0.08)' }}
                       onClick={() => {
                         handleTabChange('notifications');
                         setShowNotificationDropdown(false);
@@ -1152,7 +1153,7 @@ export default function SuperAdminPortalPage({
                   <div className="position-relative">
                     <button
                       className="btn p-0 rounded-circle d-flex align-items-center justify-content-center"
-                      style={{ width: '36px', height: '36px', border: '2px solid #FF6333', background: 'linear-gradient(135deg,#FFC107,#FF8A00)' }}
+                      style={{ width: '36px', height: '36px', border: '2px solid #F5C518', background: 'linear-gradient(135deg,#FFC107,#E5A826)' }}
                       onClick={() => {
                         setShowProfileDropdown(!showProfileDropdown);
                         setShowNotificationDropdown(false);
@@ -1164,14 +1165,14 @@ export default function SuperAdminPortalPage({
                     {showProfileDropdown && (
                       <div className="position-absolute shadow-lg" style={{ right: 0, top: '48px', minWidth: '200px', background: '#10243A', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', zIndex: 1050 }} onClick={e => e.stopPropagation()}>
                         <div className="text-center px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                          <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold mx-auto mb-2" style={{ width: '44px', height: '44px', fontSize: '18px', background: 'linear-gradient(135deg,#FFC107,#FF8A00)', color: '#000' }}>
+                          <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold mx-auto mb-2" style={{ width: '44px', height: '44px', fontSize: '18px', background: 'linear-gradient(135deg,#FFC107,#E5A826)', color: '#000' }}>
                             {initial}
                           </div>
                           <div className="fw-bold text-white" style={{ fontSize: '14px' }}>{displayName}</div>
-                          <span className="badge mt-1" style={{ background: 'rgba(255,99,51,0.15)', color: '#FF6333', fontSize: '0.6rem' }}>SUPERADMIN</span>
+                          <span className="badge mt-1" style={{ background: 'rgba(245, 197, 24, 0.15)', color: '#B8860B', fontSize: '0.6rem' }}>SUPERADMIN</span>
                         </div>
                         <div className="p-2">
-                          <button className="btn w-100 d-flex align-items-center gap-2 py-2 px-3 rounded fw-bold" style={{ color: '#FF6333', background: 'rgba(255,99,51,0.1)', fontSize: '0.85rem' }} onClick={onLogout}>
+                          <button className="btn w-100 d-flex align-items-center gap-2 py-2 px-3 rounded fw-bold" style={{ color: '#B8860B', background: 'rgba(245, 197, 24, 0.1)', fontSize: '0.85rem' }} onClick={onLogout}>
                             <LogOut size={14} /> Sign Out
                           </button>
                         </div>

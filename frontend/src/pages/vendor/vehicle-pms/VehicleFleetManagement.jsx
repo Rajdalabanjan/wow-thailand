@@ -111,7 +111,7 @@ function VehicleCard({ vehicle, type, onEdit, onToggle, onDelete, isSuspended })
       <div className="p-3 pt-0">
         <div className="d-flex align-items-center justify-content-between pt-2 border-top">
           <div>
-            <div className="fw-bold" style={{ color: '#FF6333', fontSize: '1.1rem' }}>฿{vehicle.price}<span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 400 }}>/day</span></div>
+            <div className="fw-bold" style={{ color: '#B8860B', fontSize: '1.1rem' }}>฿{vehicle.price}<span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 400 }}>/day</span></div>
             {vehicle.location && <div style={{ fontSize: '0.65rem', color: '#94a3b8' }}>📍 {vehicle.location}</div>}
           </div>
           <div className="d-flex gap-1">
@@ -587,7 +587,7 @@ export default function VehicleFleetManagement({ currentUser, cars = [], bikes =
           <h5 className="fw-bold mb-0" style={{ color: '#0D1B2E', fontSize: '16px' }}>Cab &amp; Transfer Fleet Management</h5>
           <p className="mb-0 mt-1" style={{ fontSize: '0.78rem', color: '#64748b' }}>{displayCars.length} transfer vehicles in your fleet</p>
         </div>
-        <button onClick={() => { setShowAdd(true); setUploadError(''); }} className="btn px-4 py-2 fw-bold text-white d-flex align-items-center gap-2 rounded-3 shadow-sm" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)', fontSize: '0.83rem' }}>
+        <button onClick={() => { setShowAdd(true); setUploadError(''); }} className="btn px-4 py-2 fw-bold text-dark d-flex align-items-center gap-2 rounded-3 shadow-sm" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', fontSize: '0.83rem' }}>
           <Plus size={14} /> Add Cab / Vehicle
         </button>
       </div>
@@ -677,7 +677,7 @@ export default function VehicleFleetManagement({ currentUser, cars = [], bikes =
           <div className="col-12 text-center py-5">
             <span style={{ fontSize: '3rem' }}>🚐</span>
             <div className="mt-2 fw-bold" style={{ color: '#64748b' }}>No transfer vehicles found</div>
-            <button onClick={() => { setShowAdd(true); setUploadError(''); }} className="btn mt-3 px-4 py-2 rounded-3 fw-bold text-white" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)', fontSize: '0.83rem' }}>
+            <button onClick={() => { setShowAdd(true); setUploadError(''); }} className="btn mt-3 px-4 py-2 rounded-3 fw-bold text-dark" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', fontSize: '0.83rem' }}>
               <Plus size={14} className="me-2" /> Add First Vehicle
             </button>
           </div>
@@ -730,7 +730,7 @@ export default function VehicleFleetManagement({ currentUser, cars = [], bikes =
               <div className="mb-3">
                 <div className="d-flex align-items-center justify-content-between mb-1">
                   <label className="form-label fw-bold mb-0" style={{ fontSize: '0.78rem', color: '#475569' }}>Vehicle Category *</label>
-                  <span className="fw-semibold" style={{ fontSize: '0.7rem', color: '#FF6333' }}>
+                  <span className="fw-semibold" style={{ fontSize: '0.7rem', color: '#B8860B' }}>
                     💡 Suggestions for "{editForm.name || 'Cab'}"
                   </span>
                 </div>
@@ -753,7 +753,7 @@ export default function VehicleFleetManagement({ currentUser, cars = [], bikes =
                       className="btn btn-sm py-0 px-2 rounded-pill fw-bold"
                       style={{
                         fontSize: '0.7rem',
-                        background: editForm.category === cat ? 'linear-gradient(90deg,#FF6333,#FF8A00)' : '#f1f5f9',
+                        background: editForm.category === cat ? 'linear-gradient(90deg,#F5C518,#E5A826)' : '#f1f5f9',
                         color: editForm.category === cat ? '#fff' : '#334155',
                         border: editForm.category === cat ? 'none' : '1px solid #cbd5e1'
                       }}
@@ -1087,7 +1087,7 @@ export default function VehicleFleetManagement({ currentUser, cars = [], bikes =
             </div>
 
             <div className="px-4 py-3 flex-shrink-0 border-top bg-white">
-                <button type="submit" disabled={saving || uploadingImage} className="btn w-100 py-2.5 fw-bold text-white rounded-3 d-flex align-items-center justify-content-center gap-2" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }}>
+                <button type="submit" disabled={saving || uploadingImage} className="btn w-100 py-2.5 fw-bold text-dark rounded-3 d-flex align-items-center justify-content-center gap-2" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}>
                   <Save size={14} />{saving ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
@@ -1152,7 +1152,7 @@ export default function VehicleFleetManagement({ currentUser, cars = [], bikes =
               <div className="mb-3">
                 <div className="d-flex align-items-center justify-content-between mb-1">
                   <label className="form-label fw-bold mb-0" style={{ fontSize: '0.78rem', color: '#475569' }}>Vehicle Category *</label>
-                  <span className="fw-semibold" style={{ fontSize: '0.7rem', color: '#FF6333' }}>
+                  <span className="fw-semibold" style={{ fontSize: '0.7rem', color: '#B8860B' }}>
                     💡 Suggestions for "{addForm.name || 'Cab'}"
                   </span>
                 </div>
@@ -1175,7 +1175,7 @@ export default function VehicleFleetManagement({ currentUser, cars = [], bikes =
                       className="btn btn-sm py-0 px-2 rounded-pill fw-bold"
                       style={{
                         fontSize: '0.7rem',
-                        background: addForm.category === cat ? 'linear-gradient(90deg,#FF6333,#FF8A00)' : '#f1f5f9',
+                        background: addForm.category === cat ? 'linear-gradient(90deg,#F5C518,#E5A826)' : '#f1f5f9',
                         color: addForm.category === cat ? '#fff' : '#334155',
                         border: addForm.category === cat ? 'none' : '1px solid #cbd5e1'
                       }}
@@ -1509,7 +1509,7 @@ export default function VehicleFleetManagement({ currentUser, cars = [], bikes =
             </div>
 
             <div className="px-4 py-3 flex-shrink-0 border-top bg-white">
-                <button type="submit" disabled={saving || uploadingImage} className="btn w-100 py-2.5 fw-bold text-white rounded-3 d-flex align-items-center justify-content-center gap-2" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }}>
+                <button type="submit" disabled={saving || uploadingImage} className="btn w-100 py-2.5 fw-bold text-dark rounded-3 d-flex align-items-center justify-content-center gap-2" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}>
                   <Plus size={14} />{saving ? 'Adding to Fleet...' : 'Add Vehicle to Fleet'}
                 </button>
               </div>

@@ -239,7 +239,7 @@ export default function DobPicker({
           type="button"
           onClick={() => setMode(mode === 'dropdown' ? 'type' : 'dropdown')}
           className="btn btn-link p-0 text-decoration-none fw-semibold"
-          style={{ fontSize: '0.72rem', color: '#FF6333' }}
+          style={{ fontSize: '0.72rem', color: '#B8860B' }}
         >
           {mode === 'dropdown' ? 'Type DD/MM/YYYY ⌨️' : 'Use Dropdowns ▾'}
         </button>

@@ -451,9 +451,9 @@ export default function VehicleFleetCalendar({ cars = [], bikes = [], bookings =
               className="btn btn-sm px-3 py-1 rounded-pill fw-bold border d-flex align-items-center gap-1.5 transition-all shadow-2xs" 
               style={{ 
                 background: isDaySelected(today.getDate()) && viewMonth === today.getMonth() ? '#FFF5F2' : '#fff',
-                borderColor: '#FF6333',
+                borderColor: '#F5C518',
                 fontSize: '0.78rem',
-                color: '#FF6333',
+                color: '#B8860B',
                 cursor: 'pointer'
               }}
               title="Click calendar icon to open calendar"
@@ -594,9 +594,9 @@ export default function VehicleFleetCalendar({ cars = [], bikes = [], bookings =
                           height: '32px',
                           margin: 'auto',
                           fontSize: '0.78rem',
-                          background: isSel ? '#FF6333' : (isTod ? '#FFF5F2' : 'transparent'),
-                          color: isSel ? '#fff' : (isTod ? '#FF6333' : '#1e293b'),
-                          border: isSel ? '1px solid #FF6333' : (isTod ? '1px dashed #FF6333' : '1px solid transparent'),
+                          background: isSel ? '#F5C518' : (isTod ? '#FFF5F2' : 'transparent'),
+                          color: isSel ? '#fff' : (isTod ? '#F5C518' : '#1e293b'),
+                          border: isSel ? '1px solid #F5C518' : (isTod ? '1px dashed #F5C518' : '1px solid transparent'),
                           cursor: 'pointer'
                         }}
                         title={`${d} ${MONTHS[pickerMonth]} ${pickerYear}`}
@@ -616,7 +616,7 @@ export default function VehicleFleetCalendar({ cars = [], bikes = [], bookings =
                       setShowDatePicker(false);
                     }}
                     className="btn btn-sm btn-link p-0 text-decoration-none fw-bold"
-                    style={{ color: '#FF6333', fontSize: '0.74rem' }}
+                    style={{ color: '#B8860B', fontSize: '0.74rem' }}
                   >
                     Go to Today
                   </button>
@@ -642,9 +642,9 @@ export default function VehicleFleetCalendar({ cars = [], bikes = [], bookings =
               className="btn btn-sm rounded-pill px-3 py-1 fw-bold d-flex align-items-center gap-1.5 shadow-sm transition-all"
               style={{
                 fontSize: '0.74rem',
-                background: isDaySelected(today.getDate()) && viewMonth === today.getMonth() && viewYear === today.getFullYear() ? '#FF6333' : '#fff',
-                color: isDaySelected(today.getDate()) && viewMonth === today.getMonth() && viewYear === today.getFullYear() ? '#fff' : '#FF6333',
-                border: '1px solid #FF6333',
+                background: isDaySelected(today.getDate()) && viewMonth === today.getMonth() && viewYear === today.getFullYear() ? '#F5C518' : '#fff',
+                color: isDaySelected(today.getDate()) && viewMonth === today.getMonth() && viewYear === today.getFullYear() ? '#fff' : '#F5C518',
+                border: '1px solid #F5C518',
                 cursor: 'pointer'
               }}
               title="Refresh / Reset calendar back to Today's date"
@@ -722,20 +722,20 @@ export default function VehicleFleetCalendar({ cars = [], bikes = [], bookings =
                     style={{
                       minHeight: '94px',
                       background: isSelected ? '#FFF5F2' : (isToday ? '#fffaf8' : (hasBookings ? '#f8fafc' : '#fff')),
-                      border: isSelected ? '2px solid #FF6333' : (isToday ? '1px dashed #FF6333' : (hasBookings ? '1px solid #93c5fd' : '1px solid #e2e8f0')),
+                      border: isSelected ? '2px solid #F5C518' : (isToday ? '1px dashed #F5C518' : (hasBookings ? '1px solid #93c5fd' : '1px solid #e2e8f0')),
                       cursor: 'pointer',
                       overflow: 'hidden',
-                      boxShadow: isSelected ? '0 0 0 1px #FF6333, 0 4px 12px rgba(255,99,51,0.18)' : 'none',
+                      boxShadow: isSelected ? '0 0 0 1px #F5C518, 0 4px 12px rgba(245, 197, 24, 0.18)' : 'none',
                       transform: isSelected ? 'scale(1.01)' : 'none',
                       transition: 'all 0.15s ease-in-out'
                     }}
                     title={`Click to focus on ${day} ${MONTHS[viewMonth]}`}
                   >
                     <div className="d-flex align-items-center justify-content-between mb-1">
-                      <span className="fw-bold d-flex align-items-center gap-1" style={{ fontSize: '0.82rem', color: isSelected || isToday ? '#FF6333' : '#0D1B2E' }}>
+                      <span className="fw-bold d-flex align-items-center gap-1" style={{ fontSize: '0.82rem', color: isSelected || isToday ? '#F5C518' : '#0D1B2E' }}>
                         {day} 
                         {isToday && <span className="badge bg-danger p-0 px-1" style={{ fontSize: '0.58rem' }}>TODAY</span>}
-                        {isSelected && !isToday && <span className="badge p-0 px-1" style={{ fontSize: '0.55rem', background: '#FF6333', color: '#fff' }}>ACTIVE</span>}
+                        {isSelected && !isToday && <span className="badge p-0 px-1" style={{ fontSize: '0.55rem', background: '#F5C518', color: '#06101E' }}>ACTIVE</span>}
                       </span>
                       
                       <div className="d-flex align-items-center gap-1">
@@ -745,7 +745,7 @@ export default function VehicleFleetCalendar({ cars = [], bikes = [], bookings =
                             ✓ {availableUnits.length} Free
                           </span>
                         ) : hasBookings && (
-                          <span className="badge rounded-pill" style={{ background: isSelected ? '#FF6333' : '#2563eb', fontSize: '0.6rem', padding: '2px 6px' }}>
+                          <span className="badge rounded-pill" style={{ background: isSelected ? '#F5C518' : '#2563eb', fontSize: '0.6rem', padding: '2px 6px' }}>
                             {dayBookings.length}
                           </span>
                         )}
@@ -843,7 +843,7 @@ export default function VehicleFleetCalendar({ cars = [], bikes = [], bookings =
         <div 
           ref={dayDetailsRef} 
           className="card border-0 rounded-4 shadow-sm p-4 mb-4 animate-fade-in" 
-          style={{ background: '#fff', borderLeft: '4px solid #FF6333' }}
+          style={{ background: '#fff', borderLeft: '4px solid #F5C518' }}
         >
           <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
             <div className="d-flex align-items-center gap-3 flex-wrap">
@@ -1007,7 +1007,7 @@ export default function VehicleFleetCalendar({ cars = [], bikes = [], bookings =
             <div className="modal-content border-0 shadow-2xl rounded-4 overflow-hidden">
               <div className="modal-header border-0 px-4 pt-4 pb-3" style={{ background: '#0D1B2E', color: '#fff' }}>
                 <div className="d-flex align-items-center gap-3">
-                  <div className="rounded-circle d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px', background: 'rgba(255,99,51,0.15)', color: '#FF6333' }}>
+                  <div className="rounded-circle d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px', background: 'rgba(245, 197, 24, 0.15)', color: '#B8860B' }}>
                     <Calendar size={20} />
                   </div>
                   <div>

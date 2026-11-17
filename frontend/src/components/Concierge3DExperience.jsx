@@ -176,8 +176,8 @@ export default function Concierge3DExperience({ onNavigateTab }) {
           <h2 
             className="display-6 fw-black mb-2"
             style={{
-              fontFamily: "'Cinzel', Georgia, serif",
-              letterSpacing: '0.02em',
+              fontFamily: 'var(--font-heading)',
+              letterSpacing: '-0.01em',
               background: 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 60%, #E2E8F0 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent'
@@ -408,7 +408,7 @@ export default function Concierge3DExperience({ onNavigateTab }) {
                   {/* Screen Content */}
                   <div 
                     key={currentSlide.id + '-screen'}
-                    className="p-3 d-flex flex-column justify-content-between flex-grow-1 text-start"
+                    className="p-3 p-md-4 d-flex flex-column gap-3 flex-grow-1 text-start"
                     style={{
                       background: 'radial-gradient(circle at 80% 20%, rgba(245, 197, 24, 0.08) 0%, transparent 60%)',
                       animation: 'c3dScreenContentIn 0.45s ease-out'
@@ -422,27 +422,27 @@ export default function Concierge3DExperience({ onNavigateTab }) {
                             background: `${currentSlide.screen.badgeColor}22`, 
                             color: currentSlide.screen.badgeColor,
                             border: `1px solid ${currentSlide.screen.badgeColor}44`,
-                            fontSize: '9px'
+                            fontSize: '11px'
                           }}
                         >
                           ● {currentSlide.screen.badge}
                         </span>
-                        <span className="text-white-50" style={{ fontSize: '10px' }}>
+                        <span className="text-white-50" style={{ fontSize: '12px' }}>
                           {activeIdx === 0 ? 'GPS Telemetry Active' : activeIdx === 1 ? 'Hotel PMS Synced' : activeIdx === 2 ? 'Marine Permit Valid' : 'AI Assistant Ready'}
                         </span>
                       </div>
 
-                      <div className="text-white fw-bold mb-1" style={{ fontSize: '15px' }}>
+                      <div className="text-white fw-bold mb-1" style={{ fontSize: '22px', lineHeight: 1.2 }}>
                         {currentSlide.screen.title}
                       </div>
-                      <div className="text-white-50 mb-3" style={{ fontSize: '11px' }}>
+                      <div className="text-white-50" style={{ fontSize: '13.5px' }}>
                         📍 {currentSlide.screen.header}
                       </div>
                     </div>
 
                     {/* Simulation Card */}
                     <div 
-                      className="rounded-3 p-2.5 mb-2"
+                      className="rounded-3 p-3"
                       style={{
                         background: 'rgba(255, 255, 255, 0.03)',
                         border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -450,8 +450,8 @@ export default function Concierge3DExperience({ onNavigateTab }) {
                       }}
                     >
                       <div className="d-flex align-items-center justify-content-between mb-1.5">
-                        <span className="text-white-50" style={{ fontSize: '10px' }}>{currentSlide.screen.meta}</span>
-                        <span className="fw-bold" style={{ fontSize: '11px', color: '#F5C518' }}>{currentSlide.screen.eta}</span>
+                        <span className="text-white-50" style={{ fontSize: '12.5px' }}>{currentSlide.screen.meta}</span>
+                        <span className="fw-bold" style={{ fontSize: '13px', color: '#F5C518' }}>{currentSlide.screen.eta}</span>
                       </div>
 
                       <div 
@@ -460,19 +460,19 @@ export default function Concierge3DExperience({ onNavigateTab }) {
                       >
                         <div className="d-flex align-items-center gap-1.5">
                           {activeIdx === 0 ? (
-                            <Navigation size={12} className="text-warning animate-pulse" />
+                            <Navigation size={15} className="text-warning animate-pulse" />
                           ) : activeIdx === 1 ? (
-                            <QrCode size={12} className="text-primary" />
+                            <QrCode size={15} className="text-primary" />
                           ) : activeIdx === 2 ? (
-                            <Star size={12} className="text-danger" />
+                            <Star size={15} className="text-danger" />
                           ) : (
-                            <MessageSquare size={12} className="text-success" />
+                            <MessageSquare size={15} className="text-success" />
                           )}
-                          <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.08em', color: '#FFFFFF' }}>
+                          <span style={{ fontSize: '12.5px', fontWeight: 800, letterSpacing: '0.08em', color: '#FFFFFF' }}>
                             {currentSlide.screen.otp}
                           </span>
                         </div>
-                        <span className="badge bg-success bg-opacity-25 text-success" style={{ fontSize: '8px' }}>
+                        <span className="badge bg-success bg-opacity-25 text-success" style={{ fontSize: '10px' }}>
                           ✓ VERIFIED
                         </span>
                       </div>
@@ -480,7 +480,7 @@ export default function Concierge3DExperience({ onNavigateTab }) {
 
                     {/* Bottom App Tabs */}
                     <div 
-                      className="d-flex align-items-center justify-content-around pt-1.5 border-top"
+                      className="d-flex align-items-center justify-content-around pt-2 mt-auto border-top"
                       style={{ borderColor: 'rgba(255,255,255,0.08)' }}
                     >
                       <div 
@@ -488,32 +488,32 @@ export default function Concierge3DExperience({ onNavigateTab }) {
                         onClick={() => { setIsAutoPlaying(false); setActiveIdx(0); }}
                         style={{ opacity: activeIdx === 0 ? 1 : 0.45 }}
                       >
-                        <Car size={13} className={activeIdx === 0 ? "text-warning" : "text-white"} />
-                        <div style={{ fontSize: '8px', color: '#ffffff' }}>Cabs</div>
+                        <Car size={17} className={activeIdx === 0 ? "text-warning" : "text-white"} />
+                        <div style={{ fontSize: '10.5px', color: '#ffffff' }}>Cabs</div>
                       </div>
                       <div 
                         className="text-center cursor-pointer" 
                         onClick={() => { setIsAutoPlaying(false); setActiveIdx(1); }}
                         style={{ opacity: activeIdx === 1 ? 1 : 0.45 }}
                       >
-                        <Hotel size={13} className={activeIdx === 1 ? "text-primary" : "text-white"} />
-                        <div style={{ fontSize: '8px', color: '#ffffff' }}>Hotels</div>
+                        <Hotel size={17} className={activeIdx === 1 ? "text-primary" : "text-white"} />
+                        <div style={{ fontSize: '10.5px', color: '#ffffff' }}>Hotels</div>
                       </div>
                       <div 
                         className="text-center cursor-pointer" 
                         onClick={() => { setIsAutoPlaying(false); setActiveIdx(2); }}
                         style={{ opacity: activeIdx === 2 ? 1 : 0.45 }}
                       >
-                        <Compass size={13} className={activeIdx === 2 ? "text-danger" : "text-white"} />
-                        <div style={{ fontSize: '8px', color: '#ffffff' }}>Tours</div>
+                        <Compass size={17} className={activeIdx === 2 ? "text-danger" : "text-white"} />
+                        <div style={{ fontSize: '10.5px', color: '#ffffff' }}>Tours</div>
                       </div>
                       <div 
                         className="text-center cursor-pointer" 
                         onClick={() => { setIsAutoPlaying(false); setActiveIdx(3); }}
                         style={{ opacity: activeIdx === 3 ? 1 : 0.45 }}
                       >
-                        <MessageSquare size={13} className={activeIdx === 3 ? "text-success" : "text-white"} />
-                        <div style={{ fontSize: '8px', color: '#ffffff' }}>Chat</div>
+                        <MessageSquare size={17} className={activeIdx === 3 ? "text-success" : "text-white"} />
+                        <div style={{ fontSize: '10.5px', color: '#ffffff' }}>Chat</div>
                       </div>
                     </div>
 

@@ -105,8 +105,8 @@ export default function VehiclePricing({ cars = [], bikes = [], onUpdateCar, onU
         <button
           onClick={handleSave}
           disabled={saving}
-          className="btn px-4 py-2 fw-bold text-white d-flex align-items-center gap-2 rounded-3"
-          style={{ background: saved ? '#16a34a' : 'linear-gradient(90deg,#FF6333,#FF8A00)', fontSize: '0.83rem' }}
+          className="btn px-4 py-2 fw-bold text-dark d-flex align-items-center gap-2 rounded-3"
+          style={{ background: saved ? '#16a34a' : 'linear-gradient(90deg,#F5C518,#E5A826)', fontSize: '0.83rem' }}
         >
           {saving ? (
             <><Loader2 size={14} className="spinner-border spinner-border-sm" /> Saving...</>

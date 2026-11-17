@@ -299,8 +299,8 @@ export default function VendorBookingTrackerModal({
                   <button 
                     type="submit" 
                     disabled={loading}
-                    className="btn w-100 text-white rounded-3 py-2.5 mt-3 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-xs"
-                    style={{ background: '#FF6333' }}
+                    className="btn w-100 text-dark rounded-3 py-2.5 mt-3 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-xs"
+                    style={{ background: '#F5C518' }}
                   >
                     {loading ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
                     <span>{loading ? 'Locating Record...' : 'Track My Booking Details'}</span>
@@ -459,7 +459,7 @@ export default function VendorBookingTrackerModal({
                                 style={{
                                   width: '32px',
                                   height: '32px',
-                                  background: isCurrent ? (isTripCompleted ? '#10B981' : '#FF6333') : (isDone ? '#10B981' : '#E2E8F0'),
+                                  background: isCurrent ? (isTripCompleted ? '#10B981' : '#F5C518') : (isDone ? '#10B981' : '#E2E8F0'),
                                   color: isDone || isCurrent ? '#FFFFFF' : '#64748B',
                                   border: isCurrent ? '3px solid #FFEDD5' : 'none'
                                 }}
@@ -469,7 +469,7 @@ export default function VendorBookingTrackerModal({
                               <span 
                                 className="text-center mt-1 text-xs fw-bold"
                                 style={{
-                                  color: isCurrent ? (isTripCompleted ? '#10B981' : '#FF6333') : (isDone ? '#0F172A' : '#64748B'),
+                                  color: isCurrent ? (isTripCompleted ? '#10B981' : '#F5C518') : (isDone ? '#0F172A' : '#64748B'),
                                   fontSize: '0.7rem',
                                   lineHeight: 1.2
                                 }}

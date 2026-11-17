@@ -6,6 +6,7 @@ import {
   X, FileText, ChevronRight, MessageSquare
 } from 'lucide-react';
 import { useSiteConfig } from '../context/SiteConfigContext';
+import TempleMark from './common/TempleMark';
 
 export default function Footer({ setActiveTab }) {
   const { liveConfig } = useSiteConfig();
@@ -146,12 +147,10 @@ export default function Footer({ setActiveTab }) {
                 href="/" 
                 onClick={(e) => handleNavClick(e, 'cars')}
               >
-                <div className="rounded-circle p-2 bg-warning text-dark me-2 d-flex align-items-center justify-content-center shadow-xs" style={{ width: '38px', height: '38px' }}>
-                  <Compass size={22} />
-                </div>
+                <TempleMark size={34} className="text-warning me-2 flex-shrink-0" style={{ filter: 'drop-shadow(0 2px 8px rgba(245, 197, 24, 0.45))' }} />
                 <div>
-                  <span className="text-white fw-black fs-5 line-height-1 d-block font-heading">WOW THAILAND</span>
-                  <span className="text-warning text-uppercase fw-bold text-xxs" style={{ letterSpacing: '1px' }}>Thailand Hotels & Airport Transfers &amp; Stays</span>
+                  <span className="brand-wordmark text-white fs-5 d-block" style={{ lineHeight: 1.15 }}>WOW <span className="brand-gold">THAILAND</span></span>
+                  <span className="text-uppercase fw-semibold text-xxs" style={{ letterSpacing: '0.8px', color: 'rgba(255, 255, 255, 0.7)' }}>Luxury Travel &amp; Transfers</span>
                 </div>
               </a>
               <p className="small text-muted mb-3" style={{ lineHeight: '1.6', fontSize: '0.85rem' }}>

@@ -8,6 +8,7 @@
 // ========================================================================
 
 import React, { useState, useEffect, useRef } from 'react';
+import TempleMark from '../../components/common/TempleMark';
 import { 
   Car, Calendar, Clock, MapPin, ArrowRight, X, Shield, 
   Sparkles, CheckCircle2, Phone, Check, CreditCard, Navigation, 
@@ -540,10 +541,11 @@ export default function ThailandCustomerCabsPage({
   const isAirportRoute = pickupLocation.toLowerCase().includes('airport') || dropoffLocation.toLowerCase().includes('airport');
 
   return (
-    <div style={{ backgroundColor: '#F8FAFC', minHeight: '100vh', display: 'flex', flexDirection: 'column', color: '#0F172A', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ backgroundColor: '#F8FAFC', minHeight: '100vh', display: 'flex', flexDirection: 'column', color: '#0F172A', fontFamily: 'var(--font-body)' }} className="cabs-page">
       
       {/* ── TOP HEADER BAR (Ola / Uber style) ── */}
       <header 
+        className="cabs-header"
         style={{ 
           backgroundColor: '#0B132B', 
           borderBottom: '2px solid rgba(212, 175, 55, 0.4)', 
@@ -564,20 +566,22 @@ export default function ThailandCustomerCabsPage({
               <ArrowLeft size={16} /> Back
             </button>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '20px' }}>🚕</span>
-            <span style={{ fontWeight: 900, fontSize: '18px', color: '#FFFFFF', letterSpacing: '-0.02em' }}>
-              WOW THAILAND <span style={{ color: '#D4AF37' }}>Cabs</span>
+          <div className="cabs-brand" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <TempleMark size={26} style={{ color: '#F5C518', filter: 'drop-shadow(0 2px 6px rgba(245, 197, 24, 0.45))' }} />
+            <span className="brand-wordmark" style={{ fontSize: '17px', color: '#FFFFFF', whiteSpace: 'nowrap' }}>
+              WOW <span className="brand-gold">THAILAND</span>
             </span>
+            <span className="cabs-brand-tag">Cabs</span>
           </div>
           <span 
+            className="cabs-header-badge"
             style={{ 
               backgroundColor: 'rgba(212, 175, 55, 0.15)', 
               color: '#F1D78A', 
               border: '1px solid rgba(212, 175, 55, 0.35)', 
               borderRadius: '20px', 
               padding: '3px 10px', 
-              fontSize: '11px', 
+              fontSize: '12px', 
               fontWeight: 800 
             }}
           >
@@ -589,6 +593,7 @@ export default function ThailandCustomerCabsPage({
           <button
             type="button"
             onClick={() => setShowHistoryDrawer(true)}
+            aria-label="Activity and trips"
             style={{
               backgroundColor: 'rgba(255, 255, 255, 0.1)',
               border: '1px solid rgba(255, 255, 255, 0.2)',
@@ -604,13 +609,14 @@ export default function ThailandCustomerCabsPage({
             }}
           >
             <Clock size={13} className="text-warning" />
-            <span>Activity / Trips</span>
+            <span className="cabs-btn-label">Activity / Trips</span>
           </button>
 
           <a
             href="https://wa.me/66812345678"
             target="_blank"
             rel="noreferrer"
+            aria-label="Chauffeur helpline on WhatsApp"
             style={{
               backgroundColor: '#25D366',
               color: '#FFFFFF',
@@ -625,7 +631,7 @@ export default function ThailandCustomerCabsPage({
             }}
           >
             <MessageSquare size={13} />
-            <span>Chauffeur Helpline</span>
+            <span className="cabs-btn-label">Chauffeur Helpline</span>
           </a>
         </div>
       </header>
@@ -660,14 +666,14 @@ export default function ThailandCustomerCabsPage({
                     setParkedRide(null);
                     openRide(ride.dispatchId, ride);
                   }}
-                  style={{ border: 'none', background: '#0B132B', color: '#D4AF37', borderRadius: '8px', padding: '5px 10px', fontSize: '11.5px', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  style={{ border: 'none', background: '#0B132B', color: '#D4AF37', borderRadius: '8px', padding: '5px 10px', fontSize: '12.5px', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap' }}
                 >
                   View ride
                 </button>
               </div>
             )}
 
-            <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#0F172A', margin: '0 0 2px' }}>
+            <h2 className="font-heading" style={{ fontSize: '20px', fontWeight: 800, color: '#0F172A', margin: '0 0 2px' }}>
               Get a private ride
             </h2>
             <p style={{ fontSize: '12px', color: '#64748B', margin: 0 }}>
@@ -679,7 +685,7 @@ export default function ThailandCustomerCabsPage({
               
               {/* Pickup Input */}
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
                   <span>🟢</span> Pickup Location
                 </label>
                 <ThailandLocationAutocomplete
@@ -715,7 +721,7 @@ export default function ThailandCustomerCabsPage({
 
               {/* Destination Input */}
               <div>
-                <label style={{ fontSize: '11px', fontWeight: 800, color: '#DC2626', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 800, color: '#DC2626', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
                   <span>🔴</span> Drop-off Destination
                 </label>
                 <ThailandLocationAutocomplete
@@ -827,7 +833,7 @@ export default function ThailandCustomerCabsPage({
                     borderColor: riderType === 'self' ? '#0B132B' : '#E2E8F0',
                     backgroundColor: riderType === 'self' ? '#0B132B' : '#FFFFFF',
                     color: riderType === 'self' ? '#FFFFFF' : '#64748B',
-                    fontSize: '11px',
+                    fontSize: '12px',
                     fontWeight: 700,
                     cursor: 'pointer'
                   }}
@@ -845,7 +851,7 @@ export default function ThailandCustomerCabsPage({
                     borderColor: riderType === 'other' ? '#0B132B' : '#E2E8F0',
                     backgroundColor: riderType === 'other' ? '#0B132B' : '#FFFFFF',
                     color: riderType === 'other' ? '#FFFFFF' : '#64748B',
-                    fontSize: '11px',
+                    fontSize: '12px',
                     fontWeight: 700,
                     cursor: 'pointer'
                   }}
@@ -898,7 +904,7 @@ export default function ThailandCustomerCabsPage({
                 if (phoneChannels.length) parts.push(`by ${joinWithAnd(phoneChannels)} to this number`);
                 if (emailOn) parts.push('by email');
                 return (
-                  <div style={{ fontSize: '11px', color: '#64748B', marginTop: '-4px' }}>
+                  <div style={{ fontSize: '12px', color: '#64748B', marginTop: '-4px' }}>
                     We'll send your booking and driver details {parts.join(' and ')}.
                   </div>
                 );
@@ -955,10 +961,10 @@ export default function ThailandCustomerCabsPage({
           >
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#0F172A', margin: 0 }}>
+                <h2 className="font-heading" style={{ fontSize: '20px', fontWeight: 800, color: '#0F172A', margin: 0 }}>
                   Your ride
                 </h2>
-                <span style={{ fontSize: '11px', color: '#059669', fontWeight: 800, backgroundColor: '#DCFCE7', padding: '3px 8px', borderRadius: '12px' }}>
+                <span style={{ fontSize: '12px', color: '#059669', fontWeight: 800, backgroundColor: '#DCFCE7', padding: '3px 8px', borderRadius: '12px' }}>
                   ✓ Tolls Included
                 </span>
               </div>
@@ -998,10 +1004,10 @@ export default function ThailandCustomerCabsPage({
                     </div>
                     <div>
                       <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>{matchedRide.name}</div>
-                      <div style={{ fontSize: '11px', color: '#64748B', marginTop: '1px' }}>
+                      <div style={{ fontSize: '12px', color: '#64748B', marginTop: '1px' }}>
                         Fits up to {matchedRide.maxPax} people · {matchedRide.maxLuggage} bags
                       </div>
-                      <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '1px' }}>
+                      <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '1px' }}>
                         {matchedRide.models.split(',')[0]}
                       </div>
                     </div>
@@ -1011,7 +1017,7 @@ export default function ThailandCustomerCabsPage({
                     <div style={{ fontSize: '16px', fontWeight: 900, color: '#0F172A' }}>
                       ฿{matchedRide.fareThb}
                     </div>
-                    <div style={{ fontSize: '10px', color: '#94A3B8', textTransform: 'uppercase' }}>
+                    <div style={{ fontSize: '11px', color: '#94A3B8', textTransform: 'uppercase' }}>
                       THB
                     </div>
                   </div>
@@ -1145,10 +1151,10 @@ export default function ThailandCustomerCabsPage({
                 <span style={{ fontSize: '20px' }}>🛡️</span>
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A' }}>Fixed Transparent Pricing</div>
-                  <div style={{ fontSize: '11px', color: '#64748B' }}>No hidden charges · Tolls & expressway included in quote</div>
+                  <div style={{ fontSize: '12px', color: '#64748B' }}>No hidden charges · Tolls & expressway included in quote</div>
                 </div>
               </div>
-              <span style={{ backgroundColor: '#DCFCE7', color: '#166534', fontSize: '11.5px', fontWeight: 800, padding: '4px 10px', borderRadius: '20px', border: '1px solid #BBF7D0' }}>
+              <span style={{ backgroundColor: '#DCFCE7', color: '#166534', fontSize: '12.5px', fontWeight: 800, padding: '4px 10px', borderRadius: '20px', border: '1px solid #BBF7D0' }}>
                 Guaranteed
               </span>
             </div>
@@ -1183,7 +1189,7 @@ export default function ThailandCustomerCabsPage({
                   {activeRide.status === 'Requested' ? 'Connecting to Nearest Chauffeur' : activeRide.status}
                 </span>
               </div>
-              <h2 style={{ fontSize: '22px', fontWeight: 900, color: '#0F172A', margin: '0 0 4px', letterSpacing: '-0.02em' }}>
+              <h2 className="font-heading" style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A', margin: '0 0 4px', letterSpacing: '-0.02em' }}>
                 {activeRide.status === 'Requested' ? 'Waiting for Driver to Accept...' : 'Chauffeur En Route!'}
               </h2>
               <p style={{ fontSize: '12px', color: '#64748B', margin: 0 }}>
@@ -1216,7 +1222,7 @@ export default function ThailandCustomerCabsPage({
                   <div style={{ fontSize: '12.5px', fontWeight: 800, color: '#92400E' }}>
                     Chauffeur Alert Sent
                   </div>
-                  <div style={{ fontSize: '11.5px', color: '#78350F', marginTop: '1px', lineHeight: 1.35 }}>
+                  <div style={{ fontSize: '12.5px', color: '#78350F', marginTop: '1px', lineHeight: 1.35 }}>
                     Broadcast to active chauffeurs near {activeRide?.pickup}. Screen updates automatically once accepted!
                   </div>
                 </div>
@@ -1235,7 +1241,7 @@ export default function ThailandCustomerCabsPage({
                 boxShadow: '0 6px 20px rgba(11, 19, 43, 0.15)'
               }}
             >
-              <div style={{ fontSize: '11px', fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>
                 START TRIP OTP
               </div>
 
@@ -1263,7 +1269,7 @@ export default function ThailandCustomerCabsPage({
                 ))}
               </div>
 
-              <div style={{ fontSize: '11px', color: '#CBD5E1', marginBottom: '8px' }}>
+              <div style={{ fontSize: '12px', color: '#CBD5E1', marginBottom: '8px' }}>
                 Share this 4-digit code with your chauffeur to start your journey.
               </div>
 
@@ -1276,7 +1282,7 @@ export default function ThailandCustomerCabsPage({
                   color: '#FFFFFF',
                   borderRadius: '20px',
                   padding: '4px 12px',
-                  fontSize: '11px',
+                  fontSize: '12px',
                   fontWeight: 700,
                   cursor: 'pointer',
                   display: 'inline-flex',
@@ -1323,7 +1329,7 @@ export default function ThailandCustomerCabsPage({
                     <div style={{ fontSize: '13.5px', fontWeight: 800, color: '#0F172A' }}>
                       Broadcasting to Nearby Chauffeurs...
                     </div>
-                    <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '2px' }}>
+                    <div style={{ fontSize: '12.5px', color: '#64748B', marginTop: '2px' }}>
                       Searching licensed Thai chauffeurs in pickup radius
                     </div>
                   </div>
@@ -1375,7 +1381,7 @@ export default function ThailandCustomerCabsPage({
                       <div style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>
                         {activeRide.driver.name}
                       </div>
-                      <div style={{ fontSize: '11.5px', color: '#64748B' }}>
+                      <div style={{ fontSize: '12.5px', color: '#64748B' }}>
                         ⭐ {activeRide.driver.rating || '4.95'} · Verified Chauffeur
                       </div>
                     </div>
@@ -1386,7 +1392,7 @@ export default function ThailandCustomerCabsPage({
                       {[activeRide.driver.vehicle_color, activeRide.driver.vehicle_model || activeRide.driver.vehicle?.model].filter(Boolean).join(' ') || activeRide.tierName}
                     </div>
                     {(activeRide.driver.vehicle_plate || activeRide.driver.vehicle?.plateNumber) && (
-                      <div style={{ fontSize: '11px', fontWeight: 800, backgroundColor: '#0B132B', color: '#FFFFFF', padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginTop: '2px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 800, backgroundColor: '#0B132B', color: '#FFFFFF', padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginTop: '2px' }}>
                         {activeRide.driver.vehicle_plate || activeRide.driver.vehicle?.plateNumber}
                       </div>
                     )}

@@ -7,6 +7,31 @@ import { query, withTransaction } from '../config/db.js';
 import { resolveDriverId } from '../utils/identityResolver.js';
 import { hashOtp } from '../utils/cryptoHelper.js';
 import { broadcastEvent } from '../server.js';
+import { queueRideNotification, RIDE_EVENTS } from '../services/rideNotificationService.js';
+import {
+  loadVehicle,
+  categoriesServedBy,
+  getVehicleMismatchReason,
+  findDriverScheduleConflict
+} from '../services/cabMatchingService.js';
+
+function httpError(statusCode, message) {
+  const err = new Error(message);
+  err.statusCode = statusCode;
+  return err;
+}
+
+/**
+ * Why a driver cannot receive new (unassigned) job offers right now, or null if they can.
+ */
+function getOfferBlockReason(drv, vehicle) {
+  if (!drv.vendor_id) return 'Your account is not linked to a taxi company yet.';
+  if (drv.status === 'offline') return 'You are offline. Go online to receive new jobs.';
+  if (!vehicle) return 'Select your active vehicle to receive new jobs.';
+  if (vehicle.verification_status !== 'APPROVED') return 'Your active vehicle is waiting for admin approval.';
+  if (!vehicle.is_available || vehicle.is_maintenance) return 'Your active vehicle is marked unavailable or under maintenance.';
+  return null;
+}
 
 /**
  * GET /api/v1/driver/active-duty
@@ -68,22 +93,57 @@ export async function getDutyOffers(req, res, next) {
       return res.status(403).json({ success: false, error: 'Driver account required.' });
     }
 
-    // Offers available: unassigned ALLOCATED rides or assigned specifically to this driver
-    const offers = await query(
-      `SELECT d.id, d.booking_id, d.transfer_type, d.pickup_address, d.dropoff_address,
-              d.pickup_lat, d.pickup_lng, d.dropoff_lat, d.dropoff_lng, d.pickup_datetime,
-              d.vehicle_category, d.vehicle_model, d.distance_km, d.estimated_minutes,
-              d.total_fare_thb, d.ride_status, b.customer_name, b.customer_phone
-       FROM taxi_dispatches d
-       JOIN bookings b ON d.booking_id = b.id
-       WHERE d.ride_status = 'ALLOCATED' AND (d.driver_id IS NULL OR d.driver_id = ?)
-       ORDER BY d.pickup_datetime ASC LIMIT 20`,
-      [driverId]
-    );
+    // Inspect driver's active vehicle
+    const drivers = await query('SELECT * FROM drivers WHERE id = ? LIMIT 1', [driverId]);
+    const drv = drivers[0] || {};
+
+    let querySql = `
+      SELECT d.id, d.booking_id, d.transfer_type, d.pickup_address, d.dropoff_address,
+             d.pickup_lat, d.pickup_lng, d.dropoff_lat, d.dropoff_lng, d.pickup_datetime,
+             d.passenger_count, d.luggage_count,
+             d.vehicle_category, d.vehicle_model, d.distance_km, d.estimated_minutes,
+             d.total_fare_thb, d.ride_status, b.customer_name, b.customer_phone
+      FROM taxi_dispatches d
+      JOIN bookings b ON d.booking_id = b.id
+      WHERE d.ride_status = 'ALLOCATED'
+    `;
+    const params = [];
+
+    // Open jobs are only shown when the driver is online, belongs to the job's vendor,
+    // and their approved active vehicle is big enough. Jobs assigned directly to the
+    // driver are always shown.
+    const vehicle = await loadVehicle(query, drv.active_vehicle_id);
+    const blockReason = getOfferBlockReason(drv, vehicle);
+
+    if (!blockReason) {
+      const cats = categoriesServedBy(vehicle.category);
+      querySql += `
+        AND (
+          d.driver_id = ?
+          OR (
+            d.driver_id IS NULL
+            AND d.vendor_id = ?
+            AND d.passenger_count <= ?
+            AND d.luggage_count <= ?
+            AND d.vehicle_category IN (${cats.map(() => '?').join(', ')})
+          )
+        )
+      `;
+      params.push(driverId, drv.vendor_id, vehicle.seating_capacity, vehicle.luggage_capacity, ...cats);
+    } else {
+      querySql += ` AND d.driver_id = ?`;
+      params.push(driverId);
+    }
+
+    querySql += ` ORDER BY d.pickup_datetime ASC LIMIT 20`;
+
+    const offers = await query(querySql, params);
 
     res.json({
       success: true,
-      data: offers
+      data: offers,
+      can_receive_offers: !blockReason,
+      offers_blocked_reason: blockReason
     });
   } catch (err) {
     next(err);
@@ -142,12 +202,34 @@ export async function acceptDuty(req, res, next) {
         throw err;
       }
 
-      // 2. Assign driver and transition to DISPATCHED
+      // Open jobs can only be taken by drivers of the vendor the job was given to
+      if (!dispatch.driver_id && (!drv.vendor_id || String(drv.vendor_id) !== String(dispatch.vendor_id))) {
+        throw httpError(403, 'This job belongs to another taxi company.');
+      }
+
+      if (drv.status === 'offline') {
+        throw httpError(400, 'You are offline. Go online to accept jobs.');
+      }
+
+      // The driver's active vehicle must be approved and big enough for this group
+      const vehicle = await loadVehicle(conn, drv.active_vehicle_id);
+      const mismatch = getVehicleMismatchReason(vehicle, dispatch);
+      if (mismatch) {
+        throw httpError(400, mismatch);
+      }
+
+      // The driver must not already have a trip at the same time
+      const conflict = await findDriverScheduleConflict(conn, driverId, dispatch.id);
+      if (conflict) {
+        throw httpError(409, `You already have trip ${conflict.id} at that time.`);
+      }
+
+      // 2. Assign driver and vehicle and transition to DISPATCHED
       await conn.execute(
-        `UPDATE taxi_dispatches 
-         SET driver_id = ?, vehicle_model = ?, vehicle_plate = ?, ride_status = 'DISPATCHED', updated_at = CURRENT_TIMESTAMP
+        `UPDATE taxi_dispatches
+         SET driver_id = ?, vehicle_id = ?, vehicle_model = ?, vehicle_plate = ?, ride_status = 'DISPATCHED', updated_at = CURRENT_TIMESTAMP
          WHERE id = ?`,
-        [driverId, drv.vehicle_model || dispatch.vehicle_model, drv.vehicle_plate || dispatch.vehicle_plate, dispatch_id]
+        [driverId, vehicle.id, `${vehicle.brand} ${vehicle.model}`, vehicle.plate_number, dispatch_id]
       );
 
       // 3. Keep legacy driver_assignments in sync
@@ -170,7 +252,7 @@ export async function acceptDuty(req, res, next) {
           `evt_${Date.now()}_acc`,
           dispatch_id,
           driverId,
-          JSON.stringify({ driver_name: drv.full_name, vehicle_plate: drv.vehicle_plate })
+          JSON.stringify({ driver_name: drv.full_name, vehicle_id: vehicle.id, vehicle_plate: vehicle.plate_number })
         ]
       );
 
@@ -178,19 +260,27 @@ export async function acceptDuty(req, res, next) {
         ...dispatch,
         driver_id: driverId,
         driver_name: drv.full_name,
+        vehicle_model: `${vehicle.brand} ${vehicle.model}`,
+        vehicle_plate: vehicle.plate_number,
         ride_status: 'DISPATCHED'
       };
     });
 
-    // Notify customer room & admin room via Socket.IO
+    // Notify the customer's tracking room, the vendor and admin via Socket.IO
     broadcastEvent(`dispatch_${dispatch_id}`, 'DUTY_ACCEPTED', {
       dispatch_id,
       driver_id: driverId,
       driver_name: drv.full_name,
-      vehicle_model: drv.vehicle_model,
-      vehicle_plate: drv.vehicle_plate,
+      vehicle_model: updated.vehicle_model,
+      vehicle_plate: updated.vehicle_plate,
       ride_status: 'DISPATCHED'
     });
+    const acceptedSummary = { dispatch_id, driver_id: driverId, driver_name: drv.full_name, ride_status: 'DISPATCHED' };
+    broadcastEvent(`vendor_${updated.vendor_id}`, 'CAB_DRIVER_ASSIGNED', acceptedSummary);
+    broadcastEvent('admin', 'CAB_DRIVER_ASSIGNED', { ...acceptedSummary, vendor_id: updated.vendor_id });
+
+    // Tell the customer who is coming by SMS, WhatsApp and email (runs in the background)
+    queueRideNotification(dispatch_id, RIDE_EVENTS.DRIVER_ASSIGNED);
 
     res.json({
       success: true,
@@ -260,7 +350,8 @@ export async function updateDutyStatus(req, res, next) {
       return res.status(403).json({ success: false, error: 'Driver profile required.' });
     }
 
-    const { dispatch_id, status, ride_otp, toll_fee_thb = 0, notes = '' } = req.body;
+    const { dispatch_id, status, toll_fee_thb = 0, notes = '' } = req.body;
+    const ride_otp = req.body.ride_otp || req.body.otp;
     if (!dispatch_id || !status) {
       return res.status(400).json({ success: false, error: 'dispatch_id and status are required.' });
     }
@@ -464,6 +555,10 @@ export async function updateDriverLocation(req, res, next) {
 
     const lat = parseFloat(latitude);
     const lng = parseFloat(longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+      return res.status(400).json({ success: false, error: 'latitude and longitude must be valid coordinates.' });
+    }
+    const locationText = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 
     // 1. Record location in taxi_driver_locations
     const locId = `loc_${Date.now()}_${Math.floor(Math.random() * 900 + 100)}`;
@@ -476,10 +571,26 @@ export async function updateDriverLocation(req, res, next) {
     // 2. Update drivers current_location string
     await query(
       `UPDATE drivers SET current_location = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-      [`${lat.toFixed(5)}, ${lng.toFixed(5)}`, driverId]
+      [locationText, driverId]
     );
 
-    // 3. Broadcast real-time GPS coordinate to tracking room
+    // 3. Push the new position straight away to the admin monitor and the driver's own vendor
+    const staffUpdate = {
+      driver_id: driverId,
+      dispatch_id: dispatch_id || null,
+      location: locationText,
+      latitude: lat,
+      longitude: lng,
+      heading,
+      speed
+    };
+    broadcastEvent('admin', 'DRIVER_LOCATION_UPDATE', staffUpdate);
+    const [driverRow] = await query('SELECT vendor_id FROM drivers WHERE id = ? LIMIT 1', [driverId]);
+    if (driverRow?.vendor_id) {
+      broadcastEvent(`vendor_${driverRow.vendor_id}`, 'DRIVER_LOCATION_UPDATE', staffUpdate);
+    }
+
+    // 4. Broadcast real-time GPS coordinate to the customer's tracking room
     if (dispatch_id) {
       broadcastEvent(`dispatch_${dispatch_id}`, 'DRIVER_LOCATION_UPDATE', {
         driver_id: driverId,

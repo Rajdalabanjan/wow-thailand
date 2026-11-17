@@ -15,8 +15,9 @@ import fs from 'fs';
 
 import apiRouter from './routes/api.routes.js';
 import compatRouter from './routes/compat.routes.js';
-import { authenticateToken } from './middleware/auth.js';
+import { authenticateToken, verifyAuthToken } from './middleware/auth.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { resolveVendorId, resolveDriverId } from './utils/identityResolver.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -55,10 +56,49 @@ export const io = new SocketIOServer(server, {
   }
 });
 
+const SOCKET_ADMIN_ROLES = new Set(['admin', 'superadmin', 'super_admin', 'subadmin', 'sub_admin']);
+
+// Identify the user from the JWT sent in the handshake: io(url, { auth: { token } }).
+// Guests may connect, but can only join public ride-tracking rooms.
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+  socket.data.user = typeof token === 'string' ? verifyAuthToken(token.trim()) : null;
+  next();
+});
+
+/**
+ * Room access rules:
+ *   dispatch_<id>  anyone (same visibility as the public GET /cabs/track/:id)
+ *   admin          admin roles only
+ *   vendor_<id>    that vendor, or admin
+ *   driver_<id>    that driver, or admin
+ */
+async function canJoinRoom(user, room) {
+  if (typeof room !== 'string' || room.length === 0 || room.length > 120) return false;
+  if (room.startsWith('dispatch_')) return true;
+  if (!user) return false;
+
+  const isAdmin = SOCKET_ADMIN_ROLES.has(user.role);
+  if (room === 'admin') return isAdmin;
+  if (room.startsWith('vendor_')) {
+    return isAdmin || String(await resolveVendorId(user)) === room.slice('vendor_'.length);
+  }
+  if (room.startsWith('driver_')) {
+    return isAdmin || (user.role === 'driver' && String(await resolveDriverId(user)) === room.slice('driver_'.length));
+  }
+  return false;
+}
+
 io.on('connection', (socket) => {
-  // Join role room (e.g., 'drivers', 'vendors', 'admin')
-  socket.on('join_room', (room) => {
-    socket.join(room);
+  socket.on('join_room', async (room, ack) => {
+    let allowed = false;
+    try {
+      allowed = await canJoinRoom(socket.data.user, room);
+      if (allowed) socket.join(room);
+    } catch (err) {
+      console.warn('[Socket] join_room check failed:', err.message);
+    }
+    if (typeof ack === 'function') ack({ ok: allowed });
   });
 });
 

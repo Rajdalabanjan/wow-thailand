@@ -9,7 +9,7 @@ import {
 import { apiFetch, API_BASE } from '../../services/api';
 
 const COLORS = {
-  primary: '#FF6333',
+  primary: '#F5C518',
   dark: '#0D1B2E',
   success: '#16a34a',
   danger: '#dc2626',
@@ -363,7 +363,7 @@ export default function SuperAdminAmenitiesManager({ currentUser }) {
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
         <div>
           <div className="d-flex align-items-center gap-2">
-            <div className="rounded-3 p-2 d-flex align-items-center justify-content-center" style={{ background: '#FF633315', color: '#FF6333' }}>
+            <div className="rounded-3 p-2 d-flex align-items-center justify-content-center" style={{ background: '#FF633315', color: '#B8860B' }}>
               <Sparkles size={22} />
             </div>
             <div>
@@ -393,8 +393,8 @@ export default function SuperAdminAmenitiesManager({ currentUser }) {
               </button>
               <button
                 type="button"
-                className="btn btn-sm text-white d-flex align-items-center gap-1 rounded-pill px-3 fw-bold"
-                style={{ background: 'linear-gradient(90deg, #FF6333, #FF8A00)' }}
+                className="btn btn-sm text-dark d-flex align-items-center gap-1 rounded-pill px-3 fw-bold"
+                style={{ background: 'linear-gradient(90deg, #F5C518, #E5A826)' }}
                 onClick={() => setAmenityModal({ open: true, amenity: null, defaultCategoryId: categories[0]?.id || '' })}
               >
                 <Plus size={14} /> Add Master Amenity

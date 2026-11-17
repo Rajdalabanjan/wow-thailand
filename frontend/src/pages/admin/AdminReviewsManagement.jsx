@@ -235,9 +235,9 @@ export default function AdminReviewsManagement({ portalTitle = 'Admin Portal', o
           <div
             className="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white"
             style={{
-              borderLeft: '4px solid #EA580C',
+              borderLeft: '4px solid #CA8A04',
               cursor: 'pointer',
-              outline: starFilter === 2 ? '2px solid #EA580C' : 'none',
+              outline: starFilter === 2 ? '2px solid #CA8A04' : 'none',
               background: starFilter === 2 ? '#FFF7ED' : '#FFFFFF',
               transition: 'all 0.15s ease'
             }}
@@ -245,8 +245,8 @@ export default function AdminReviewsManagement({ portalTitle = 'Admin Portal', o
             title="Filter by 2-star reviews"
           >
             <div className="d-flex align-items-center justify-content-between mb-1">
-              <span className="text-orange text-xs fw-bold" style={{ color: '#EA580C' }}>2 Star</span>
-              <Star size={13} fill="#EA580C" stroke="#EA580C" />
+              <span className="text-orange text-xs fw-bold" style={{ color: '#B8860B' }}>2 Star</span>
+              <Star size={13} fill="#CA8A04" stroke="#CA8A04" />
             </div>
             <h4 className="fw-bold text-dark mt-1 mb-0">
               {Number(stats.star_2 || 0).toLocaleString('en-US')}

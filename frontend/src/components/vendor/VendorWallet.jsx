@@ -7,7 +7,7 @@ import {
 import { apiFetch, API_BASE } from '../../services/api';
 import ReactivationRequestModal from './ReactivationRequestModal';
 
-const COLORS = { primary: '#FF6333', dark: '#0D1B2E', success: '#16a34a', danger: '#dc2626', warn: '#ca8a04' };
+const COLORS = { primary: '#F5C518', dark: '#0D1B2E', success: '#16a34a', danger: '#dc2626', warn: '#ca8a04' };
 
 function StatusBadge({ status }) {
   const map = {
@@ -198,7 +198,7 @@ export default function VendorWallet({ currentUser }) {
             <button className="btn btn-sm btn-outline-danger fw-bold px-3 py-1.5 rounded-pill" onClick={() => setShowRecharge(true)}>
               Recharge
             </button>
-            <button className="btn btn-sm fw-bold text-white px-3 py-1.5 rounded-pill shadow-sm" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)', border: 'none' }} onClick={() => setShowReactivationModal(true)}>
+            <button className="btn btn-sm fw-bold text-dark px-3 py-1.5 rounded-pill shadow-sm" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', border: 'none' }} onClick={() => setShowReactivationModal(true)}>
               {wallet?.reactivation_status === 'PENDING_REACTIVATION' ? 'View Reactivation Status' : 'Request Reactivation'}
             </button>
           </div>
@@ -319,14 +319,14 @@ export default function VendorWallet({ currentUser }) {
 
       {/* Recharge Button */}
       {!showRecharge && (
-        <button className="btn px-5 py-2 fw-bold text-white d-flex align-items-center gap-2 rounded-3 mb-4 shadow-sm" style={{ background: `linear-gradient(90deg,${COLORS.primary},#FF8A00)` }} onClick={() => setShowRecharge(true)}>
+        <button className="btn px-5 py-2 fw-bold text-white d-flex align-items-center gap-2 rounded-3 mb-4 shadow-sm" style={{ background: `linear-gradient(90deg,${COLORS.primary},#E5A826)` }} onClick={() => setShowRecharge(true)}>
           <ArrowUpRight size={16} /> Recharge Wallet
         </button>
       )}
 
       {/* Recharge Form */}
       {showRecharge && (
-        <div className="rounded-3 p-4 mb-4" style={{ background: '#fff', border: `1.5px solid ${COLORS.primary}33`, boxShadow: '0 4px 16px rgba(255,99,51,0.08)' }}>
+        <div className="rounded-3 p-4 mb-4" style={{ background: '#fff', border: `1.5px solid ${COLORS.primary}33`, boxShadow: '0 4px 16px rgba(245, 197, 24, 0.08)' }}>
           <div className="d-flex align-items-center justify-content-between mb-3">
             <h6 className="fw-bold mb-0" style={{ color: COLORS.dark }}>Recharge Wallet</h6>
             <button className="btn btn-sm p-1 border-0" onClick={() => setShowRecharge(false)}><X size={16} /></button>
@@ -422,7 +422,7 @@ export default function VendorWallet({ currentUser }) {
 
           <div className="d-flex flex-wrap gap-2">
             <button className="btn btn-light fw-bold px-4" onClick={() => setShowRecharge(false)}>Cancel</button>
-            <button className="btn fw-bold px-4 px-sm-5 text-white rounded-3 shadow-sm" style={{ background: `linear-gradient(90deg,${COLORS.primary},#FF8A00)` }} onClick={handleRechargeSubmit} disabled={submitting}>
+            <button className="btn fw-bold px-4 px-sm-5 text-white rounded-3 shadow-sm" style={{ background: `linear-gradient(90deg,${COLORS.primary},#E5A826)` }} onClick={handleRechargeSubmit} disabled={submitting}>
               {submitting ? 'Submitting...' : 'Submit Recharge Request'}
             </button>
           </div>

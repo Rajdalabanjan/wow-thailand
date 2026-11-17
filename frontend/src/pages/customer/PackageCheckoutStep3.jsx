@@ -240,10 +240,10 @@ export default function PackageCheckoutStep3({
 
                      <button 
                         type="button" 
-                        className="btn btn-primary w-100 py-3 rounded-pill fw-bold text-white shadow d-flex justify-content-between align-items-center px-4 mt-2" 
+                        className="btn btn-primary w-100 py-3 rounded-pill fw-bold text-dark shadow d-flex justify-content-between align-items-center px-4 mt-2" 
                         onClick={handleCheckoutClick}
                         disabled={isSubmitting}
-                        style={{ background: 'linear-gradient(90deg, #FF6333, #FF8A00)', borderColor: '#FF6333', opacity: isSubmitting ? 0.75 : 1 }}
+                        style={{ background: 'linear-gradient(90deg, #F5C518, #E5A826)', borderColor: '#F5C518', opacity: isSubmitting ? 0.75 : 1 }}
                       >
                           {isSubmitting ? (
                             <span className="d-flex align-items-center gap-2 w-100 justify-content-center">

@@ -346,7 +346,7 @@ export default function HotelAmenitiesManager({ currentUser, vendorHotels = [], 
       {/* Header bar */}
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
         <div className="d-flex align-items-center gap-2.5">
-          <div className="rounded-3 p-2 d-flex align-items-center justify-content-center text-white" style={{ background: 'linear-gradient(135deg, #FF6333, #FF8A00)' }}>
+          <div className="rounded-3 p-2 d-flex align-items-center justify-content-center text-dark" style={{ background: 'linear-gradient(135deg, #F5C518, #E5A826)' }}>
             <Sparkles size={22} />
           </div>
           <div>
@@ -388,8 +388,8 @@ export default function HotelAmenitiesManager({ currentUser, vendorHotels = [], 
 
           <button
             type="button"
-            className="btn btn-sm text-white rounded-pill px-4 fw-bold"
-            style={{ background: 'linear-gradient(90deg, #FF6333, #FF8A00)' }}
+            className="btn btn-sm text-dark rounded-pill px-4 fw-bold"
+            style={{ background: 'linear-gradient(90deg, #F5C518, #E5A826)' }}
             onClick={handleSaveAmenities}
             disabled={saving}
           >
@@ -473,7 +473,7 @@ export default function HotelAmenitiesManager({ currentUser, vendorHotels = [], 
                     style={{
                       fontSize: '0.62rem',
                       background: isApproved ? '#16a34a' : isRejected ? '#dc2626' : '#ca8a04',
-                      color: '#fff'
+                      color: '#06101E'
                     }}
                   >
                     {req.status || 'Pending'}
@@ -631,8 +631,8 @@ export default function HotelAmenitiesManager({ currentUser, vendorHotels = [], 
                 </button>
                 <button
                   type="submit"
-                  className="btn btn-sm text-white px-4 rounded-pill fw-bold"
-                  style={{ background: 'linear-gradient(90deg, #FF6333, #FF8A00)' }}
+                  className="btn btn-sm text-dark px-4 rounded-pill fw-bold"
+                  style={{ background: 'linear-gradient(90deg, #F5C518, #E5A826)' }}
                 >
                   Add to Hotel
                 </button>
@@ -723,8 +723,8 @@ export default function HotelAmenitiesManager({ currentUser, vendorHotels = [], 
                 </button>
                 <button
                   type="submit"
-                  className="btn btn-sm text-white px-4 rounded-pill fw-bold"
-                  style={{ background: 'linear-gradient(90deg, #FF6333, #FF8A00)' }}
+                  className="btn btn-sm text-dark px-4 rounded-pill fw-bold"
+                  style={{ background: 'linear-gradient(90deg, #F5C518, #E5A826)' }}
                 >
                   Submit Request
                 </button>

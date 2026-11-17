@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import TempleMark from '../../components/common/TempleMark';
 import HoverGlider, { useEnterAnimation } from '../../components/common/HoverGlider';
 import { 
   Building2, LayoutDashboard, Gift, Tag, Hotel, Car, Compass, 
@@ -268,11 +269,9 @@ export default function B2BPortalPage({
             onClick={() => { setActiveTab('dashboard'); setSidebarOpen(false); }}
             style={{ cursor: 'pointer' }}
           >
-            <div className="rounded-3 p-1.5 bg-warning text-dark fw-bold d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '32px', height: '32px' }}>
-              <Building2 size={18} />
-            </div>
+            <TempleMark size={28} style={{ color: '#E5A826', flexShrink: 0 }} />
             <div>
-              <span className="fw-black fs-6 tracking-wider text-dark font-heading">WOW THAILAND</span>
+              <span className="brand-wordmark brand-wordmark--on-light fs-6 text-dark">WOW <span className="brand-gold">THAILAND</span></span>
               <span className="badge bg-dark text-warning text-xxs ms-1.5 px-2 py-0.5 rounded-pill">B2B PORTAL</span>
             </div>
           </div>

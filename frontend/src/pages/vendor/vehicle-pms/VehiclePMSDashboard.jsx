@@ -186,10 +186,10 @@ export default function VehiclePMSDashboard({ currentUser, cars = [], bikes = []
         .stat-card-interactive:hover {
           transform: translateY(-3px);
           box-shadow: 0 10px 24px rgba(13,27,46,0.09) !important;
-          border-color: rgba(255,99,51,0.35) !important;
+          border-color: rgba(245, 197, 24, 0.35) !important;
         }
         .stat-card-interactive:hover .stat-card-arrow {
-          color: #FF6333 !important;
+          color: #B8860B !important;
           transform: translateX(2px);
         }
         .fleet-status-row {
@@ -200,7 +200,7 @@ export default function VehiclePMSDashboard({ currentUser, cars = [], bikes = []
           transform: translateX(4px);
           box-shadow: 0 4px 14px rgba(0,0,0,0.06);
           filter: brightness(0.97);
-          border-color: rgba(255,99,51,0.4) !important;
+          border-color: rgba(245, 197, 24, 0.4) !important;
         }
         .booking-row-interactive {
           cursor: pointer;
@@ -349,7 +349,7 @@ export default function VehiclePMSDashboard({ currentUser, cars = [], bikes = []
                 <ChevronRight size={14} className="text-muted ms-1" />
               </div>
             </div>
-            <MiniBar data={displayWeekRevenue} color="#FF6333" />
+            <MiniBar data={displayWeekRevenue} color="#B8860B" />
             <div className="d-flex justify-content-between mt-2">
               {displayWeekRevenue.map(d => (
                 <span key={d.day} style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 600 }}>{d.day}</span>
@@ -513,7 +513,7 @@ export default function VehiclePMSDashboard({ currentUser, cars = [], bikes = []
         <div className="fw-bold mb-3" style={{ color: '#0D1B2E', fontSize: '13px' }}>Quick Navigation</div>
         <div className="row g-2">
           {[
-            { label: 'Fleet Management', color: '#FF6333', action: 'fleet', hint: 'Add & configure vehicles' },
+            { label: 'Fleet Management', color: '#B8860B', action: 'fleet', hint: 'Add & configure vehicles' },
             { label: 'Fleet Calendar', color: '#7c3aed', action: 'calendar', hint: 'Day-by-day fleet grid' },
             { label: 'All Bookings', color: '#2563eb', action: 'bookings', hint: 'Reservations & workflow' },
             { label: 'Pricing & Rates', color: '#16a34a', action: 'pricing', hint: 'Set daily prices' },
@@ -611,7 +611,7 @@ export default function VehiclePMSDashboard({ currentUser, cars = [], bikes = []
                       </div>
 
                       <div className="text-end flex-shrink-0">
-                        <div className="fw-bold" style={{ color: '#FF6333', fontSize: '0.95rem' }}>฿{v.price}<span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>/day</span></div>
+                        <div className="fw-bold" style={{ color: '#B8860B', fontSize: '0.95rem' }}>฿{v.price}<span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>/day</span></div>
                         <span className="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5" style={{ fontSize: '0.65rem' }}>
                           Available
                         </span>
@@ -747,8 +747,8 @@ export default function VehiclePMSDashboard({ currentUser, cars = [], bikes = []
                       setSelectedStatusModal(null);
                       onNavigate('fleet', { filter: 'available' });
                     }}
-                    className="btn btn-sm text-white fw-bold rounded-pill px-4 shadow-sm d-flex align-items-center gap-1.5"
-                    style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }}
+                    className="btn btn-sm text-dark fw-bold rounded-pill px-4 shadow-sm d-flex align-items-center gap-1.5"
+                    style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}
                   >
                     Go to Fleet Management <ArrowRight size={14} />
                   </button>
@@ -771,8 +771,8 @@ export default function VehiclePMSDashboard({ currentUser, cars = [], bikes = []
                         setSelectedStatusModal(null);
                         onNavigate('bookings', { statusFilter: 'Confirmed' });
                       }}
-                      className="btn btn-sm text-white fw-bold rounded-pill px-3.5 shadow-sm d-flex align-items-center gap-1.5"
-                      style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }}
+                      className="btn btn-sm text-dark fw-bold rounded-pill px-3.5 shadow-sm d-flex align-items-center gap-1.5"
+                      style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}
                     >
                       Manage Bookings <ArrowRight size={14} />
                     </button>
@@ -785,8 +785,8 @@ export default function VehiclePMSDashboard({ currentUser, cars = [], bikes = []
                       setSelectedStatusModal(null);
                       onNavigate('bookings', { statusFilter: 'Pending' });
                     }}
-                    className="btn btn-sm text-white fw-bold rounded-pill px-4 shadow-sm d-flex align-items-center gap-1.5"
-                    style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }}
+                    className="btn btn-sm text-dark fw-bold rounded-pill px-4 shadow-sm d-flex align-items-center gap-1.5"
+                    style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}
                   >
                     Review in Bookings <ArrowRight size={14} />
                   </button>
@@ -798,8 +798,8 @@ export default function VehiclePMSDashboard({ currentUser, cars = [], bikes = []
                       setSelectedStatusModal(null);
                       onNavigate('fleet', { filter: 'unavailable' });
                     }}
-                    className="btn btn-sm text-white fw-bold rounded-pill px-4 shadow-sm d-flex align-items-center gap-1.5"
-                    style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }}
+                    className="btn btn-sm text-dark fw-bold rounded-pill px-4 shadow-sm d-flex align-items-center gap-1.5"
+                    style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}
                   >
                     Manage in Fleet <ArrowRight size={14} />
                   </button>
@@ -880,8 +880,8 @@ export default function VehiclePMSDashboard({ currentUser, cars = [], bikes = []
                   setSelectedBookingDetails(null);
                   onNavigate('bookings');
                 }}
-                className="btn btn-sm text-white fw-bold rounded-pill px-4"
-                style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }}
+                className="btn btn-sm text-dark fw-bold rounded-pill px-4"
+                style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}
               >
                 Manage in All Bookings →
               </button>

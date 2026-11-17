@@ -34,7 +34,7 @@ export default function CurrencyPriceDisplay({
   };
 
   const selectedSize = sizeStyles[size] || sizeStyles.md;
-  const primaryColor = color || (highlight ? '#FF6333' : '#0D1B2E');
+  const primaryColor = color || (highlight ? '#F5C518' : '#0D1B2E');
 
   const foreignDisplay = appendCode 
     ? `${conv.formattedConverted} ${conv.currency}` 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import TempleMark from '../../components/common/TempleMark';
 import HoverGlider, { useEnterAnimation } from '../../components/common/HoverGlider';
 import {
   Compass, LogOut, Box, Building, MessageSquare, CreditCard, Calendar,
@@ -249,11 +250,11 @@ function SidebarGroup({ group, activeTab, onSelect, defaultOpen }) {
                 fontWeight: activeTab === item.id ? 700 : 400,
                 opacity: draggedItemId === item.id ? 0.4 : 1,
                 cursor: 'grab',
-                border: dragOverItemId === item.id ? '1px dashed #FF8A00' : 'none',
+                border: dragOverItemId === item.id ? '1px dashed #E5A826' : 'none',
                 transition: 'all 0.15s ease'
               }}
             >
-              <span style={{ color: activeTab === item.id ? '#fff' : '#00B8D9', flexShrink: 0 }}>{item.icon}</span>
+              <span style={{ color: activeTab === item.id ? '#fff' : '#F5C518', flexShrink: 0 }}>{item.icon}</span>
               <span className="flex-grow-1">{item.label}</span>
             </button>
           ))}
@@ -274,8 +275,8 @@ function AdminHotelsView({ hotels, onAddHotel, onUpdateHotel, onDeleteHotel, boo
           <p className="text-muted mb-0" style={{ fontSize: '0.82rem' }}>{hotels.length} hotels in inventory</p>
         </div>
         <button
-          className="btn fw-bold text-white d-flex align-items-center gap-2"
-          style={{ background: innerTab === 'add_hotel' ? '#64748b' : 'linear-gradient(90deg,#FF6333,#FF8A00)', borderRadius: '8px', fontSize: '0.85rem' }}
+          className="btn fw-bold text-dark d-flex align-items-center gap-2"
+          style={{ background: innerTab === 'add_hotel' ? '#64748b' : 'linear-gradient(90deg,#F5C518,#E5A826)', borderRadius: '8px', fontSize: '0.85rem' }}
           onClick={() => setInnerTab(innerTab === 'add_hotel' ? 'hotels' : 'add_hotel')}>
           <PlusCircle size={16} /> {innerTab === 'add_hotel' ? 'Back to List' : 'Add Hotel'}
         </button>
@@ -445,10 +446,10 @@ export default function AdminPortalPage({
 
     if (['vehicle', 'car', 'bike', 'rental'].includes(type) || b.vehicle_id || itemId.startsWith('car-') || itemId.startsWith('bike-') || itemId.startsWith('veh-') || 
         itemName.includes('thar') || itemName.includes('swift') || itemName.includes('creta') || itemName.includes('activa')) {
-      return { tab: 'admin_vehicles', type: 'Vehicle Rental', color: '#ea580c' };
+      return { tab: 'admin_vehicles', type: 'Vehicle Rental', color: '#B8860B' };
     }
 
-    return { tab: 'bookings', type: 'Holiday Package Booking', color: '#f97316' };
+    return { tab: 'bookings', type: 'Holiday Package Booking', color: '#B8860B' };
   };
 
   const [liveBookings, setLiveBookings] = useState(bookings);
@@ -630,7 +631,7 @@ export default function AdminPortalPage({
         title: n.title || 'System Notification',
         message: n.message || '',
         time: n.created_at ? String(n.created_at).slice(0, 16) : 'Recent',
-        color: isB2B ? '#3b82f6' : '#FF6333',
+        color: isB2B ? '#3b82f6' : '#F5C518',
         tab: isB2B ? 'b2b_commission_bookings' : 'bookings',
         isActionable: !n.is_read,
         is_read: n.is_read
@@ -716,12 +717,12 @@ export default function AdminPortalPage({
     return (
       <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#0D1B2E 0%,#1a3050 100%)' }}>
         <div className="text-center p-5">
-          <div className="mx-auto mb-4 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '90px', height: '90px', background: 'rgba(255,99,51,0.15)', border: '2px solid rgba(255,99,51,0.3)' }}>
-            <Shield size={42} style={{ color: '#FF6333' }} />
+          <div className="mx-auto mb-4 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '90px', height: '90px', background: 'rgba(245, 197, 24, 0.15)', border: '2px solid rgba(245, 197, 24, 0.3)' }}>
+            <Shield size={42} style={{ color: '#B8860B' }} />
           </div>
           <h3 className="fw-bold text-white mb-2">Admin Console</h3>
           <p className="mb-4" style={{ color: 'rgba(255,255,255,0.5)' }}>Please sign in with an admin or sub-admin account to continue</p>
-          <button type="button" className="btn px-5 py-2 fw-bold text-white rounded-pill" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }} onClick={triggerOpenLogin}>
+          <button type="button" className="btn px-5 py-2 fw-bold text-dark rounded-pill" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }} onClick={triggerOpenLogin}>
             Sign In to Admin Console
           </button>
         </div>
@@ -977,10 +978,10 @@ export default function AdminPortalPage({
           }}
         >
           <div className="px-3 py-3 d-flex align-items-center gap-2 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-            <Compass size={22} style={{ color: '#FF6333' }} />
+            <TempleMark size={26} style={{ color: '#F5C518', flexShrink: 0, filter: 'drop-shadow(0 2px 6px rgba(245, 197, 24, 0.4))' }} />
             <div>
-              <div className="fw-extrabold text-white" style={{ fontSize: '15px' }}>WOW THAILAND</div>
-              <div className="fw-bold text-uppercase" style={{ fontSize: '0.55rem', letterSpacing: '2px', color: '#00B8D9' }}>Admin Panel</div>
+              <div className="brand-wordmark text-white" style={{ fontSize: '15px' }}>WOW <span className="brand-gold">THAILAND</span></div>
+              <div className="fw-bold text-uppercase" style={{ fontSize: '0.55rem', letterSpacing: '2px', color: 'rgba(255, 255, 255, 0.55)' }}>Admin Panel</div>
             </div>
           </div>
           <HoverGlider className="flex-grow-1 py-2 sidebar-glide" gliderClassName="hover-glider--sidebar" activeGliderClassName="hover-glider--sidebar-active">
@@ -989,7 +990,7 @@ export default function AdminPortalPage({
             ))}
           </HoverGlider>
           <div className="p-3 flex-shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-            <button onClick={onLogout} className="btn w-100 d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3" style={{ background: 'rgba(255,99,51,0.1)', color: '#FF6333', fontSize: '0.85rem', fontWeight: 600 }}>
+            <button onClick={onLogout} className="btn w-100 d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3" style={{ background: 'rgba(245, 197, 24, 0.1)', color: '#B8860B', fontSize: '0.85rem', fontWeight: 600 }}>
               <LogOut size={15} /> Sign Out
             </button>
           </div>
@@ -1012,7 +1013,7 @@ export default function AdminPortalPage({
             </div>
           </div>
           <div className="d-flex align-items-center gap-3">
-            <span className="d-flex align-items-center gap-1 px-3 py-1 rounded-pill" style={{ background: 'rgba(0,184,217,0.1)', color: '#00B8D9', fontSize: '0.7rem', fontWeight: 700 }}>
+            <span className="d-flex align-items-center gap-1 px-3 py-1 rounded-pill" style={{ background: 'rgba(245, 197, 24, 0.1)', color: '#B8860B', fontSize: '0.7rem', fontWeight: 700 }}>
               <span className="rounded-circle" style={{ width: '6px', height: '6px', background: '#00e676', display: 'inline-block' }}></span>
               Online
             </span>
@@ -1023,7 +1024,7 @@ export default function AdminPortalPage({
                 type="button"
                 className="btn p-2 rounded-circle border-0 d-flex align-items-center justify-content-center text-white"
                 style={{
-                  background: showNotificationDropdown ? 'rgba(255,99,51,0.2)' : 'rgba(255,255,255,0.08)',
+                  background: showNotificationDropdown ? 'rgba(245, 197, 24, 0.2)' : 'rgba(255,255,255,0.08)',
                   width: '36px',
                   height: '36px',
                   transition: 'all 0.2s'
@@ -1035,7 +1036,7 @@ export default function AdminPortalPage({
                 title="Notifications"
                 aria-label="View notifications"
               >
-                <Bell size={18} style={{ color: adminUnreadCount > 0 ? '#FF6333' : 'rgba(255,255,255,0.7)' }} />
+                <Bell size={18} style={{ color: adminUnreadCount > 0 ? '#F5C518' : 'rgba(255,255,255,0.7)' }} />
                 {adminUnreadCount > 0 && (
                   <span
                     className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-2 border-dark"
@@ -1115,13 +1116,13 @@ export default function AdminPortalPage({
                           <div
                             key={n.id}
                             className="px-3 py-2.5 border-bottom border-secondary border-opacity-10 cursor-pointer d-flex align-items-start justify-content-between gap-2"
-                            style={{ background: isUnread ? 'rgba(255,99,51,0.08)' : 'transparent', transition: 'background 0.15s' }}
+                            style={{ background: isUnread ? 'rgba(245, 197, 24, 0.08)' : 'transparent', transition: 'background 0.15s' }}
                             onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-                            onMouseLeave={e => e.currentTarget.style.background = isUnread ? 'rgba(255,99,51,0.08)' : 'transparent'}
+                            onMouseLeave={e => e.currentTarget.style.background = isUnread ? 'rgba(245, 197, 24, 0.08)' : 'transparent'}
                             onClick={() => handleAdminNotificationClick(n)}
                           >
                             <div className="d-flex align-items-start gap-2 flex-grow-1 overflow-hidden pe-1">
-                              <div className="rounded-circle mt-1 flex-shrink-0" style={{ width: '8px', height: '8px', background: n.color || '#FF6333' }}></div>
+                              <div className="rounded-circle mt-1 flex-shrink-0" style={{ width: '8px', height: '8px', background: n.color || '#F5C518' }}></div>
                               <div className="flex-grow-1 overflow-hidden">
                                 <div className="d-flex flex-wrap align-items-center gap-1.5 mb-0.5">
                                   <span
@@ -1178,7 +1179,7 @@ export default function AdminPortalPage({
                     <button
                       type="button"
                       className="btn btn-sm w-100 text-warning fw-bold py-1 border-0"
-                      style={{ fontSize: '0.75rem', background: 'rgba(255,159,28,0.08)' }}
+                      style={{ fontSize: '0.75rem', background: 'rgba(245, 197, 24, 0.08)' }}
                       onClick={() => {
                         setAdminActiveTab('bookings');
                         setShowNotificationDropdown(false);
@@ -1196,18 +1197,18 @@ export default function AdminPortalPage({
               const initial = (displayName[0] || 'A').toUpperCase();
               return (
                 <div className="position-relative">
-                  <button className="btn p-0 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px', border: '2px solid #FF6333', background: 'linear-gradient(135deg,#FFC107,#FF8A00)' }} onClick={() => { setShowProfileDropdown(!showProfileDropdown); setShowNotificationDropdown(false); }}>
+                  <button className="btn p-0 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px', border: '2px solid #F5C518', background: 'linear-gradient(135deg,#FFC107,#E5A826)' }} onClick={() => { setShowProfileDropdown(!showProfileDropdown); setShowNotificationDropdown(false); }}>
                     <span className="fw-bold text-dark" style={{ fontSize: '14px' }}>{initial}</span>
                   </button>
                   {showProfileDropdown && (
                     <div className="position-absolute shadow-lg" style={{ right: 0, top: '48px', minWidth: '200px', background: '#10243A', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', zIndex: 1050 }}>
                       <div className="text-center px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                        <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold mx-auto mb-2" style={{ width: '44px', height: '44px', fontSize: '18px', background: 'linear-gradient(135deg,#FFC107,#FF8A00)', color: '#000' }}>{initial}</div>
+                        <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold mx-auto mb-2" style={{ width: '44px', height: '44px', fontSize: '18px', background: 'linear-gradient(135deg,#FFC107,#E5A826)', color: '#000' }}>{initial}</div>
                         <div className="fw-bold text-white" style={{ fontSize: '14px' }}>{displayName}</div>
-                        <span className="badge mt-1" style={{ background: 'rgba(0,184,217,0.15)', color: '#00B8D9', fontSize: '0.6rem' }}>{String(currentUser?.role || 'admin').toUpperCase()}</span>
+                        <span className="badge mt-1" style={{ background: 'rgba(245, 197, 24, 0.15)', color: '#B8860B', fontSize: '0.6rem' }}>{String(currentUser?.role || 'admin').toUpperCase()}</span>
                       </div>
                       <div className="p-2">
-                        <button className="btn w-100 d-flex align-items-center gap-2 py-2 px-3 rounded fw-bold" style={{ color: '#FF6333', background: 'rgba(255,99,51,0.1)', fontSize: '0.85rem' }} onClick={onLogout}>
+                        <button className="btn w-100 d-flex align-items-center gap-2 py-2 px-3 rounded fw-bold" style={{ color: '#B8860B', background: 'rgba(245, 197, 24, 0.1)', fontSize: '0.85rem' }} onClick={onLogout}>
                           <LogOut size={14} /> Sign Out
                         </button>
                       </div>
@@ -1237,7 +1238,7 @@ export default function AdminPortalPage({
               className="card border-0 shadow-lg mb-2 text-white animate-fade-in-up cursor-pointer"
               style={{
                 background: '#10243A',
-                borderLeft: '4px solid #FF6333',
+                borderLeft: '4px solid #F5C518',
                 borderRadius: '10px',
                 pointerEvents: 'auto',
                 boxShadow: '0 10px 30px rgba(0,0,0,0.5)'

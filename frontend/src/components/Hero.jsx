@@ -5,6 +5,7 @@ import {
   Compass, Car, Hotel, Check, Info
 } from 'lucide-react';
 import { getTodayDateStr, getNextDayDateStr } from '../utils/dateUtils';
+import LiquidSlideshow from './LiquidSlideshow';
 
 // ─── THAILAND DESTINATIONS CATALOGUE ─────────────────────────────────────────
 const FAMOUS_DESTINATIONS = [
@@ -94,6 +95,9 @@ const FAMOUS_DESTINATIONS = [
   }
 ];
 
+// The same destination photos, in the same order, for the liquid-wave slideshow
+const SLIDE_IMAGES = FAMOUS_DESTINATIONS.map((d) => d.bgImage);
+
 // Words to cycle through in typewriter if letting it freely loop
 const TYPEWRITER_WORDS = [
   'Bangkok',
@@ -132,7 +136,7 @@ function TypewriterWord({ targetWord, onWordDone }) {
           if (charCount >= targetWord.length) {
             currentPhase = 'paused';
             setPhase('paused');
-            pauseEndTime = now + 2400; // 2.4s comfortable pause to read
+            pauseEndTime = now + 4200; // 4.2s: the photo rests calmly after its wave
           }
         }
       } else if (currentPhase === 'paused') {
@@ -210,6 +214,14 @@ export default function Hero({
     const timer = setTimeout(() => setLeavingIdx(-1), 1800);
     return () => clearTimeout(timer);
   }, [destIdx]);
+  // 'pending' until the liquid-wave slideshow shows its first image, 'on' when it runs,
+  // 'off' = no WebGL / reduced motion: the photo slider below is used instead
+  const [liquid, setLiquid] = useState(() => {
+    try {
+      if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return 'off';
+    } catch { /* ignore */ }
+    return 'pending';
+  });
   const [wordIdx, setWordIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
@@ -242,16 +254,29 @@ export default function Hero({
   const videoRef = useRef(null);
   const activeDest = FAMOUS_DESTINATIONS[destIdx] || FAMOUS_DESTINATIONS[0];
 
+  // The opening intro (public/intro/wow-intro.js) covers the page at first. The hero video
+  // waits until it starts to leave, so the two videos don't fight over bandwidth and decoding.
+  const [introShowing, setIntroShowing] = useState(
+    () => typeof window !== 'undefined' && window.__wowIntroShowing === true
+  );
+  useEffect(() => {
+    if (!introShowing) return undefined;
+    const done = () => setIntroShowing(false);
+    if (window.__wowIntroShowing !== true) { done(); return undefined; }
+    window.addEventListener('wow:intro-revealing', done, { once: true });
+    return () => window.removeEventListener('wow:intro-revealing', done);
+  }, [introShowing]);
+
   // Video playback sync
   useEffect(() => {
     if (videoRef.current) {
-      if (isPlaying) {
+      if (isPlaying && !introShowing) {
         videoRef.current.play().catch(() => {});
       } else {
         videoRef.current.pause();
       }
     }
-  }, [isPlaying]);
+  }, [isPlaying, introShowing]);
 
   useEffect(() => {
     if (videoRef.current) {
@@ -437,17 +462,33 @@ export default function Hero({
         }
 
         /* Cinema Vigenette & Gradient Overlays */
+        /* Darker behind the headline (left) so the gold title and the subtitle stay
+           readable on bright photos, e.g. a golden sunset sky */
         .hero-vignette-overlay {
           position: absolute;
           inset: 0;
-          background: linear-gradient(180deg, 
-            rgba(0, 0, 0, 0.08) 0%, 
-            rgba(0, 0, 0, 0.0) 30%, 
-            rgba(0, 0, 0, 0.10) 65%, 
-            rgba(6, 16, 30, 0.50) 100%
-          );
+          background:
+            linear-gradient(90deg,
+              rgba(6, 16, 30, 0.58) 0%,
+              rgba(6, 16, 30, 0.34) 32%,
+              rgba(6, 16, 30, 0) 58%),
+            linear-gradient(180deg,
+              rgba(6, 16, 30, 0.30) 0%,
+              rgba(0, 0, 0, 0.0) 34%,
+              rgba(0, 0, 0, 0.10) 65%,
+              rgba(6, 16, 30, 0.55) 100%);
           z-index: 3;
           pointer-events: none;
+        }
+        @media (max-width: 768px) {
+          /* the text spans the full width on phones: darken the top half instead */
+          .hero-vignette-overlay {
+            background: linear-gradient(180deg,
+              rgba(6, 16, 30, 0.55) 0%,
+              rgba(6, 16, 30, 0.40) 40%,
+              rgba(6, 16, 30, 0.15) 62%,
+              rgba(6, 16, 30, 0.60) 100%);
+          }
         }
 
         .hero-radial-vignette {
@@ -519,10 +560,11 @@ export default function Hero({
           line-height: 1.05;
           letter-spacing: -1px;
           display: block;
-          background: linear-gradient(135deg, #FFF0B3 0%, #F5C518 40%, #E5A826 80%, #FF9F1C 100%);
+          background: linear-gradient(135deg, #FFF0B3 0%, #F5C518 40%, #E5A826 80%, #E5A826 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
-          filter: drop-shadow(0 4px 24px rgba(229, 168, 38, 0.45));
+          /* a tight dark edge first, so gold letters separate from a gold sky */
+          filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.55)) drop-shadow(0 4px 22px rgba(229, 168, 38, 0.35));
         }
 
         /* Typewriter text styling */
@@ -535,7 +577,7 @@ export default function Hero({
         }
 
         .hero-typewriter-text {
-          background: linear-gradient(135deg, #FFF0B3 0%, #F5C518 40%, #E5A826 80%, #FF9F1C 100%);
+          background: linear-gradient(135deg, #FFF0B3 0%, #F5C518 40%, #E5A826 80%, #E5A826 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
@@ -702,10 +744,10 @@ export default function Hero({
           z-index: 12;
         }
 
+        /* No backdrop blur here: the slideshow behind moves every frame, so a blur would be
+           recalculated on every frame (the main cause of lag). A slightly deeper tint looks the same. */
         .hero-search-glass-card {
-          background: rgba(10, 20, 38, 0.78);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
+          background: linear-gradient(180deg, rgba(12, 22, 40, 0.88), rgba(8, 16, 30, 0.9));
           border: 1px solid rgba(255, 255, 255, 0.16);
           border-radius: 22px;
           padding: 8px 12px 14px;
@@ -747,6 +789,22 @@ export default function Hero({
           color: #06101E;
           font-weight: 800;
           box-shadow: 0 4px 16px rgba(245, 197, 24, 0.4);
+        }
+
+        /* Phones: three equal tabs that always fit (the last one used to be cut off) */
+        @media (max-width: 576px) {
+          .hero-search-tabs { gap: 4px; padding: 2px 0 10px; }
+          .hero-tab-btn {
+            flex: 1 1 0;
+            min-width: 0;
+            justify-content: center;
+            gap: 5px;
+            padding: 8px 6px;
+            font-size: 12px;
+            line-height: 1.2;
+            text-align: center;
+          }
+          .hero-tab-btn svg { flex-shrink: 0; }
         }
 
         /* Fields Row */
@@ -891,6 +949,28 @@ export default function Hero({
           box-shadow: 0 0 10px rgba(245, 197, 24, 0.8);
         }
 
+        /* Liquid-wave slideshow canvas: fades in once its first photo is ready */
+        .hero-liquid-canvas {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          display: block;
+          z-index: 2;
+          opacity: 0;
+          transition: opacity 0.9s ease;
+        }
+        .hero-liquid-canvas.is-on { opacity: 1; }
+
+        /* ─── BOTTOM CONTROLS ROW ────────────────────────────────── */
+        .hero-bottom-controls-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          width: 100%;
+          padding-top: 10px;
+        }
+
         /* Scroll to explore center */
         .hero-scroll-indicator {
           display: flex;
@@ -1006,15 +1086,29 @@ export default function Hero({
           ref={videoRef}
           className="hero-video-bg"
           src="/thailand_destinations.mp4"
-          autoPlay
+          autoPlay={!introShowing}
+          preload={introShowing ? 'metadata' : 'auto'}
           muted={isMuted}
           loop
           playsInline
           onLoadedData={() => setVideoLoaded(true)}
         />
 
-        {/* Dynamic Ken Burns Destination Photos as fallback / switch */}
-        {FAMOUS_DESTINATIONS.map((dest, idx) => {
+        {/* Liquid-wave slideshow (WebGL): the same destination photos, changing with a
+            clear liquid wave that sweeps across and bends the picture */}
+        {liquid !== 'off' && (
+          <LiquidSlideshow
+            className={`hero-liquid-canvas ${liquid === 'on' ? 'is-on' : ''}`}
+            images={SLIDE_IMAGES}
+            index={destIdx}
+            duration={2600}
+            paused={introShowing}
+            onStatus={setLiquid}
+          />
+        )}
+
+        {/* Fallback when WebGL is not available or motion is reduced: the photo slider */}
+        {liquid === 'off' && FAMOUS_DESTINATIONS.map((dest, idx) => {
           const isActive = destIdx === idx;
           const isLeaving = leavingIdx === idx && !isActive;
           return (
@@ -1302,19 +1396,11 @@ export default function Hero({
           </div>
         </div>
 
-        {/* ─── 3. BOTTOM CONTROLS: DASHES, SCROLL MOUSE, MEDIA BUTTONS ─── */}
+        {/* ─── 3. BOTTOM CONTROLS: SCROLL MOUSE ─── */}
         <div className="hero-bottom-controls-row">
           
-          {/* Progress Indicators (Left) */}
-          <div className="hero-slide-indicators">
-            {FAMOUS_DESTINATIONS.map((_, i) => (
-              <div 
-                key={i} 
-                className={`hero-indicator-dash ${destIdx === i ? 'active' : ''}`}
-                onClick={() => handleSelectDest(i)}
-              />
-            ))}
-          </div>
+          {/* Left spacer so center indicator stays perfectly centered */}
+          <div style={{ width: '44px' }} />
 
           {/* Mouse Scroll Indicator (Center) */}
           <div 
@@ -1329,7 +1415,7 @@ export default function Hero({
             <span>Scroll to Explore</span>
           </div>
 
-          {/* Spacer to keep center scroll indicator balanced */}
+          {/* Right spacer to keep center scroll indicator balanced */}
           <div style={{ width: '44px' }} />
 
         </div>

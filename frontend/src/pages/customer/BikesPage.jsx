@@ -266,7 +266,7 @@ export default function BikesPage({
           <button
             key={cat}
             type="button"
-            className={`btn btn-sm rounded-pill px-3 ${bikeFilterType === cat ? 'btn-primary' : 'btn-light border'}`}
+            className={`btn btn-sm rounded-pill px-3 ${bikeFilterType === cat ? 'btn-dark' : 'btn-light border'}`}
             onClick={() => setBikeFilterType && setBikeFilterType(cat)}
           >
             {cat}
@@ -281,7 +281,7 @@ export default function BikesPage({
             <h4 className="text-muted mb-2">No rental bikes available in this category.</h4>
             <button 
               type="button"
-              className="btn btn-primary rounded-pill px-4 py-2 mt-2"
+              className="btn btn-brand rounded-pill px-4 py-2 mt-2"
               onClick={handleResetFilters}
             >
               View All Bikes
@@ -425,13 +425,12 @@ export default function BikesPage({
                     <div className="d-flex justify-content-between align-items-center pt-2 border-top">
                       <div>
                         <span className="text-muted small d-block">per day</span>
-                        <h4 className="fw-black text-primary mb-0 font-heading">฿{Number(bike.price).toLocaleString('en-US')}</h4>
+                        <h4 className="fw-black text-dark mb-0 font-heading">฿{Number(bike.price).toLocaleString('en-US')}</h4>
                       </div>
                       <div>
                         <button 
                           type="button" 
-                          className="btn btn-primary btn-sm rounded-pill px-3 py-1.5 fw-bold font-heading d-flex align-items-center gap-1 hover-scale shadow-sm"
-                          style={{ background: '#FF6333', borderColor: '#FF6333', color: '#FFFFFF' }}
+                          className="btn btn-brand btn-sm rounded-pill px-3 py-1.5 fw-bold font-heading d-flex align-items-center gap-1"
                           onClick={(e) => {
                             e.stopPropagation();
                             if (document.activeElement?.blur) document.activeElement.blur();

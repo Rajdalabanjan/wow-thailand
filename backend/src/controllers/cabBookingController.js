@@ -6,13 +6,43 @@
 import crypto from 'crypto';
 import { query, withTransaction } from '../config/db.js';
 import { calculateFare, estimateAllTiers } from '../services/cabPricingService.js';
+import { createCurrencySnapshot } from '../services/currencyService.js';
+import {
+  parseGroupSize,
+  pickVehicleCategory,
+  findVendorForRide,
+  findEligibleDriverIds
+} from '../services/cabMatchingService.js';
 import { isBookingOwnerOrStaff, resolveDriverId, resolveVendorId } from '../utils/identityResolver.js';
 import { hashOtp, encryptOtp } from '../utils/cryptoHelper.js';
+import { generateBookingId } from '../utils/bookingIds.js';
 import { broadcastEvent } from '../server.js';
+import {
+  queueRideNotification,
+  getCustomerUpdateChannels,
+  getConfiguredChannels,
+  RIDE_EVENTS
+} from '../services/rideNotificationService.js';
+
+// Paid extras are priced on the server so the customer and driver always see the same total
+const CHILD_SEAT_FEE_THB = 200;
+
+function readGroupSize(b) {
+  return parseGroupSize(
+    b.passenger_count ?? b.passengerCount ?? b.pax ?? b.passengers,
+    b.luggage_count ?? b.luggageCount ?? b.luggage ?? b.bags
+  );
+}
+
+function wantsChildSeat(b) {
+  const v = b.child_seat ?? b.childSeat ?? b.extras?.child_seat ?? b.extras?.childSeat;
+  return v === true || v === 'true' || v === 1 || v === '1';
+}
 
 /**
  * POST /api/v1/cabs/estimate
- * Get fare estimates across all vehicle tiers
+ * Get fare estimates across all vehicle tiers, plus the one vehicle the system
+ * will actually send for this group size (`recommended`).
  */
 export async function estimateFare(req, res, next) {
   try {
@@ -21,6 +51,7 @@ export async function estimateFare(req, res, next) {
     const dropoff_address = b.dropoff_address || b.dropoffAddress || b.dropoff;
     const distance_km = b.distance_km || b.distanceKm;
     const target_currency = b.target_currency || b.customer_currency || b.currency || 'THB';
+    const { passengers, luggage } = readGroupSize(b);
 
     const estimates = await estimateAllTiers({
       pickupAddress: pickup_address,
@@ -52,10 +83,39 @@ export async function estimateFare(req, res, next) {
       }
     }));
 
+    // Match the group to a vehicle category and check a vendor can serve it
+    let recommended = null;
+    let availabilityMessage = '';
+    try {
+      const matchedTier = await pickVehicleCategory(passengers, luggage);
+      const vendor = await findVendorForRide({ category: matchedTier.vehicle_category, passengers, luggage });
+      const tierQuote = mappedTiers.find(t => t.tier === matchedTier.vehicle_category);
+      recommended = {
+        ...tierQuote,
+        maxPax: matchedTier.max_passengers,
+        maxLuggage: matchedTier.max_luggage,
+        available: Boolean(vendor)
+      };
+      if (!vendor) {
+        availabilityMessage = `No vehicle for ${passengers} passengers and ${luggage} bags is available right now.`;
+      }
+    } catch (matchErr) {
+      if (matchErr.statusCode !== 400) throw matchErr;
+      availabilityMessage = matchErr.message;
+    }
+
     res.json({
       success: true,
       data: estimates,
       tiers: mappedTiers,
+      recommended,
+      passengerCount: passengers,
+      luggageCount: luggage,
+      vehicleAvailable: Boolean(recommended?.available),
+      availabilityMessage,
+      childSeatFeeThb: CHILD_SEAT_FEE_THB,
+      // Channels this server will use for booking & driver updates (empty when switched off)
+      updateChannels: getConfiguredChannels(),
       distanceKm: estimates[0]?.distance_km || 25,
       durationMin: estimates[0]?.estimated_minutes || 45
     });
@@ -84,9 +144,10 @@ export async function createCabBooking(req, res, next) {
     const pickup_date = b.pickup_date || b.pickupDate || b.travelDate;
     const pickup_time = b.pickup_time || b.pickupTime || b.travelTime;
     const transfer_type = b.transfer_type || b.transferType || 'POINT_TO_POINT';
-    const vehicle_category = b.vehicle_category || b.vehicleCategory || b.tier || 'SEDAN';
-    const passenger_count = b.passenger_count || b.passengerCount || b.pax || 1;
-    const luggage_count = b.luggage_count || b.luggageCount || b.luggage || 0;
+    // The customer only tells us how many people and bags; any vehicle_category/tier
+    // sent by the client is ignored and the system picks the vehicle below.
+    const { passengers, luggage } = readGroupSize(b);
+    const childSeat = wantsChildSeat(b);
     const rawPayment = b.payment_method || b.paymentMethod || 'CASH';
     const payment_method = (rawPayment === 'CASH' || rawPayment === 'Cash') ? 'CASH_TO_DRIVER' : rawPayment;
     const special_requests = b.special_requests || b.specialRequests || b.notes || '';
@@ -129,7 +190,21 @@ export async function createCabBooking(req, res, next) {
       }
     }
 
-    // 3. Authoritative Server-Side Fare Calculation
+    // 3. Pick the vehicle category from the group size (smallest that fits)
+    const matchedTier = await pickVehicleCategory(passengers, luggage);
+    const vehicle_category = matchedTier.vehicle_category;
+
+    // 4. Pick the vendor (taxi owner) that has an approved vehicle that fits
+    const vendor = await findVendorForRide({ category: vehicle_category, passengers, luggage });
+    if (!vendor) {
+      return res.status(409).json({
+        success: false,
+        error: `Sorry, no vehicle for ${passengers} passengers and ${luggage} bags is available right now. Please try again later or contact our helpline.`
+      });
+    }
+    const vendorId = vendor.vendor_id;
+
+    // 5. Authoritative Server-Side Fare Calculation
     const fareDetails = await calculateFare({
       routeId: route_id,
       pickupAddress: pickup_address,
@@ -142,12 +217,21 @@ export async function createCabBooking(req, res, next) {
       targetCurrency: customer_currency
     });
 
-    const totalFareTHB = fareDetails.total_fare_thb;
+    const extrasTHB = childSeat ? CHILD_SEAT_FEE_THB : 0;
+    const rideFareTHB = fareDetails.total_fare_thb;
+    const totalFareTHB = rideFareTHB + extrasTHB;
     const baseFareTHB = fareDetails.base_fare_thb;
     const tollFeeTHB = fareDetails.toll_fee_thb || 0.00;
     const platformFeeTHB = Math.round(totalFareTHB * 0.10 * 100) / 100; // 10% platform fee
+    const currencySnapshot = extrasTHB > 0
+      ? createCurrencySnapshot(totalFareTHB, customer_currency)
+      : fareDetails.currency_snapshot;
 
-    // 4. Cryptographically Generate 4-digit Ride OTP
+    const requestNotes = [special_requests || `Cab Transfer: ${fareDetails.route_name}`];
+    if (childSeat) requestNotes.push(`Child safety seat (+฿${CHILD_SEAT_FEE_THB})`);
+    const finalSpecialRequests = requestNotes.filter(Boolean).join(' | ');
+
+    // 6. Cryptographically Generate 4-digit Ride OTP
     const plainOtp = String(crypto.randomInt(1000, 10000));
     const hashedOtp = hashOtp(plainOtp);
 
@@ -157,12 +241,11 @@ export async function createCabBooking(req, res, next) {
       ? new Date(Date.now() + 24 * 3600 * 1000)
       : new Date(pickupDateObj.getTime() + 4 * 3600 * 1000);
 
-    // 5. Execute Atomic MySQL Transaction
+    // 7. Execute Atomic MySQL Transaction
     const result = await withTransaction(async (conn) => {
       // Generate IDs
-      const dateTag = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const randTag = Math.floor(Math.random() * 9000 + 1000);
-      const bookingId = `TH-BKG-${dateTag}-${randTag}`;
+      const bookingId = await generateBookingId(conn);
       const dispatchId = `dsp_${Date.now()}_${randTag}`;
       const itemId = `itm_${Date.now()}_${randTag}`;
       const paymentTxId = `ptx_${Date.now()}_${randTag}`;
@@ -190,13 +273,13 @@ export async function createCabBooking(req, res, next) {
           customer_email || '',
           finalPickupDatetime.slice(0, 10),
           finalPickupDatetime.slice(0, 10),
-          'vnd-phuket-01', // Default authoritative transfer partner
-          baseFareTHB,
+          vendorId, // Vendor chosen by the matching service
+          baseFareTHB + extrasTHB,
           platformFeeTHB,
-          fareDetails.currency_snapshot.customer_currency,
-          fareDetails.currency_snapshot.exchange_rate_applied,
-          fareDetails.currency_snapshot.customer_total_amount,
-          special_requests || `Cab Transfer: ${fareDetails.route_name}`
+          currencySnapshot.customer_currency,
+          currencySnapshot.exchange_rate_applied,
+          currencySnapshot.customer_total_amount,
+          finalSpecialRequests
         ]
       );
 
@@ -217,6 +300,10 @@ export async function createCabBooking(req, res, next) {
             dropoff_address,
             vehicle_category,
             model_name: fareDetails.model_name,
+            passenger_count: passengers,
+            luggage_count: luggage,
+            ride_fare_thb: rideFareTHB,
+            extras: childSeat ? { child_seat_thb: CHILD_SEAT_FEE_THB } : {},
             distance_km: fareDetails.distance_km,
             estimated_minutes: fareDetails.estimated_minutes
           })
@@ -232,10 +319,11 @@ export async function createCabBooking(req, res, next) {
           pickup_datetime, passenger_count, luggage_count, vehicle_category, vehicle_model,
           distance_km, estimated_minutes, base_fare_thb, toll_fee_thb, total_fare_thb,
           ride_status, ride_otp_hash, ride_otp_encrypted, otp_expires_at, idempotency_key
-        ) VALUES (?, ?, NULL, 'vnd-phuket-01', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ALLOCATED', ?, ?, ?, ?)`,
+        ) VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ALLOCATED', ?, ?, ?, ?)`,
         [
           dispatchId,
           bookingId,
+          vendorId,
           fareDetails.route_id || null,
           transfer_type,
           pickup_address,
@@ -245,8 +333,8 @@ export async function createCabBooking(req, res, next) {
           dropoff_lat || null,
           dropoff_lng || null,
           finalPickupDatetime,
-          parseInt(passenger_count, 10) || 1,
-          parseInt(luggage_count, 10) || 0,
+          passengers,
+          luggage,
           vehicle_category,
           fareDetails.model_name,
           fareDetails.distance_km,
@@ -293,11 +381,13 @@ export async function createCabBooking(req, res, next) {
         booking_id: bookingId,
         dispatch_id: dispatchId,
         total_fare_thb: totalFareTHB,
-        currency_snapshot: fareDetails.currency_snapshot,
+        currency_snapshot: currencySnapshot,
         ride_status: 'ALLOCATED',
         pickup_address,
         dropoff_address,
         pickup_datetime: finalPickupDatetime,
+        passenger_count: passengers,
+        luggage_count: luggage,
         vehicle_category,
         model_name: fareDetails.model_name,
         // The plaintext 4-digit ride OTP is sent ONCE to the booking owner
@@ -306,20 +396,37 @@ export async function createCabBooking(req, res, next) {
       };
     });
 
-    // Notify drivers & admin via Socket.IO
-    broadcastEvent('drivers', 'NEW_DUTY_AVAILABLE', {
+    // Notify the chosen vendor, admin, and only the drivers whose vehicle fits
+    const jobSummary = {
       dispatch_id: result.dispatch_id,
+      booking_id: result.booking_id,
+      ride_status: 'ALLOCATED',
       pickup_address: result.pickup_address,
       dropoff_address: result.dropoff_address,
       pickup_datetime: result.pickup_datetime,
+      passenger_count: passengers,
+      luggage_count: luggage,
       vehicle_category: result.vehicle_category,
       total_fare_thb: result.total_fare_thb
-    });
-    broadcastEvent('admin', 'DISPATCH_CREATED', {
-      dispatch_id: result.dispatch_id,
-      booking_id: result.booking_id,
-      ride_status: 'ALLOCATED'
-    });
+    };
+    broadcastEvent(`vendor_${vendorId}`, 'NEW_CAB_BOOKING', jobSummary);
+    broadcastEvent('admin', 'DISPATCH_CREATED', { ...jobSummary, vendor_id: vendorId });
+    try {
+      const driverIds = await findEligibleDriverIds(vendorId, {
+        passenger_count: passengers,
+        luggage_count: luggage,
+        vehicle_category
+      });
+      for (const driverId of driverIds) {
+        broadcastEvent(`driver_${driverId}`, 'NEW_DUTY_AVAILABLE', jobSummary);
+      }
+    } catch (notifyErr) {
+      // The booking is already saved; drivers still see it in their offer list
+      console.warn('[CabBooking] Driver notification failed:', notifyErr.message);
+    }
+
+    // Tell the customer by SMS, WhatsApp and email (runs in the background)
+    queueRideNotification(result.dispatch_id, RIDE_EVENTS.BOOKED, { rideOtp: result.ride_otp });
 
     res.status(201).json({
       success: true,
@@ -329,6 +436,12 @@ export async function createCabBooking(req, res, next) {
       bookingReference: result.booking_reference || result.booking_id,
       dispatchId: result.dispatch_id,
       rideOtp: result.ride_otp,
+      vehicleCategory: result.vehicle_category,
+      vehicleName: result.model_name,
+      passengerCount: passengers,
+      luggageCount: luggage,
+      // Channels that will carry booking & driver updates to this customer
+      updatesVia: getCustomerUpdateChannels(cleanPhone, customer_email),
       fareThb: result.total_fare_thb,
       displayFare: result.currency_snapshot?.customer_total_amount || result.total_fare_thb
     });

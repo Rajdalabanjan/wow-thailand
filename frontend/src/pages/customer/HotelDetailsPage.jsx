@@ -25,6 +25,11 @@ export default function HotelDetailsPage({
   breadcrumbPrefix,
   isCraftMyTrip = false
 }) {
+  const [liveHotel, setLiveHotel] = useState(hotel);
+  useEffect(() => {
+    setLiveHotel(hotel);
+  }, [hotel]);
+
   // Navigation & View Mode
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryTab, setGalleryTab] = useState('all'); // 'all', 'property', or 'rooms'
@@ -134,6 +139,16 @@ export default function HotelDetailsPage({
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const handleBack = () => {
+    if (document.activeElement?.blur) document.activeElement.blur();
+    if (typeof onBack === 'function') {
+      onBack();
+    } else {
+      window.history.pushState({}, '', '/hotels');
+      window.dispatchEvent(new PopStateEvent('popstate'));
     }
   };
 
@@ -247,6 +262,12 @@ export default function HotelDetailsPage({
           }
         }
         if (res.hotel) {
+          setLiveHotel(prev => ({
+            ...prev,
+            ...res.hotel,
+            images_json: res.hotel.images_json,
+            images: Array.isArray(res.hotel.images) ? res.hotel.images : (typeof res.hotel.images_json === 'string' ? JSON.parse(res.hotel.images_json || '[]') : res.hotel.images_json)
+          }));
           if (Array.isArray(res.hotel.categorized_amenities) && res.hotel.categorized_amenities.length > 0) {
             setHotelCategorizedAmenities(res.hotel.categorized_amenities);
           }
@@ -328,11 +349,10 @@ export default function HotelDetailsPage({
   // Collect all property images
   const propertyImages = useMemo(() => {
     const list = [];
-    if (hotel.image) list.push(hotel.image);
-    if (hotel.image_url && !list.includes(hotel.image_url)) list.push(hotel.image_url);
-    if (hotel.images_json) {
+    const target = liveHotel || hotel;
+    if (target.images_json) {
       try {
-        const parsed = typeof hotel.images_json === 'string' ? JSON.parse(hotel.images_json) : hotel.images_json;
+        const parsed = typeof target.images_json === 'string' ? JSON.parse(target.images_json) : target.images_json;
         if (Array.isArray(parsed)) {
           parsed.forEach(img => {
             if (typeof img === 'string' && img.trim() && !list.includes(img)) list.push(img);
@@ -340,27 +360,39 @@ export default function HotelDetailsPage({
         }
       } catch (e) {}
     }
-    if (Array.isArray(hotel.images)) {
-      hotel.images.forEach(img => {
+    if (list.length === 0 && Array.isArray(target.images)) {
+      target.images.forEach(img => {
         if (typeof img === 'string' && img.trim() && !list.includes(img)) list.push(img);
       });
     }
+    if (list.length === 0) {
+      if (target.image) list.push(target.image);
+      if (target.image_url && !list.includes(target.image_url)) list.push(target.image_url);
+    }
     return list.length > 0 ? list : ['https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80'];
-  }, [hotel]);
+  }, [liveHotel, hotel]);
 
   // Collect all room images across real room types
   const roomGalleryItems = useMemo(() => {
     const items = [];
     roomTypes.forEach(rt => {
-      const rImgs = Array.isArray(rt.images) ? rt.images : [];
+      let rImgs = Array.isArray(rt.images) ? rt.images : [];
+      if (rImgs.length === 0 && rt.images_json) {
+        try {
+          const parsed = typeof rt.images_json === 'string' ? JSON.parse(rt.images_json) : rt.images_json;
+          if (Array.isArray(parsed)) rImgs = parsed;
+        } catch (e) {}
+      }
       rImgs.forEach((imgUrl, i) => {
-        items.push({
-          url: imgUrl,
-          category: 'rooms',
-          roomName: rt.name,
-          caption: `${rt.name} - Photo ${i + 1}`,
-          roomType: rt
-        });
+        if (imgUrl && typeof imgUrl === 'string') {
+          items.push({
+            url: imgUrl,
+            category: 'rooms',
+            roomName: rt.name,
+            caption: `${rt.name} - Photo ${i + 1}`,
+            roomType: rt
+          });
+        }
       });
     });
     return items;
@@ -412,35 +444,46 @@ export default function HotelDetailsPage({
     return items;
   }, [barLoungeData, foodMenuItems]);
 
-  // Combined all photos (Property + Rooms + Dining & Bar)
+  // Combined all photos (Property + Rooms + Dining & Bar) strictly deduplicated for this hotel
   const allGalleryItems = useMemo(() => {
     const list = [];
+    const seenUrls = new Set();
+
     propertyImages.forEach((img, i) => {
-      list.push({
-        url: img,
-        category: 'property',
-        roomName: 'Property & Grounds',
-        caption: `${hotel.name} - Photo ${i + 1}`,
-        type: 'Property'
-      });
+      if (img && !seenUrls.has(img)) {
+        seenUrls.add(img);
+        list.push({
+          url: img,
+          category: 'property',
+          roomName: 'Property & Grounds',
+          caption: `${hotel.name} - Photo ${i + 1}`,
+          type: 'Property'
+        });
+      }
     });
     roomGalleryItems.forEach((item) => {
-      list.push({
-        url: item.url,
-        category: 'rooms',
-        roomName: item.roomName,
-        caption: item.caption,
-        type: item.roomName || 'Room'
-      });
+      if (item.url && !seenUrls.has(item.url)) {
+        seenUrls.add(item.url);
+        list.push({
+          url: item.url,
+          category: 'rooms',
+          roomName: item.roomName,
+          caption: item.caption,
+          type: item.roomName || 'Room'
+        });
+      }
     });
     diningGalleryItems.forEach((item) => {
-      list.push({
-        url: item.url,
-        category: 'dining',
-        roomName: item.roomName,
-        caption: item.caption,
-        type: item.type || 'Dining & Bar'
-      });
+      if (item.url && !seenUrls.has(item.url)) {
+        seenUrls.add(item.url);
+        list.push({
+          url: item.url,
+          category: 'dining',
+          roomName: item.roomName,
+          caption: item.caption,
+          type: item.type || 'Dining & Bar'
+        });
+      }
     });
     return list;
   }, [propertyImages, roomGalleryItems, diningGalleryItems, hotel.name]);
@@ -685,7 +728,7 @@ export default function HotelDetailsPage({
         <div className="d-flex align-items-center gap-3">
           <button 
             type="button"
-            onClick={() => { if (document.activeElement?.blur) document.activeElement.blur(); onBack(); }} 
+            onClick={handleBack} 
             className={`btn btn-light border hover-scale d-flex align-items-center gap-1.5 ${
               backLabel ? 'rounded-pill px-3 py-1.5 fw-bold text-xs' : 'rounded-circle p-2 justify-content-center'
             }`}
@@ -720,7 +763,7 @@ export default function HotelDetailsPage({
               type="button"
               onClick={() => handleReserveRoom(null, null)}
               className="btn btn-primary btn-sm rounded-pill px-3.5 py-1.5 fw-bold d-flex align-items-center gap-1.5 shadow-sm font-heading hover-scale"
-              style={{ background: '#FF6333', borderColor: '#FF6333', color: '#FFFFFF' }}
+              style={{ background: '#F5C518', borderColor: '#F5C518', color: '#06101E' }}
             >
               <span>{actionLabel || 'Select & Continue'}</span>
               <ChevronRight size={15} />
@@ -728,7 +771,7 @@ export default function HotelDetailsPage({
           )}
           <button 
             type="button"
-            onClick={() => { if (document.activeElement?.blur) document.activeElement.blur(); onBack(); }} 
+            onClick={handleBack} 
             className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1.5 rounded-pill px-3 py-1"
           >
             <X size={15} /> Back
@@ -795,7 +838,7 @@ export default function HotelDetailsPage({
                   type="button"
                   onClick={() => handleReserveRoom(null, null)}
                   className="btn btn-primary rounded-pill px-4 py-2 fw-bold text-xs mt-2 w-100 shadow-sm font-heading hover-scale"
-                  style={{ background: '#FF6333', borderColor: '#FF6333', color: '#FFFFFF' }}
+                  style={{ background: '#F5C518', borderColor: '#F5C518', color: '#06101E' }}
                 >
                   {actionLabel || 'Select & Continue'}
                 </button>
@@ -850,7 +893,7 @@ export default function HotelDetailsPage({
                 <div className="position-absolute inset-0 bg-dark bg-opacity-50 d-flex flex-column align-items-center justify-content-center text-white p-2 text-center" style={{ top: 0, left: 0, right: 0, bottom: 0 }}>
                   <Eye size={22} className="mb-1 text-warning" />
                   <span className="fw-bold text-xs">View All Photos</span>
-                  <span className="text-xxs text-white-50">{allGalleryItems.length} Property &amp; Rooms</span>
+                  <span className="text-xxs text-white-50">{allGalleryItems.length} Photos for this Property</span>
                 </div>
               </div>
             </div>
@@ -858,7 +901,7 @@ export default function HotelDetailsPage({
 
           <div className="d-flex justify-content-between align-items-center mt-2 px-1">
             <span className="text-muted text-xs">
-              📸 Showing property &amp; active room photos ({allGalleryItems.length} total)
+              📸 Official photos for {hotel.name} ({propertyImages.length} Property · {roomGalleryItems.length} Rooms{diningGalleryItems.length > 0 ? ` · ${diningGalleryItems.length} Dining` : ''})
             </span>
             <button 
               type="button"
@@ -1478,7 +1521,7 @@ export default function HotelDetailsPage({
                                 disabled={isRoomSoldOut}
                                 onClick={() => handleReserveRoom(room, currentSelectedPlan)}
                                 className={`btn ${isRoomSoldOut ? 'btn-secondary' : isCraftMyTrip ? 'btn-primary' : 'btn-warning text-dark'} rounded-pill px-4 py-2 fw-bold text-xs d-flex align-items-center gap-2 shadow-sm font-heading hover-scale`}
-                                style={isCraftMyTrip && !isRoomSoldOut ? { background: '#FF6333', borderColor: '#FF6333', color: '#FFFFFF' } : {}}
+                                style={isCraftMyTrip && !isRoomSoldOut ? { background: '#F5C518', borderColor: '#F5C518', color: '#06101E' } : {}}
                               >
                                 {isRoomSoldOut ? (
                                   <span>Sold Out for Dates</span>
@@ -1874,7 +1917,7 @@ export default function HotelDetailsPage({
                     ฿{combinedStaySubtotal.toLocaleString('en-US')}
                   </span>
                   <span className="text-muted text-xs">
-                    for {nights} {nights === 1 ? 'night' : 'nights'} (+ 7% VAT ฿{combinedGst.toLocaleString('en-US')})
+                    for {nights} {nights === 1 ? 'night' : 'nights'} (+ 7% VAT ฿{combinedVat.toLocaleString('en-US')})
                   </span>
                 </div>
                 <div className="text-muted text-xxs d-none d-sm-block">
@@ -1992,7 +2035,10 @@ export default function HotelDetailsPage({
           {/* Gallery Modal Top Bar */}
           <div className="d-flex flex-wrap justify-content-between align-items-center p-3 text-white border-bottom border-secondary bg-dark bg-opacity-75">
             <div className="d-flex flex-wrap align-items-center gap-2 gap-sm-3">
-              <h5 className="mb-0 fw-bold font-heading text-white text-truncate" style={{ maxWidth: '420px', color: '#FFFFFF' }}>{hotel.name} Gallery</h5>
+              <div>
+                <h5 className="mb-0 fw-bold font-heading text-white text-truncate" style={{ maxWidth: '420px', color: '#FFFFFF' }}>{hotel.name} Gallery</h5>
+                <span className="text-white-50 text-xxs d-block">Official Photos for this property · {hotel.area || hotel.city || 'Thailand'}</span>
+              </div>
               <div className="btn-group rounded-pill p-1 bg-secondary bg-opacity-25">
                 <button 
                   type="button" 
@@ -2213,7 +2259,7 @@ export default function HotelDetailsPage({
         >
           <div>
             <span className="text-muted text-xxs d-block">Starting from ({nights} {nights === 1 ? 'night' : 'nights'})</span>
-            <div className="fw-black font-heading fs-5 mb-0" style={{ color: '#FF6333' }}>
+            <div className="fw-black font-heading fs-5 mb-0" style={{ color: '#B8860B' }}>
               ฿{(basePricePerNight * nights).toLocaleString('en-US')}
             </div>
           </div>
@@ -2230,7 +2276,7 @@ export default function HotelDetailsPage({
               }
             }}
             className="btn btn-primary rounded-pill px-4 py-2 fw-bold d-flex align-items-center gap-1.5 shadow-sm font-heading hover-scale"
-            style={{ background: '#FF6333', borderColor: '#FF6333', color: '#FFFFFF' }}
+            style={{ background: '#F5C518', borderColor: '#F5C518', color: '#06101E' }}
           >
             <span>{actionLabel || (roomTypes.length > 0 ? 'Select Room & Book' : 'Select Hotel')}</span>
             <ChevronRight size={16} />

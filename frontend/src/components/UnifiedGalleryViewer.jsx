@@ -271,7 +271,7 @@ export default function UnifiedGalleryViewer({
                 backdropFilter: 'blur(6px)',
                 transition: 'all 0.2s ease'
               }}
-              onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; e.currentTarget.style.backgroundColor = '#00B8D9'; }}
+              onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; e.currentTarget.style.backgroundColor = '#F5C518'; }}
               onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; e.currentTarget.style.backgroundColor = 'rgba(15, 23, 42, 0.85)'; }}
             >
               <ChevronLeft size={28} />
@@ -320,7 +320,7 @@ export default function UnifiedGalleryViewer({
                 backdropFilter: 'blur(6px)',
                 transition: 'all 0.2s ease'
               }}
-              onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; e.currentTarget.style.backgroundColor = '#00B8D9'; }}
+              onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; e.currentTarget.style.backgroundColor = '#F5C518'; }}
               onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; e.currentTarget.style.backgroundColor = 'rgba(15, 23, 42, 0.85)'; }}
             >
               <ChevronRight size={28} />
@@ -888,7 +888,7 @@ export default function UnifiedGalleryViewer({
                     transition: 'all 0.2s ease'
                   }}
                   onMouseOver={(e) => {
-                    e.currentTarget.style.backgroundColor = '#00B8D9';
+                    e.currentTarget.style.backgroundColor = '#F5C518';
                     e.currentTarget.style.borderColor = '#ffffff';
                     e.currentTarget.style.transform = 'translateY(-50%) scale(1.12)';
                   }}
@@ -925,7 +925,7 @@ export default function UnifiedGalleryViewer({
                     transition: 'all 0.2s ease'
                   }}
                   onMouseOver={(e) => {
-                    e.currentTarget.style.backgroundColor = '#00B8D9';
+                    e.currentTarget.style.backgroundColor = '#F5C518';
                     e.currentTarget.style.borderColor = '#ffffff';
                     e.currentTarget.style.transform = 'translateY(-50%) scale(1.12)';
                   }}

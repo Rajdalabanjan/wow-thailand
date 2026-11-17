@@ -140,7 +140,7 @@ export default function PackageCheckoutStep2({
           </div>
 
           {/* Confirmed Trip & Travel Dates Summary Banner */}
-          <div className="bg-white border rounded-3 p-3 mb-4 shadow-sm d-flex flex-wrap align-items-center justify-content-between gap-3" style={{ borderLeft: '4px solid #FF6333' }}>
+          <div className="bg-white border rounded-3 p-3 mb-4 shadow-sm d-flex flex-wrap align-items-center justify-content-between gap-3" style={{ borderLeft: '4px solid #F5C518' }}>
             <div>
               <span className="text-muted text-uppercase fw-bold d-block" style={{ fontSize: '0.68rem', letterSpacing: '0.5px' }}>Selected Package</span>
               <h5 className="fw-bold text-dark mb-0">{pkg?.name}</h5>
@@ -299,7 +299,7 @@ export default function PackageCheckoutStep2({
                 type="button" 
                 className="btn btn-primary btn-lg fw-bold px-5 rounded-pill shadow d-flex align-items-center gap-2" 
                 onClick={handleProceedClick}
-                style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', borderColor: '#FF6333' }}
+                style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', borderColor: '#F5C518' }}
               >
                   <span>Continue to Payment</span>
                   <ChevronRight size={18} />

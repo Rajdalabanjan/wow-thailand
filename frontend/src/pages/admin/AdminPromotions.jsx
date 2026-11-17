@@ -92,7 +92,7 @@ export default function AdminPromotions() {
           <h5 className="fw-bold mb-0" style={{ color: '#0D1B2E', fontSize: '16px' }}>Promotions & Offers</h5>
           <p className="mb-0 mt-1" style={{ fontSize: '0.78rem', color: '#64748b' }}>Manage coupons, flash deals, seasonal offers and gift vouchers</p>
         </div>
-        <button onClick={() => setShowCreateCoupon(true)} className="btn px-4 py-2 fw-bold text-white d-flex align-items-center gap-2 rounded-3" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)', fontSize: '0.83rem' }}>
+        <button onClick={() => setShowCreateCoupon(true)} className="btn px-4 py-2 fw-bold text-dark d-flex align-items-center gap-2 rounded-3" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', fontSize: '0.83rem' }}>
           <Plus size={14} /> Create Offer
         </button>
       </div>
@@ -101,7 +101,7 @@ export default function AdminPromotions() {
       <div className="d-flex gap-2 mb-4">
         {PROMO_TYPES.map(t => (
           <button key={t.id} onClick={() => setActiveType(t.id)} className="btn d-flex align-items-center gap-2 px-4 py-2 rounded-3 fw-bold" style={{ fontSize: '0.82rem', background: activeType === t.id ? '#0D1B2E' : '#fff', color: activeType === t.id ? '#fff' : '#475569', border: `1px solid ${activeType === t.id ? 'transparent' : 'rgba(0,0,0,0.1)'}` }}>
-            <span style={{ color: activeType === t.id ? '#FF6333' : '#94a3b8' }}>{t.icon}</span>
+            <span style={{ color: activeType === t.id ? '#F5C518' : '#94a3b8' }}>{t.icon}</span>
             {t.label}
           </button>
         ))}
@@ -130,9 +130,9 @@ export default function AdminPromotions() {
                 <div className="position-absolute top-0 end-0 p-3">
                   <span className="fw-bold text-white" style={{ fontSize: '2rem', opacity: 0.1 }}>⚡</span>
                 </div>
-                <div className="mb-2"><span className="px-2 py-1 rounded-pill fw-bold" style={{ background: 'rgba(255,99,51,0.2)', color: '#FF6333', fontSize: '0.65rem' }}>FLASH DEAL</span></div>
+                <div className="mb-2"><span className="px-2 py-1 rounded-pill fw-bold" style={{ background: 'rgba(245, 197, 24, 0.2)', color: '#B8860B', fontSize: '0.65rem' }}>FLASH DEAL</span></div>
                 <div className="fw-bold text-white mb-1" style={{ fontSize: '16px' }}>{d.title}</div>
-                <div className="fw-bold mb-2" style={{ fontSize: '2rem', color: '#FF6333' }}>{d.discount}% OFF</div>
+                <div className="fw-bold mb-2" style={{ fontSize: '2rem', color: '#B8860B' }}>{d.discount}% OFF</div>
                 <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)' }}>{d.category} · {d.uses} uses</div>
                 <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginTop: '4px' }}>Until {d.validUntil}</div>
               </div>
@@ -146,7 +146,7 @@ export default function AdminPromotions() {
           <Calendar size={40} style={{ color: '#94a3b8' }} className="mb-3" />
           <h6 className="fw-bold mb-2" style={{ color: '#0D1B2E' }}>Seasonal Campaigns</h6>
           <p style={{ color: '#64748b', fontSize: '0.85rem' }}>Create holiday and season-specific promotions like Diwali, Christmas, New Year and Monsoon specials.</p>
-          <button className="btn px-4 py-2 fw-bold rounded-3 text-white" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)', fontSize: '0.83rem' }}>
+          <button className="btn px-4 py-2 fw-bold rounded-3 text-dark" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', fontSize: '0.83rem' }}>
             <Plus size={14} className="me-2" />Create Seasonal Offer
           </button>
         </div>
@@ -157,7 +157,7 @@ export default function AdminPromotions() {
           <Gift size={40} style={{ color: '#94a3b8' }} className="mb-3" />
           <h6 className="fw-bold mb-2" style={{ color: '#0D1B2E' }}>Gift Vouchers</h6>
           <p style={{ color: '#64748b', fontSize: '0.85rem' }}>Create prepaid gift vouchers that customers can purchase and gift to others for travel bookings.</p>
-          <button className="btn px-4 py-2 fw-bold rounded-3 text-white" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)', fontSize: '0.83rem' }}>
+          <button className="btn px-4 py-2 fw-bold rounded-3 text-dark" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', fontSize: '0.83rem' }}>
             <Plus size={14} className="me-2" />Create Gift Voucher
           </button>
         </div>
@@ -209,7 +209,7 @@ export default function AdminPromotions() {
                   <input type="date" className="form-control" style={{ fontSize: '0.85rem', borderRadius: '8px' }} value={form.valid_until} onChange={e => setForm(f => ({ ...f, valid_until: e.target.value }))} />
                 </div>
               </div>
-              <button type="submit" className="btn w-100 py-2 fw-bold text-white rounded-3 d-flex align-items-center justify-content-center gap-2" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }}><Save size={14} />Create Coupon</button>
+              <button type="submit" className="btn w-100 py-2 fw-bold text-dark rounded-3 d-flex align-items-center justify-content-center gap-2" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}><Save size={14} />Create Coupon</button>
             </form>
           </div>
         </div>

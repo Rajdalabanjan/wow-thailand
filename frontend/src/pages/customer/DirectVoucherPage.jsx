@@ -109,7 +109,7 @@ export default function DirectVoucherPage({ onBackHome }) {
             <span>Back to Home</span>
           </button>
           <div className="d-flex align-items-center gap-2">
-            <span className="badge rounded-pill px-2.5 py-1 text-dark fw-bold" style={{ background: '#ff9f1c', fontSize: '11px' }}>
+            <span className="badge rounded-pill px-2.5 py-1 text-dark fw-bold" style={{ background: '#E5A826', fontSize: '11px' }}>
               OFFICIAL VOUCHER
             </span>
             <span className="fw-bold text-white small d-none d-sm-inline">

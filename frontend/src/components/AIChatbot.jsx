@@ -552,14 +552,21 @@ export default function AIChatbot() {
 
     // Process each new video frame once (~30 fps), not on every screen refresh (60-144 Hz)
     let lastDraw = 0;
-    const onVideoFrame = () => {
+    // While the homepage's liquid-wave slideshow is changing picture (window.__wowHeroWave,
+    // set by LiquidSlideshow), the avatar updates ~10 times a second instead of every frame:
+    // its per-pixel work would otherwise compete with the wave and make it stutter.
+    const waveBusy = (now) => window.__wowHeroWave === true && now - lastDraw < 100;
+    const onVideoFrame = (now) => {
       if (cancelled) return;
-      renderCurrentFrame();
+      if (!waveBusy(now)) {
+        lastDraw = now;
+        renderCurrentFrame();
+      }
       frameHandle = video.requestVideoFrameCallback(onVideoFrame);
     };
     const onAnimationFrame = (now) => {
       if (cancelled) return;
-      if (now - lastDraw >= 32) {
+      if (now - lastDraw >= (window.__wowHeroWave === true ? 100 : 32)) {
         lastDraw = now;
         renderCurrentFrame();
       }
@@ -601,13 +608,18 @@ export default function AIChatbot() {
 
     window.addEventListener('resize', measureSize);
 
-    video.play().catch(() => { });
-    // While the opening intro covers the page the avatar is hidden behind it, so frame
-    // processing starts only when the curtains begin to open (keeps the intro smooth)
-    if (window.__wowIntroShowing === true) {
-      window.addEventListener('wow:intro-revealing', startLoop, { once: true });
-    } else {
+    // While the opening intro covers the page the avatar is hidden behind it, so the video
+    // is not played (or decoded) and frames are not processed until the intro begins to
+    // leave: a second video decoding under the intro video made it stutter
+    const begin = () => {
+      if (cancelled) return;
+      video.play().catch(() => { });
       startLoop();
+    };
+    if (window.__wowIntroShowing === true) {
+      window.addEventListener('wow:intro-revealing', begin, { once: true });
+    } else {
+      begin();
     }
 
     return () => {
@@ -616,7 +628,7 @@ export default function AIChatbot() {
         if (supportsVideoFrames) video.cancelVideoFrameCallback?.(frameHandle);
         else cancelAnimationFrame(frameHandle);
       }
-      window.removeEventListener('wow:intro-revealing', startLoop);
+      window.removeEventListener('wow:intro-revealing', begin);
       window.removeEventListener('resize', measureSize);
       video.removeEventListener('play', handleImmediateRedraw);
       video.removeEventListener('seeking', handleImmediateRedraw);
@@ -635,7 +647,7 @@ export default function AIChatbot() {
       setTimeout(() => {
         setMsgIndex((prev) => (prev + 1) % aiMessages.length);
         setFade(true);
-      }, 500);
+      }, 260);
     }, 4000);
     return () => clearInterval(intervalId);
   }, [isOpen]);
@@ -1307,7 +1319,7 @@ export default function AIChatbot() {
         ref={avatarVideoRef}
         src={chatbotAnimationVideo}
         id="ai-hidden-video"
-        autoPlay
+        preload="metadata"
         muted
         playsInline
         style={{ position: 'fixed', top: '-9999px', left: '-9999px', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none' }}
@@ -1336,7 +1348,7 @@ export default function AIChatbot() {
               fontWeight: 700,
               fontSize: '15px',
               opacity: fade ? 1 : 0,
-              transition: 'opacity 0.35s ease-in-out',
+              transition: 'opacity 0.24s ease-in-out',
               whiteSpace: 'nowrap'
             }}
           >
@@ -1352,6 +1364,9 @@ export default function AIChatbot() {
             width="1280"
             height="720"
           />
+          {/* Only the character itself is clickable; the see-through canvas around her
+              lets clicks reach the page underneath */}
+          <span className="ai-avatar-hit" aria-hidden="true" />
         </div>
       </div>
 
@@ -1367,6 +1382,9 @@ export default function AIChatbot() {
           align-items: center;
           cursor: pointer;
           user-select: none;
+          /* the trigger box is mostly transparent canvas: only the pill and the
+             character take clicks (see .ai-avatar-hit), the rest passes through */
+          pointer-events: none !important;
           background: transparent !important;
           -webkit-tap-highlight-color: transparent;
           transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
@@ -1381,7 +1399,21 @@ export default function AIChatbot() {
         .ai-floating-trigger.is-visible {
           transform: scale(1);
           opacity: 1;
+        }
+        .ai-floating-trigger.is-visible .sophia-speech-pill,
+        .ai-floating-trigger.is-visible .ai-avatar-hit {
           pointer-events: auto;
+        }
+        .ai-avatar-hit {
+          position: absolute;
+          left: 50%;
+          bottom: 4%;
+          width: 34%;
+          height: 88%;
+          transform: translateX(-50%);
+          border-radius: 45% 45% 20% 20%;
+          z-index: 11;
+          pointer-events: none;
         }
         .sophia-floating-trigger:hover,
         .ai-floating-trigger:hover {
@@ -1453,7 +1485,7 @@ export default function AIChatbot() {
         .ai-avatar-wrapper {
           position: relative;
           z-index: 10;
-          width: 325px;
+          width: 260px;
           height: auto;
           display: flex;
           align-items: center;
@@ -1472,7 +1504,7 @@ export default function AIChatbot() {
         #ai-avatar-canvas {
           -webkit-mask-image: linear-gradient(to bottom, black 84%, rgba(0, 0, 0, 0.85) 93%, transparent 100%);
           mask-image: linear-gradient(to bottom, black 84%, rgba(0, 0, 0, 0.85) 93%, transparent 100%);
-          width: 325px;
+          width: 260px;
           height: auto;
           z-index: 10;
           position: relative;
@@ -1491,13 +1523,12 @@ export default function AIChatbot() {
           .sophia-avatar-wrapper,
           .ai-avatar-wrapper,
           #ai-avatar-canvas {
-            width: 255px !important;
+            width: 180px !important;
           }
+          /* on phones the wide pill sat over buttons and form fields: the avatar alone is the button */
           .sophia-speech-pill,
           .ai-speech-pill {
-            margin-right: -32px !important;
-            padding: 9px 18px !important;
-            font-size: 13.5px !important;
+            display: none !important;
           }
         }
 
@@ -1559,8 +1590,8 @@ export default function AIChatbot() {
           transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
         .luzia-form-control:focus {
-          border-color: #FF6B35 !important;
-          box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.18) !important;
+          border-color: #F5C518 !important;
+          box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.18) !important;
           outline: none !important;
         }
         .luzia-input-group {
@@ -1569,8 +1600,8 @@ export default function AIChatbot() {
           transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
         .luzia-input-group:focus-within {
-          border-color: #FF6B35 !important;
-          box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.18) !important;
+          border-color: #F5C518 !important;
+          box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.18) !important;
         }
         .luzia-input-group input:focus {
           outline: none !important;
@@ -1581,7 +1612,7 @@ export default function AIChatbot() {
         }
         .luzia-cta-btn:hover {
           transform: translateY(-1px);
-          box-shadow: 0 6px 18px rgba(255, 107, 53, 0.35) !important;
+          box-shadow: 0 6px 18px rgba(245, 197, 24, 0.35) !important;
         }
         .luzia-cta-btn:active {
           transform: translateY(0);
@@ -1615,7 +1646,7 @@ export default function AIChatbot() {
             height: calc(100dvh - 32px) !important;
             max-height: calc(100dvh - 32px) !important;
             border-radius: 24px !important;
-            box-shadow: 0 30px 80px -15px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 107, 53, 0.25) !important;
+            box-shadow: 0 30px 80px -15px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(245, 197, 24, 0.25) !important;
           }
         }
 
@@ -1695,7 +1726,7 @@ export default function AIChatbot() {
           opacity: isOpen ? 1 : 0,
           pointerEvents: isOpen ? 'all' : 'none',
           boxShadow: isFullScreen 
-            ? '0 30px 80px -15px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 107, 53, 0.25)' 
+            ? '0 30px 80px -15px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(245, 197, 24, 0.25)' 
             : '0 20px 40px -15px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.08)',
           borderRadius: '22px',
           overscrollBehavior: 'contain',
@@ -1709,10 +1740,10 @@ export default function AIChatbot() {
           ref={headerRef}
           onPointerDown={handleHeaderPointerDown}
           onDoubleClick={() => setIsFullScreen(prev => !prev)}
-          className="d-flex flex-column"
+          className="d-flex flex-column luzia-header"
           style={{
-            background: 'linear-gradient(135deg, #FF6B35, #FF9F1C)',
-            color: 'white',
+            background: 'linear-gradient(135deg, #F5C518, #E5A826)',
+            color: '#06101E',
             borderTopLeftRadius: '22px',
             borderTopRightRadius: '22px',
             flexShrink: 0,
@@ -1948,9 +1979,9 @@ export default function AIChatbot() {
                 >
                   <div
                     className="d-inline-flex align-items-center justify-content-center rounded-circle mb-2"
-                    style={{ width: '42px', height: '42px', background: 'linear-gradient(135deg, rgba(255,107,53,0.12), rgba(255,159,28,0.18))' }}
+                    style={{ width: '42px', height: '42px', background: 'linear-gradient(135deg, rgba(245, 197, 24, 0.12), rgba(245, 197, 24, 0.18))' }}
                   >
-                    <Sparkles size={20} style={{ color: '#FF6B35' }} />
+                    <Sparkles size={20} style={{ color: '#B8860B' }} />
                   </div>
                   <h6 className="fw-bold text-dark mb-1" style={{ fontSize: '15px' }}>Let's Plan Your Thailand Trip! 🌴</h6>
                   <p className="text-muted mb-3" style={{ fontSize: '12px', lineHeight: '1.45' }}>
@@ -2008,13 +2039,13 @@ export default function AIChatbot() {
                     <button
                       type="submit"
                       id="btn-luzia-get-recommendations"
-                      className="btn w-100 rounded-pill fw-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-2 luzia-cta-btn"
+                      className="btn w-100 rounded-pill fw-bold text-dark shadow-sm d-flex align-items-center justify-content-center gap-2 luzia-cta-btn"
                       style={{
                         height: '44px',
-                        background: 'linear-gradient(135deg, #FF6B35 0%, #FF9F1C 100%)',
+                        background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)',
                         border: 'none',
                         fontSize: '13.5px',
-                        boxShadow: '0 4px 14px rgba(255, 107, 53, 0.3)',
+                        boxShadow: '0 4px 14px rgba(245, 197, 24, 0.3)',
                         cursor: 'pointer'
                       }}
                     >
@@ -2069,14 +2100,14 @@ export default function AIChatbot() {
                                 const itemName = activeContext?.active_item_name || '';
                                 const safeEncodedName = encodeURIComponent(itemName || '').replace(/'/g, '%27');
                                 const targetUrl = `/${tab}${query || (itemId ? `?id=${encodeURIComponent(itemId)}` : '')}`;
-                                return `<a href="${targetUrl}" onclick="window.sophiaNavigate('${tab}','${itemId}','${itemType}','${safeEncodedName}','${targetUrl}');return false;" style="display:inline-block;margin-top:6px;padding:7px 16px;background:linear-gradient(135deg,#FF6B35,#FF9F1C);color:#fff;border-radius:20px;text-decoration:none;font-weight:700;font-size:12.5px;box-shadow:0 3px 10px rgba(255,107,53,0.3);cursor:pointer;">${text}</a>`;
+                                return `<a href="${targetUrl}" onclick="window.sophiaNavigate('${tab}','${itemId}','${itemType}','${safeEncodedName}','${targetUrl}');return false;" style="display:inline-block;margin-top:6px;padding:7px 16px;background:linear-gradient(135deg,#F5C518,#E5A826);color:#fff;border-radius:20px;text-decoration:none;font-weight:700;font-size:12.5px;box-shadow:0 3px 10px rgba(245, 197, 24, 0.3);cursor:pointer;">${text}</a>`;
                               }
                             )
                             // Action link: [Get Price for My Dates](#get-price)
                             .replace(
                               /\[([^\]]+)\]\(#get-price\)/g,
                               (match, text) => {
-                                return `<a href="#" onclick="window.dispatchEvent(new CustomEvent('sophia_send_msg',{detail:{text:'Get Price for My Dates'}}));return false;" style="display:inline-block;margin-top:6px;padding:7px 16px;background:#ffffff;color:#FF6B35;border:1.5px solid #FF6B35;border-radius:20px;text-decoration:none;font-weight:700;font-size:12.5px;cursor:pointer;transition:all 0.2s;">${text}</a>`;
+                                return `<a href="#" onclick="window.dispatchEvent(new CustomEvent('sophia_send_msg',{detail:{text:'Get Price for My Dates'}}));return false;" style="display:inline-block;margin-top:6px;padding:7px 16px;background:#ffffff;color:#B8860B;border:1.5px solid #F5C518;border-radius:20px;text-decoration:none;font-weight:700;font-size:12.5px;cursor:pointer;transition:all 0.2s;">${text}</a>`;
                               }
                             )
                             // Generic internal markdown links [Text](/some-path) -> styled redirect button
@@ -2084,11 +2115,11 @@ export default function AIChatbot() {
                               /\[([^\]]+)\]\((\/[^)]+)\)/g,
                               (match, text, url) => {
                                 const cleanUrl = url.trim();
-                                return `<a href="${cleanUrl}" onclick="window.location.href='${cleanUrl}';return false;" style="display:inline-block;margin-top:6px;padding:7px 16px;background:linear-gradient(135deg,#FF6B35,#FF9F1C);color:#fff;border-radius:20px;text-decoration:none;font-weight:700;font-size:12.5px;box-shadow:0 3px 10px rgba(255,107,53,0.3);cursor:pointer;">${text}</a>`;
+                                return `<a href="${cleanUrl}" onclick="window.location.href='${cleanUrl}';return false;" style="display:inline-block;margin-top:6px;padding:7px 16px;background:linear-gradient(135deg,#F5C518,#E5A826);color:#fff;border-radius:20px;text-decoration:none;font-weight:700;font-size:12.5px;box-shadow:0 3px 10px rgba(245, 197, 24, 0.3);cursor:pointer;">${text}</a>`;
                               }
                             )
                             // Generic external markdown links
-                            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:#FF6B35;font-weight:600;text-decoration:underline;">$1</a>')
+                            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:#B8860B;font-weight:600;text-decoration:underline;">$1</a>')
                           : msg.content
                       }}
                     />
@@ -2099,9 +2130,9 @@ export default function AIChatbot() {
                 {activeContext?.booking_preview && !activeProposal && (
                   <div
                     className="card border-0 shadow-sm rounded-4 overflow-hidden my-2 align-self-stretch animate-fade-in"
-                    style={{ background: '#ffffff', border: '1.5px solid #fed7aa', boxShadow: '0 8px 24px rgba(255, 107, 53, 0.12)' }}
+                    style={{ background: '#ffffff', border: '1.5px solid #fed7aa', boxShadow: '0 8px 24px rgba(245, 197, 24, 0.12)' }}
                   >
-                    <div className="p-3" style={{ background: 'linear-gradient(135deg, #FF6B35, #FF9F1C)', color: 'white' }}>
+                    <div className="p-3" style={{ background: 'linear-gradient(135deg, #F5C518, #E5A826)', color: 'white' }}>
                       <div className="d-flex align-items-center justify-content-between">
                         <div className="d-flex align-items-center gap-2">
                           <Sparkles size={18} />
@@ -2163,10 +2194,10 @@ export default function AIChatbot() {
                         }}
                         className="btn w-100 fw-bold text-white shadow-sm py-2.5 rounded-pill d-flex align-items-center justify-content-center gap-2 hover-scale transition-all"
                         style={{
-                          background: 'linear-gradient(135deg, #FF6B35, #FF9F1C)',
+                          background: 'linear-gradient(135deg, #F5C518, #E5A826)',
                           border: 'none',
                           fontSize: '13px',
-                          boxShadow: '0 4px 14px rgba(255, 107, 53, 0.35)',
+                          boxShadow: '0 4px 14px rgba(245, 197, 24, 0.35)',
                           cursor: 'pointer'
                         }}
                       >
@@ -2181,9 +2212,9 @@ export default function AIChatbot() {
                 {activeProposal && (
                   <div
                     className="card border-0 shadow-sm rounded-4 overflow-hidden my-2 align-self-stretch animate-fade-in"
-                    style={{ background: '#ffffff', border: '1.5px solid #fed7aa', boxShadow: '0 8px 24px rgba(255, 107, 53, 0.12)' }}
+                    style={{ background: '#ffffff', border: '1.5px solid #fed7aa', boxShadow: '0 8px 24px rgba(245, 197, 24, 0.12)' }}
                   >
-                    <div className="p-3" style={{ background: 'linear-gradient(135deg, #FF6B35, #FF9F1C)', color: 'white' }}>
+                    <div className="p-3" style={{ background: 'linear-gradient(135deg, #F5C518, #E5A826)', color: 'white' }}>
                       <div className="d-flex align-items-center justify-content-between">
                         <div className="d-flex align-items-center gap-2">
                           <Sparkles size={18} />
@@ -2350,7 +2381,7 @@ export default function AIChatbot() {
                       focusInput();
                     }}
                     className="btn btn-sm rounded-pill fw-bold text-nowrap"
-                    style={{ fontSize: '11.5px', border: '1px solid #FF6B35', color: '#FF6B35', background: 'transparent' }}
+                    style={{ fontSize: '11.5px', border: '1px solid #F5C518', color: '#B8860B', background: 'transparent' }}
                   >
                     {s}
                   </button>
@@ -2369,7 +2400,7 @@ export default function AIChatbot() {
                     height: '36px',
                     minWidth: '36px',
                     background: isListening ? '#ef4444' : 'transparent',
-                    color: isListening ? 'white' : '#FF6B35',
+                    color: isListening ? 'white' : '#F5C518',
                     border: 'none',
                     transition: 'all 0.2s'
                   }}
@@ -2396,7 +2427,7 @@ export default function AIChatbot() {
                     width: '36px',
                     height: '36px',
                     minWidth: '36px',
-                    background: 'linear-gradient(135deg, #FF6B35, #FF9F1C)',
+                    background: 'linear-gradient(135deg, #F5C518, #E5A826)',
                     color: 'white',
                     border: 'none',
                     cursor: (!input.trim() || isLoading) ? 'not-allowed' : 'pointer'

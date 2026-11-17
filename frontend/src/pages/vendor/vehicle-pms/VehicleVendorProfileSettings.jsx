@@ -167,13 +167,13 @@ export default function VehicleVendorProfileSettings({ currentUser = {} }) {
         <div className="col-12 col-lg-4">
           <div className="card border-0 rounded-4 shadow-sm p-4 text-center" style={{ background: '#fff' }}>
             <div
-              className="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white mx-auto mb-3 shadow-sm"
-              style={{ width: '80px', height: '80px', background: 'linear-gradient(135deg, #FF6333, #FF8A00)', fontSize: '32px' }}
+              className="rounded-circle d-flex align-items-center justify-content-center fw-bold text-dark mx-auto mb-3 shadow-sm"
+              style={{ width: '80px', height: '80px', background: 'linear-gradient(135deg, #F5C518, #E5A826)', fontSize: '32px' }}
             >
               {(form.name || form.username || 'V')[0].toUpperCase()}
             </div>
             <h5 className="fw-bold mb-1" style={{ color: '#0D1B2E' }}>{form.name || form.username}</h5>
-            <span className="badge rounded-pill px-3 py-1" style={{ background: 'rgba(255,99,51,0.1)', color: '#FF6333', fontSize: '0.72rem' }}>
+            <span className="badge rounded-pill px-3 py-1" style={{ background: 'rgba(245, 197, 24, 0.1)', color: '#B8860B', fontSize: '0.72rem' }}>
               Vehicle Vendor Partner
             </span>
             <hr className="my-3" />
@@ -206,7 +206,7 @@ export default function VehicleVendorProfileSettings({ currentUser = {} }) {
           <form onSubmit={handleSave} className="card border-0 rounded-4 shadow-sm p-4" style={{ background: '#fff' }}>
             {activeSubTab === 'profile' && (
               <>
-                <h6 className="fw-bold mb-3" style={{ color: '#0D1B2E', borderBottom: '2px solid #FF6333', paddingBottom: '6px', display: 'inline-block' }}>
+                <h6 className="fw-bold mb-3" style={{ color: '#0D1B2E', borderBottom: '2px solid #F5C518', paddingBottom: '6px', display: 'inline-block' }}>
                   Personal & Contact Information
                 </h6>
                 <div className="row g-3">
@@ -226,7 +226,7 @@ export default function VehicleVendorProfileSettings({ currentUser = {} }) {
 
             {activeSubTab === 'business' && (
               <>
-                <h6 className="fw-bold mb-3" style={{ color: '#0D1B2E', borderBottom: '2px solid #FF6333', paddingBottom: '6px', display: 'inline-block' }}>
+                <h6 className="fw-bold mb-3" style={{ color: '#0D1B2E', borderBottom: '2px solid #F5C518', paddingBottom: '6px', display: 'inline-block' }}>
                   Vehicle Fleet & Operational Settings
                 </h6>
                 <div className="row g-3">
@@ -255,7 +255,7 @@ export default function VehicleVendorProfileSettings({ currentUser = {} }) {
 
             {activeSubTab === 'bank' && (
               <>
-                <h6 className="fw-bold mb-3" style={{ color: '#0D1B2E', borderBottom: '2px solid #FF6333', paddingBottom: '6px', display: 'inline-block' }}>
+                <h6 className="fw-bold mb-3" style={{ color: '#0D1B2E', borderBottom: '2px solid #F5C518', paddingBottom: '6px', display: 'inline-block' }}>
                   Bank Account & Payout Details
                 </h6>
                 <div className="alert py-2 px-3 mb-3 d-flex align-items-center gap-2 rounded-3" style={{ background: '#fff9e6', border: '1px solid #fdcb6e', fontSize: '0.78rem' }}>
@@ -282,8 +282,8 @@ export default function VehicleVendorProfileSettings({ currentUser = {} }) {
               <button
                 type="submit"
                 disabled={saving}
-                className="btn px-5 py-2 fw-bold text-white rounded-3 d-flex align-items-center gap-2"
-                style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)', fontSize: '0.85rem' }}
+                className="btn px-5 py-2 fw-bold text-dark rounded-3 d-flex align-items-center gap-2"
+                style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', fontSize: '0.85rem' }}
               >
                 {saving ? <Loader2 size={15} className="spinner-border spinner-border-sm" /> : <Save size={15} />}
                 {saving ? 'Saving...' : 'Save Profile & Settings'}

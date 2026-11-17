@@ -527,7 +527,7 @@ export const TEMPLATES = [
     name: 'Multi-Service Travel Marketplace',
     description: 'All-in-one marketplace: hotels, vehicles, packages, flights, and more',
     thumbnail: '🌐',
-    color: '#FF6333',
+    color: '#B8860B',
     pages: {
       home: {
         id: 'home', title: 'Home', slug: '/', status: 'published', isHome: true,

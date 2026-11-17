@@ -1663,8 +1663,8 @@ export default function BookingModal({
                     <div className="mt-4">
                       <button 
                         type="submit"
-                        className="btn w-100 py-2.5 fw-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-2" 
-                        style={{ background: '#FF6333', borderColor: '#FF6333', fontSize: '0.95rem' }}
+                        className="btn w-100 py-2.5 fw-bold text-dark shadow-sm d-flex align-items-center justify-content-center gap-2" 
+                        style={{ background: '#F5C518', borderColor: '#F5C518', fontSize: '0.95rem' }}
                       >
                         <span>Continue to Payment &amp; Review</span>
                         <ArrowRight size={18} />
@@ -1905,8 +1905,8 @@ export default function BookingModal({
                       <button 
                         type="button" 
                         onClick={handleConfirmBookingSubmit}
-                        className="btn w-100 py-2.5 fw-bold text-white shadow-sm mt-3 d-flex align-items-center justify-content-center" 
-                        style={{ background: '#FF6333', opacity: (!policyAgreed || isSubmitting) ? 0.65 : 1 }}
+                        className="btn w-100 py-2.5 fw-bold text-dark shadow-sm mt-3 d-flex align-items-center justify-content-center" 
+                        style={{ background: '#F5C518', opacity: (!policyAgreed || isSubmitting) ? 0.65 : 1 }}
                         disabled={!policyAgreed || isSubmitting}
                       >
                         {isSubmitting ? (

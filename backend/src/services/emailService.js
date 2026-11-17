@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { generateVoucherPdfBuffer } from './pdfVoucherService.js';
+import { voucherAccessKey } from '../utils/voucherLink.js';
 
 // Create reusable transporter object using Gmail SMTP
 let transporter = null;
@@ -41,8 +42,10 @@ export function generateVoucherEmailHtml({ booking, voucherCode, clientOrigin, a
   const guests = booking.total_members || booking.guests || 1;
   const totalAmount = Number(booking.total_amount || booking.total_paid || booking.customer_total_amount || 0).toLocaleString('en-US');
   const currency = booking.customer_currency || 'THB';
-  const trackingUrl = `${clientOrigin || 'http://localhost:5173'}/voucher?id=${encodeURIComponent(bkgId)}`;
-  const downloadPdfUrl = `${apiOrigin || 'http://localhost:5000'}/api.php?action=download_voucher_pdf&id=${encodeURIComponent(bkgId)}`;
+  // vk = key for this one booking, so the links open without signing in
+  const vk = encodeURIComponent(voucherAccessKey(String(bkgId)));
+  const trackingUrl = `${clientOrigin || 'http://localhost:5173'}/voucher?id=${encodeURIComponent(bkgId)}&vk=${vk}`;
+  const downloadPdfUrl = `${apiOrigin || 'http://localhost:5000'}/api.php?action=download_voucher_pdf&id=${encodeURIComponent(bkgId)}&vk=${vk}`;
 
   return `
 <!DOCTYPE html>

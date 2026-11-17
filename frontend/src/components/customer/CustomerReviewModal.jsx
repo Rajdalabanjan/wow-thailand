@@ -328,7 +328,7 @@ export default function CustomerReviewModal({
                   {/* Active Rating Indicator Label */}
                   <div style={{ minHeight: '22px' }}>
                     {currentActiveRating > 0 ? (
-                      <span className="badge rounded-pill px-3 py-1.5 fw-bold" style={{ background: '#FFF7ED', color: '#EA580C', fontSize: '12px' }}>
+                      <span className="badge rounded-pill px-3 py-1.5 fw-bold" style={{ background: '#FFF7ED', color: '#B8860B', fontSize: '12px' }}>
                         {currentActiveRating} Star{currentActiveRating > 1 ? 's' : ''} — {RATING_LABELS[currentActiveRating]}
                       </span>
                     ) : (
@@ -377,10 +377,10 @@ export default function CustomerReviewModal({
 
                   <button
                     type="submit"
-                    className="btn flex-fill py-2.5 rounded-3 fw-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-1.5"
+                    className="btn flex-fill py-2.5 rounded-3 fw-bold text-dark shadow-sm d-flex align-items-center justify-content-center gap-1.5"
                     disabled={submitting || rating === 0}
                     style={{
-                      background: rating === 0 ? '#94A3B8' : 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)',
+                      background: rating === 0 ? '#94A3B8' : 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)',
                       border: 'none',
                       fontSize: '13.5px',
                       cursor: rating === 0 ? 'not-allowed' : 'pointer'

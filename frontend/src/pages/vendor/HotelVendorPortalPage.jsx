@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import TempleMark from '../../components/common/TempleMark';
 import HoverGlider, { useEnterAnimation } from '../../components/common/HoverGlider';
 import {
   LayoutDashboard, Building, PlusCircle, BedDouble, CalendarDays, Tag, Lock,
@@ -199,7 +200,7 @@ function SidebarGroup({ group, activeTab, onSelect, defaultOpen = false }) {
                 width: 'calc(100% - 8px)'
               }}
             >
-              <span style={{ color: activeTab === item.id ? '#fff' : '#00B8D9', flexShrink: 0 }}>{item.icon}</span>
+              <span style={{ color: activeTab === item.id ? '#fff' : '#F5C518', flexShrink: 0 }}>{item.icon}</span>
               <span>{item.label}</span>
             </button>
           ))}
@@ -347,12 +348,12 @@ export default function HotelVendorPortalPage({
     return (
       <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#0D1B2E 0%,#1a3050 100%)' }}>
         <div className="text-center p-5">
-          <div className="mx-auto mb-4 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '90px', height: '90px', background: 'rgba(255,99,51,0.15)', border: '2px solid rgba(255,99,51,0.3)' }}>
-            <Building size={42} style={{ color: '#FF6333' }} />
+          <div className="mx-auto mb-4 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '90px', height: '90px', background: 'rgba(245, 197, 24, 0.15)', border: '2px solid rgba(245, 197, 24, 0.3)' }}>
+            <Building size={42} style={{ color: '#B8860B' }} />
           </div>
           <h3 className="fw-bold text-white mb-2">Hotel Operator Console</h3>
           <p className="mb-4" style={{ color: 'rgba(255,255,255,0.5)' }}>Sign in with your hotel vendor account to continue</p>
-          <button type="button" className="btn px-5 py-2 fw-bold text-white rounded-pill" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }} onClick={triggerOpenLogin}>
+          <button type="button" className="btn px-5 py-2 fw-bold text-dark rounded-pill" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }} onClick={triggerOpenLogin}>
             Sign In to Hotel Console
           </button>
         </div>
@@ -471,10 +472,10 @@ export default function HotelVendorPortalPage({
       >
         {/* Brand */}
         <div className="p-3 border-bottom d-flex align-items-center gap-2 mb-2" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-          <div style={{ color: '#FF6333' }}><Compass size={26} /></div>
+          <TempleMark size={28} style={{ color: '#F5C518', flexShrink: 0, filter: 'drop-shadow(0 2px 6px rgba(245, 197, 24, 0.4))' }} />
           <div>
-            <span className="fw-extrabold text-white" style={{ fontSize: '17px' }}>WOW THAILAND</span>
-            <span className="d-block text-uppercase fw-bold" style={{ fontSize: '0.6rem', letterSpacing: '1.5px', color: '#00B8D9' }}>Hotel Operator PMS</span>
+            <span className="brand-wordmark text-white" style={{ fontSize: '16px' }}>WOW <span className="brand-gold">THAILAND</span></span>
+            <span className="d-block text-uppercase fw-bold" style={{ fontSize: '0.6rem', letterSpacing: '1.5px', color: 'rgba(255, 255, 255, 0.55)' }}>Hotel Operator PMS</span>
           </div>
         </div>
 
@@ -496,9 +497,9 @@ export default function HotelVendorPortalPage({
           <button
             onClick={onLogout}
             className="btn w-100 d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-pill text-white"
-            style={{ background: 'rgba(255,99,51,0.12)', color: '#FF6333', fontSize: '0.85rem' }}
+            style={{ background: 'rgba(245, 197, 24, 0.12)', color: '#B8860B', fontSize: '0.85rem' }}
           >
-            <LogOut size={16} style={{ color: '#FF6333' }} /> Sign Out
+            <LogOut size={16} style={{ color: '#B8860B' }} /> Sign Out
           </button>
         </div>
       </div>
@@ -523,7 +524,7 @@ export default function HotelVendorPortalPage({
 
           <div className="d-flex align-items-center gap-3">
             {/* Online badge */}
-            <span className="d-flex align-items-center gap-1 px-3 py-1 rounded-pill" style={{ backgroundColor: 'rgba(0,184,217,0.1)', color: '#00B8D9', fontSize: '0.7rem', fontWeight: 700 }}>
+            <span className="d-flex align-items-center gap-1 px-3 py-1 rounded-pill" style={{ backgroundColor: 'rgba(245, 197, 24, 0.1)', color: '#B8860B', fontSize: '0.7rem', fontWeight: 700 }}>
               <span className="rounded-circle" style={{ width: '6px', height: '6px', background: '#00e676', display: 'inline-block' }}></span>
               PMS Online
             </span>
@@ -540,10 +541,10 @@ export default function HotelVendorPortalPage({
             <div className="position-relative">
               <button
                 className="btn p-0 rounded-circle d-flex align-items-center justify-content-center overflow-hidden"
-                style={{ width: '38px', height: '38px', border: '2px solid #FF6333', background: 'transparent' }}
+                style={{ width: '38px', height: '38px', border: '2px solid #F5C518', background: 'transparent' }}
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
               >
-                <div className="text-dark d-flex align-items-center justify-content-center fw-bold" style={{ width: '100%', height: '100%', fontSize: '15px', background: 'linear-gradient(135deg, #FFC107, #FF8A00)' }}>
+                <div className="text-dark d-flex align-items-center justify-content-center fw-bold" style={{ width: '100%', height: '100%', fontSize: '15px', background: 'linear-gradient(135deg, #FFC107, #E5A826)' }}>
                   {currentUser.username[0].toUpperCase()}
                 </div>
               </button>
@@ -551,11 +552,11 @@ export default function HotelVendorPortalPage({
               {showProfileDropdown && (
                 <div className="dropdown-menu dropdown-menu-end show shadow-lg border-0 mt-2 position-absolute" style={{ right: 0, minWidth: '200px', zIndex: 1050, backgroundColor: '#10243A', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
                   <div className="px-4 py-3 border-bottom text-center" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-                    <div className="text-dark rounded-circle d-flex align-items-center justify-content-center fw-bold mx-auto mb-2" style={{ width: '48px', height: '48px', fontSize: '20px', background: 'linear-gradient(135deg, #FFC107, #FF8A00)' }}>
+                    <div className="text-dark rounded-circle d-flex align-items-center justify-content-center fw-bold mx-auto mb-2" style={{ width: '48px', height: '48px', fontSize: '20px', background: 'linear-gradient(135deg, #FFC107, #E5A826)' }}>
                       {currentUser.username[0].toUpperCase()}
                     </div>
                     <h6 className="mb-0 fw-bold text-white">{currentUser.username}</h6>
-                    <span className="badge mt-1" style={{ backgroundColor: 'rgba(0,184,217,0.15)', color: '#00B8D9', fontSize: '0.65rem' }}>Hotel Vendor</span>
+                    <span className="badge mt-1" style={{ backgroundColor: 'rgba(245, 197, 24, 0.15)', color: '#B8860B', fontSize: '0.65rem' }}>Hotel Vendor</span>
                   </div>
                   <div className="p-2">
                     <button className="dropdown-item text-white-50 rounded py-2 d-flex align-items-center gap-2" onClick={() => { setShowProfileDropdown(false); setActiveTab('profile'); }}>
@@ -565,7 +566,7 @@ export default function HotelVendorPortalPage({
                       <Settings size={14} /> Settings
                     </button>
                     <hr className="my-1" style={{ borderColor: 'rgba(255,255,255,0.06)' }} />
-                    <button className="dropdown-item rounded py-2 fw-bold d-flex align-items-center gap-2" style={{ color: '#FF6333' }} onClick={onLogout}>
+                    <button className="dropdown-item rounded py-2 fw-bold d-flex align-items-center gap-2" style={{ color: '#B8860B' }} onClick={onLogout}>
                       <LogOut size={14} /> Sign Out
                     </button>
                   </div>

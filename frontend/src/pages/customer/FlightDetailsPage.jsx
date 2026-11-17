@@ -199,7 +199,7 @@ export default function FlightDetailsPage({
                 type="button"
                 onClick={handleProceedToBooking}
                 className="btn btn-primary rounded-pill px-4 py-2 fw-bold d-flex align-items-center gap-1.5 shadow-sm font-heading hover-scale"
-                style={{ background: '#FF6333', borderColor: '#FF6333', color: '#FFFFFF' }}
+                style={{ background: '#F5C518', borderColor: '#F5C518', color: '#06101E' }}
               >
                 <span>{actionLabel || (isCraftMyTrip ? (isSelected ? 'Continue to Review' : 'Select & Continue') : 'Book Flight')}</span>
                 <ChevronRight size={16} />
@@ -494,7 +494,7 @@ export default function FlightDetailsPage({
                 type="button"
                 onClick={handleProceedToBooking}
                 className="btn btn-primary btn-lg w-100 rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 hover-scale font-heading"
-                style={{ background: '#FF6333', borderColor: '#FF6333', padding: '12px 20px', fontSize: '15px' }}
+                style={{ background: '#F5C518', borderColor: '#F5C518', padding: '12px 20px', fontSize: '15px' }}
               >
                 <span>{actionLabel || (isCraftMyTrip ? (isSelected ? 'Continue to Review' : 'Select & Continue') : 'Book Flight')}</span>
                 <ChevronRight size={18} />
@@ -519,7 +519,7 @@ export default function FlightDetailsPage({
           <span className="text-muted text-xxs d-block">
             {isCraftMyTrip ? `Total (${totalPayingPassengers} ${totalPayingPassengers === 1 ? 'traveller' : 'travellers'})` : 'Total Payable'}
           </span>
-          <div className="fw-black font-heading fs-5 mb-0" style={{ color: '#FF6333' }}>
+          <div className="fw-black font-heading fs-5 mb-0" style={{ color: '#B8860B' }}>
             ฿{totalFare.toLocaleString('en-US')}
           </div>
         </div>
@@ -527,7 +527,7 @@ export default function FlightDetailsPage({
           type="button"
           onClick={handleProceedToBooking}
           className="btn btn-primary rounded-pill px-4 py-2 fw-bold d-flex align-items-center gap-1.5 shadow-sm font-heading hover-scale"
-          style={{ background: '#FF6333', borderColor: '#FF6333', color: '#FFFFFF' }}
+          style={{ background: '#F5C518', borderColor: '#F5C518', color: '#06101E' }}
         >
           <span>{actionLabel || (isCraftMyTrip ? (isSelected ? 'Continue to Review' : 'Select & Continue') : 'Book Flight')}</span>
           <ChevronRight size={16} />

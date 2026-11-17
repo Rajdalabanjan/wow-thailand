@@ -154,7 +154,7 @@ export default function TripPackagesManagementView({
               className="rounded-3 p-2 d-flex align-items-center justify-content-center text-white shadow-sm flex-shrink-0"
               style={{ background: 'linear-gradient(135deg, #0D1B2E 0%, #172F4F 100%)' }}
             >
-              <Compass size={22} style={{ color: '#FF6333' }} />
+              <Compass size={22} style={{ color: '#B8860B' }} />
             </div>
             <h4 className="fw-bold mb-0 text-dark font-heading text-wrap" style={{ fontSize: 'clamp(1.1rem, 2.5vw, 1.4rem)' }}>
               {portalTitle}
@@ -167,8 +167,8 @@ export default function TripPackagesManagementView({
 
         <button
           type="button"
-          className="btn px-4 py-2.5 rounded-pill fw-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-2 flex-shrink-0"
-          style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', border: 'none' }}
+          className="btn px-4 py-2.5 rounded-pill fw-bold text-dark shadow-sm d-flex align-items-center justify-content-center gap-2 flex-shrink-0"
+          style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', border: 'none' }}
           onClick={handleOpenAdd}
         >
           <Plus size={18} />
@@ -385,7 +385,7 @@ export default function TripPackagesManagementView({
                       <span className="text-muted text-uppercase fw-semibold d-block" style={{ fontSize: '0.68rem', letterSpacing: '0.5px' }}>
                         Starts from
                       </span>
-                      <div className="fw-extrabold text-nowrap" style={{ color: '#FF6333', fontSize: '1.3rem', lineHeight: 1.15 }}>
+                      <div className="fw-extrabold text-nowrap" style={{ color: '#B8860B', fontSize: '1.3rem', lineHeight: 1.15 }}>
                         ฿{price.toLocaleString('en-US')}
                       </div>
                       <span className="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2 py-0.5 mt-1" style={{ fontSize: '0.66rem' }}>

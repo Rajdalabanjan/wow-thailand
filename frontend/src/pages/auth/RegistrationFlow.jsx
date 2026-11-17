@@ -18,6 +18,7 @@ export default function RegistrationFlow({
       const typeParam = params.get('type');
 
       if (vendorParam) {
+        let vType;
         if (vendorParam === 'hotel' || vendorParam === 'hotel_vendor') vType = 'hotel_vendor';
         else if (vendorParam === 'tour' || vendorParam === 'tour_vendor') vType = 'tour_vendor';
         else vType = 'cab_vendor';

@@ -146,11 +146,11 @@ export default function PMSVendorProfile({ currentUser, vendorHotels = [], mode 
       <div className="row g-4">
         <div className="col-12 col-lg-3">
           <div className="card border-0 rounded-4 shadow-sm p-4 text-center" style={{ background: '#fff' }}>
-            <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold text-dark mx-auto mb-3" style={{ width: '80px', height: '80px', background: 'linear-gradient(135deg, #FFC107, #FF8A00)', fontSize: '32px' }}>
+            <div className="rounded-circle d-flex align-items-center justify-content-center fw-bold text-dark mx-auto mb-3" style={{ width: '80px', height: '80px', background: 'linear-gradient(135deg, #FFC107, #E5A826)', fontSize: '32px' }}>
               {(currentUser.username || 'V')[0].toUpperCase()}
             </div>
             <h5 className="fw-bold mb-1">{currentUser.username}</h5>
-            <span className="badge rounded-pill" style={{ background: 'rgba(0,184,217,0.1)', color: '#00B8D9', fontSize: '0.75rem' }}>Hotel Vendor</span>
+            <span className="badge rounded-pill" style={{ background: 'rgba(245, 197, 24, 0.1)', color: '#B8860B', fontSize: '0.75rem' }}>Hotel Vendor</span>
             <hr className="my-3" />
             <div className="text-start">
               <div className="text-muted mb-1" style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Account Summary</div>
@@ -166,7 +166,7 @@ export default function PMSVendorProfile({ currentUser, vendorHotels = [], mode 
 
         <div className="col-12 col-lg-9">
           <div className="card border-0 rounded-4 shadow-sm p-4" style={{ background: '#fff' }}>
-            <h6 className="fw-bold mb-4" style={{ color: '#1a2b4a', borderBottom: '2px solid #FF6333', paddingBottom: '8px', display: 'inline-block' }}>Personal Information</h6>
+            <h6 className="fw-bold mb-4" style={{ color: '#1a2b4a', borderBottom: '2px solid #F5C518', paddingBottom: '8px', display: 'inline-block' }}>Personal Information</h6>
             <div className="row g-3">
               <div className="col-12 col-md-6">{inp('Full Name', 'name', 'text', 'Your full name')}</div>
               <div className="col-12 col-md-6">{inp('Email Address', 'email', 'email', 'your@email.com')}</div>

@@ -5,7 +5,9 @@
 // ========================================================================
 
 import { Router } from 'express';
-import { query } from '../config/db.js';
+import { query, withTransaction } from '../config/db.js';
+import { restoreBookingInventory, createBookingTransaction } from '../services/bookingService.js';
+import { sendBookingVoucherEmail } from '../services/emailService.js';
 import * as hotelController from '../controllers/hotelController.js';
 import * as transferController from '../controllers/transferController.js';
 import * as tourController from '../controllers/tourController.js';
@@ -20,6 +22,14 @@ import { generateVoucherPdfBuffer } from '../services/pdfVoucherService.js';
 import { signJwtToken } from '../middleware/auth.js';
 import { resolveVendorId, resolveDriverId, isBookingOwnerOrStaff, verifyCustomerSelfAccess } from '../utils/identityResolver.js';
 import { generateAndSendOtp, verifyHashedOtp } from '../services/otpService.js';
+import { addPortalFields } from '../services/customerBookingView.js';
+import { hasVoucherAccess, voucherAccessKey } from '../utils/voucherLink.js';
+import { findAccountForReset } from '../utils/accountLookup.js';
+import {
+  isLocalRequest, devShortcutsAllowed, clientIp, retryAfter, noteAttempt, tooManyAttempts
+} from '../utils/loginGuard.js';
+import { handleB2BRequest, B2B_ADMIN_RESOURCES, B2B_ADMIN_ACTIONS } from '../controllers/b2bPortalController.js';
+import { onBookingStatusChange, setPartnerStatus } from '../services/b2bService.js';
 
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
@@ -58,18 +68,35 @@ function hashResetCode(identifier, code) {
     .digest('hex');
 }
 
-function isValidResetOtp(identifier, enteredOtp) {
-  const stored = resetOtpStore.get(identifier.trim().toLowerCase());
-  if (!stored || !enteredOtp) return false;
-  if (Date.now() > stored.expiresAt) {
-    resetOtpStore.delete(identifier.trim().toLowerCase());
-    return false;
+function sameSecret(a, b) {
+  const left = Buffer.from(String(a || ''), 'utf8');
+  const right = Buffer.from(String(b || ''), 'utf8');
+  return left.length > 0 && left.length === right.length && crypto.timingSafeEqual(left, right);
+}
+
+const MAX_RESET_CODE_TRIES = 5;
+
+/**
+ * Checks a password-reset code against the one emailed to the account. Five wrong codes cancel it.
+ * The test code 123456 is accepted only on this computer while ALLOW_DEMO_PASSWORDS=true.
+ */
+function checkResetCode(req, identifier, enteredCode) {
+  const key = identifier.trim().toLowerCase();
+  const stored = resetOtpStore.get(key);
+  if (!stored || Date.now() > stored.expiresAt) {
+    resetOtpStore.delete(key);
+    return { ok: false, error: 'This code has expired or was not requested. Please request a new code.' };
   }
-  const candidateHash = hashResetCode(identifier, enteredOtp);
-  const recordBuf = Buffer.from(stored.otpHash, 'utf8');
-  const candBuf = Buffer.from(candidateHash, 'utf8');
-  if (recordBuf.length !== candBuf.length) return false;
-  return crypto.timingSafeEqual(recordBuf, candBuf);
+  const code = String(enteredCode || '').trim();
+  if (code && devShortcutsAllowed(req) && code === '123456') return { ok: true, stored };
+  if (code && sameSecret(stored.otpHash, hashResetCode(identifier, code))) return { ok: true, stored };
+
+  stored.attempts = (stored.attempts || 0) + 1;
+  if (stored.attempts >= MAX_RESET_CODE_TRIES) {
+    resetOtpStore.delete(key);
+    return { ok: false, error: 'Too many wrong codes. Please request a new code.' };
+  }
+  return { ok: false, error: 'Invalid or expired verification code.' };
 }
 
 // -------------------------------------------------------------
@@ -89,12 +116,14 @@ const ADMIN_ONLY_RESOURCES = new Set([
   'admin_reviews', 'admin_b2b_notifications', 'b2b_partners', 'b2b_all_wallet_transactions',
   'b2b_mode_requests', 'birthday_logs', 'today_birthdays', 'blocked_booking_alerts',
   'commission_rules', 'platform_revenue', 'vendor_reactivations', 'all_vendor_hold_settings',
-  'wallet_settlements', 'settlements', 'pricing_rules'
+  'wallet_settlements', 'settlements', 'pricing_rules',
+  ...B2B_ADMIN_RESOURCES
 ]);
 const ADMIN_ONLY_ACTIONS = new Set([
   'update_lead', 'update_lead_status', 'assign_lead', 'update_next_action', 'delete_lead',
   'add_lead_comment', 'delete_lead_comment', 'delete_master_hotel', 'get_admin_payment_methods',
-  'recharge_wallet', 'top_up_wallet'
+  'recharge_wallet', 'top_up_wallet', 'toggle_user_status',
+  ...B2B_ADMIN_ACTIONS
 ]);
 const PARTNER_RESOURCES = new Set([
   'vendor_wallets', 'wallets', 'wallet', 'wallet_transactions', 'payment_gateways', 'payment_settings',
@@ -116,6 +145,10 @@ const PARTNER_ACTIONS = new Set([
 /** Returns the roles allowed for this request, or null when it is public. */
 function requiredRoles(req, resource, action) {
   if (ADMIN_ONLY_RESOURCES.has(resource) || ADMIN_ONLY_ACTIONS.has(action)) return ADMIN_ROLES;
+  // Driver names, phones, licence numbers and live locations are not public
+  if (resource === 'drivers') return ADMIN_ROLES;
+  if (resource === 'driver_details') return ['driver', ...ADMIN_ROLES];
+  if (resource === 'b2b_bookings') return ['b2b_agent', 'b2b', 'agent', ...ADMIN_ROLES];
   if (PARTNER_RESOURCES.has(resource) || PARTNER_ACTIONS.has(action) || action.startsWith('pms_')) {
     return PARTNER_ROLES;
   }
@@ -123,6 +156,10 @@ function requiredRoles(req, resource, action) {
     return ['driver', ...ADMIN_ROLES];
   }
   if (resource === 'booking_invoice_data' || action === 'download_voucher_pdf' || action === 'download_pdf') {
+    // Shared voucher link (email / WhatsApp) carries a key for that one booking
+    if (action !== 'booking_invoice_data' && resource !== 'booking_invoice_data' && hasVoucherAccess(voucherIdFrom(req), req.query.vk)) {
+      return null;
+    }
     return ALL_AUTHENTICATED_ROLES;
   }
   if (resource === 'customer_wallet' || resource === 'customer_wallet_transactions' || resource === 'customer_loyalty') {
@@ -135,8 +172,77 @@ function requiredRoles(req, resource, action) {
       }
       return PARTNER_ROLES;
     }
+    // Shared voucher link: one booking, read-only
+    if (req.method === 'GET' && hasVoucherAccess(voucherIdFrom(req), req.query.vk)) return null;
     // GET bookings requires authentication
     return ALL_AUTHENTICATED_ROLES;
+  }
+  return null;
+}
+
+function voucherIdFrom(req) {
+  return req.query.id || req.query.booking_id || req.query.pnr || '';
+}
+
+// Actions that change a hotel's content (the hotel record, room types, rooms, menu, bar,
+// amenities, meal plans, publish status). Only admins, or the hotel vendor who owns that
+// hotel, may use them.
+const HOTEL_WRITE_ACTIONS = new Set([
+  'update_hotel', 'edit_hotel', 'delete_hotel',
+  'pms_delete_menu_item', 'pms_save_menu_item', 'pms_save_bar_lounge', 'pms_delete_bar_lounge',
+  'pms_save_hotel_categorized_amenities', 'pms_save_hotel_amenities', 'pms_save_room_categorized_amenities',
+  'pms_request_custom_amenity', 'pms_save_room_meal_plans', 'pms_sync_room_meal_plans',
+  'pms_update_hotel_status', 'pms_delete_room_type', 'pms_create_room_type', 'pms_update_room_type',
+  'pms_create_room', 'pms_update_room', 'pms_delete_room',
+  'pms_update_availability', 'pms_create_manual_booking'
+]);
+
+/** The hotels a hotel-content request would change. */
+async function hotelsTouchedBy(action, body, q) {
+  const ids = new Set();
+  const add = (v) => { if (v) ids.add(String(v)); };
+  const lookup = async (sql, id) => { if (id) (await query(sql, [id])).forEach(r => add(r.hotel_id)); };
+  const id = body.id || q.id;
+
+  add(body.hotel_id);
+  add(q.hotel_id);
+  if (['update_hotel', 'edit_hotel', 'delete_hotel'].includes(action)) add(id);
+  await lookup('SELECT hotel_id FROM hotel_room_types WHERE id = ?', body.room_type_id);
+  for (const rtId of Array.isArray(body.room_type_ids) ? body.room_type_ids : []) {
+    await lookup('SELECT hotel_id FROM hotel_room_types WHERE id = ?', rtId);
+  }
+  if (action === 'pms_delete_room_type' || action === 'pms_update_room_type') {
+    await lookup('SELECT hotel_id FROM hotel_room_types WHERE id = ?', id);
+  }
+  if (action === 'pms_delete_room' || action === 'pms_update_room') {
+    await lookup('SELECT hotel_id FROM hotel_rooms WHERE id = ?', id);
+  }
+  if (action === 'pms_delete_menu_item') {
+    const itemId = body.id || q.id || body.item_id;
+    await lookup('SELECT hotel_id FROM hotel_menu_items WHERE id = ?', itemId);
+    add(hotelMenuItemsMap.get(itemId)?.hotel_id);
+  }
+  return [...ids];
+}
+
+/** True when this login owns the hotel (directly, or through one of its vendor rows). */
+async function ownsHotel(user, hotelId) {
+  const rows = await query(
+    `SELECT 1 FROM hotels h LEFT JOIN vendors v ON v.id = h.vendor_id
+     WHERE h.id = ? AND (h.vendor_id = ? OR v.user_id = ?) LIMIT 1`,
+    [hotelId, user.id, user.id]
+  );
+  return rows.length > 0;
+}
+
+/** Returns an error message when this user may not make this hotel change, else null. */
+async function hotelWriteDenied(user, action, body, q) {
+  if (ADMIN_ROLES.includes(user.role)) return null;
+  if (user.role !== 'hotel_vendor') return 'Only hotel vendors and admins can change hotel details.';
+  const hotelIds = await hotelsTouchedBy(action, body, q);
+  if (hotelIds.length === 0) return 'Choose which of your hotels to update (hotel_id is missing).';
+  for (const hotelId of hotelIds) {
+    if (!(await ownsHotel(user, hotelId))) return 'You can only change your own hotels.';
   }
   return null;
 }
@@ -208,6 +314,20 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
   }
 
   try {
+    // Hotel content changes: admins, or the hotel vendor who owns the hotel
+    if (HOTEL_WRITE_ACTIONS.has(action)) {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: 'Authentication required.' });
+      }
+      const denied = await hotelWriteDenied(req.user, action, req.body || {}, req.query);
+      if (denied) {
+        return res.status(403).json({ success: false, error: denied });
+      }
+    }
+
+    // B2B partner portal (partners, pricing, prepaid wallet, bookings, admin approvals)
+    if ((await handleB2BRequest(req, res, resource, action)) !== false) return;
+
     // -------------------------------------------------------------
     // FILE UPLOAD (Images, Documents, Photos)
     // -------------------------------------------------------------
@@ -258,7 +378,8 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     // 1. AUTHENTICATION, REGISTRATION & LOGIN
     // -------------------------------------------------------------
     if (action === 'login' || action === 'b2b_login' || resource === 'auth') {
-      return authController.login(req, res, next);
+      // The B2B portal's own sign-in accepts B2B partner accounts only
+      return authController.login(req, res, next, { b2bOnly: action === 'b2b_login' });
     }
 
     if (action === 'send_customer_otp') {
@@ -269,6 +390,14 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       if (!phone && !email) {
         return res.status(400).json({ success: false, error: 'Mobile number or email is required.' });
       }
+
+      // Stops one address from flooding many phones / inboxes with codes
+      const sendLimits = isLocalRequest(req) ? [] : [{ key: `otp-send:ip:${clientIp(req)}`, max: 15 }];
+      const sendWait = retryAfter(sendLimits);
+      if (sendWait) {
+        return tooManyAttempts(res, sendWait);
+      }
+      noteAttempt(sendLimits);
 
       const cleanPhone = phone.replace(/\D/g, '');
       let foundEmail = email;
@@ -318,6 +447,13 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       const email = (payload.email || req.query.email || '').trim().toLowerCase();
       const enteredOtp = String(payload.otp || req.query.otp || '').trim();
 
+      // Each code allows 5 tries; this also caps wrong codes per address across many numbers
+      const verifyLimits = isLocalRequest(req) ? [] : [{ key: `otp-verify:ip:${clientIp(req)}`, max: 20 }];
+      const verifyWait = retryAfter(verifyLimits);
+      if (verifyWait) {
+        return tooManyAttempts(res, verifyWait);
+      }
+
       const verifyResult = verifyHashedOtp({
         phone,
         email,
@@ -325,6 +461,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       });
 
       if (!verifyResult.success) {
+        noteAttempt(verifyLimits);
         return res.status(400).json(verifyResult);
       }
 
@@ -334,9 +471,13 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       let customerId = `c_${cleanPhone || Date.now()}`;
       try {
         const last10 = cleanPhone.slice(-10);
+        // Name from the customer's newest booking, preferring bookings made with this phone
+        // number over older bookings that only share the email address
         const rows = await query(
-          'SELECT user_id, customer_name, customer_email, customer_phone FROM bookings WHERE customer_phone LIKE ? OR customer_email = ? LIMIT 1',
-          [`%${last10}%`, email || '___none___']
+          `SELECT user_id, customer_name, customer_email, customer_phone FROM bookings
+           WHERE customer_phone LIKE ? OR customer_email = ?
+           ORDER BY (customer_phone LIKE ?) DESC, created_at DESC LIMIT 1`,
+          [`%${last10}%`, email || '___none___', `%${last10}%`]
         );
         if (rows.length > 0) {
           customerName = rows[0].customer_name || customerName;
@@ -378,65 +519,118 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       if (!identifier) {
         return res.status(400).json({ success: false, error: 'Identifier is required.' });
       }
+
+      const requestLimits = isLocalRequest(req) ? [] : [
+        { key: `reset-request:ip:${clientIp(req)}`, max: 10 },
+        { key: `reset-request:id:${identifier.toLowerCase()}`, max: 5 }
+      ];
+      const requestWait = retryAfter(requestLimits);
+      if (requestWait) {
+        return tooManyAttempts(res, requestWait);
+      }
+      noteAttempt(requestLimits);
+
+      // Same answer whether or not the account exists, so this cannot be used to discover accounts
+      const reply = {
+        success: true,
+        message: 'If an account matches, a 6-digit reset code has been sent to its registered email address.'
+      };
+
+      // Phone numbers also match when typed without the country code or spaces
+      // ("0812345678" for "+66 81 234 5678"); before, those requests silently matched nothing
+      const found = await findAccountForReset(identifier);
+      if (!found) {
+        return res.json(reply);
+      }
+      const { account, loginId } = found;
+
+      // The code goes only to the email saved on the account; it is never sent back in this response
       const otp = crypto.randomInt(100000, 1000000).toString();
-      const resetToken = `rst-${Date.now()}-${crypto.randomBytes(8).toString('hex')}`;
-      const hashed = hashResetCode(identifier, otp);
       resetOtpStore.set(identifier.toLowerCase(), {
-        otpHash: hashed,
-        resetToken,
+        userId: account.id,
+        loginId,
+        otpHash: hashResetCode(identifier, otp),
+        verifiedToken: null,
+        attempts: 0,
         expiresAt: Date.now() + 10 * 60 * 1000
       });
 
-      if (identifier.includes('@')) {
+      if (account.email && account.email.includes('@')) {
         import('../services/emailService.js').then(m => {
-          m.sendOtpEmail(identifier, otp, 'Password Reset').catch(() => {});
+          m.sendOtpEmail(account.email, otp, 'Password Reset').catch(() => {});
         });
       }
 
-      return res.json({
-        success: true,
-        message: 'Password reset code generated and dispatched.',
-        reset_token: resetToken
-      });
+      // On this computer, show the code on screen so a reset can be tested without the inbox
+      if (devShortcutsAllowed(req)) {
+        reply.dev_otp = otp;
+      }
+      return res.json(reply);
     }
 
     if (action === 'verify_reset_otp') {
       const payload = req.body || {};
-      const identifier = (payload.identifier || req.query.identifier || '').trim().toLowerCase();
-      const enteredOtp = String(payload.otp || '').trim();
-      const stored = resetOtpStore.get(identifier);
-      const isValid = (stored && stored.otp === enteredOtp && Date.now() <= stored.expiresAt) || enteredOtp === '123456';
-      if (!isValid) {
-        return res.status(400).json({ success: false, error: 'Invalid or expired verification code.' });
+      const identifier = (payload.identifier || req.query.identifier || '').trim();
+      const verifyLimits = isLocalRequest(req) ? [] : [{ key: `reset-verify:ip:${clientIp(req)}`, max: 20 }];
+      const verifyWait = retryAfter(verifyLimits);
+      if (verifyWait) {
+        return tooManyAttempts(res, verifyWait);
       }
-      return res.json({ success: true, verified: true, reset_token: stored?.resetToken || 'valid-token' });
+
+      const result = identifier
+        ? checkResetCode(req, identifier, payload.otp)
+        : { ok: false, error: 'Invalid or expired verification code.' };
+      if (!result.ok) {
+        noteAttempt(verifyLimits);
+        return res.status(400).json({ success: false, error: result.error });
+      }
+
+      // A one-time token, issued only after the emailed code was entered, authorises the new password
+      result.stored.verifiedToken = crypto.randomBytes(24).toString('hex');
+      return res.json({ success: true, verified: true, reset_token: result.stored.verifiedToken });
     }
 
     if (action === 'reset_password') {
       const payload = req.body || {};
       const identifier = (payload.identifier || req.query.identifier || '').trim();
       const newPassword = (payload.new_password || '').trim();
-      const resetCode = (payload.code || payload.reset_code || payload.otp || payload.reset_token || '').trim();
+      const enteredCode = String(payload.otp || payload.code || payload.reset_code || '').trim();
+      const verifiedToken = String(payload.reset_token || '').trim();
 
       if (!identifier || !newPassword) {
         return res.status(400).json({ success: false, error: 'Identifier and new password required.' });
       }
-
-      if (!resetCode) {
+      if (newPassword.length < 6) {
+        return res.status(400).json({ success: false, error: 'Password must be at least 6 characters long.' });
+      }
+      if (!enteredCode && !verifiedToken) {
         return res.status(400).json({ success: false, error: 'A valid reset code or verification token is required.' });
       }
 
-      const stored = resetOtpStore.get(identifier.toLowerCase());
-      const isValid = stored && (stored.resetToken === resetCode || (stored.otpHash && stored.otpHash === hashResetCode(identifier, resetCode))) && Date.now() <= stored.expiresAt;
-      if (!isValid) {
+      const resetLimits = isLocalRequest(req) ? [] : [{ key: `reset-verify:ip:${clientIp(req)}`, max: 20 }];
+      const resetWait = retryAfter(resetLimits);
+      if (resetWait) {
+        return tooManyAttempts(res, resetWait);
+      }
+
+      const key = identifier.toLowerCase();
+      const stored = resetOtpStore.get(key);
+      const tokenOk = Boolean(stored && Date.now() <= stored.expiresAt && stored.verifiedToken
+        && sameSecret(stored.verifiedToken, verifiedToken));
+      const isValid = tokenOk || (enteredCode && checkResetCode(req, identifier, enteredCode).ok);
+      if (!isValid || !stored?.userId) {
+        noteAttempt(resetLimits);
         return res.status(400).json({ success: false, error: 'Invalid or expired password reset code.' });
       }
 
-      // Invalidate single-use reset code
-      resetOtpStore.delete(identifier.toLowerCase());
+      // Single use: the code and token stop working once the password is changed
+      resetOtpStore.delete(key);
       const passwordHash = await bcrypt.hash(newPassword, 10);
-      await query('UPDATE users SET password_hash = ? WHERE username = ? OR email = ? OR phone = ?', [passwordHash, identifier, identifier, identifier]);
-      return res.json({ success: true, message: 'Password updated successfully.' });
+      // Only the one account the code was sent for
+      await query('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, stored.userId]);
+      // What to put in the sign-in form afterwards (e.g. the stored "+66 81 234 5678" when the
+      // person typed "0812345678", which the sign-in form would not recognise)
+      return res.json({ success: true, message: 'Password updated successfully.', login_id: stored.loginId || identifier });
     }
 
 
@@ -508,11 +702,28 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
         return hotelController.getHotelById(req, res, next);
       }
       const city = req.query.city;
-      let sql = `SELECT h.*, 
-        (SELECT MIN(base_price_thb) FROM hotel_room_types rt WHERE rt.hotel_id = h.id) AS min_room_price
-      FROM hotels h 
-      WHERE (h.is_published = 1 OR h.is_demo = 0)`;
+      // Visitors see published hotels; admins see all; a hotel vendor also sees their own drafts
+      const isStaffViewer = Boolean(req.user && ADMIN_ROLES.includes(req.user.role));
+      const isHotelVendorViewer = req.user?.role === 'hotel_vendor';
+      const myVendorIds = new Set();
+      if (isHotelVendorViewer) {
+        myVendorIds.add(String(req.user.id));
+        (await query('SELECT id FROM vendors WHERE user_id = ? OR id = ?', [req.user.id, req.user.id]))
+          .forEach(v => myVendorIds.add(String(v.id)));
+      }
       const params = [];
+      let visibility = 'h.is_published = 1';
+      if (isStaffViewer) {
+        visibility = '1 = 1';
+      } else if (isHotelVendorViewer) {
+        const ids = [...myVendorIds];
+        visibility = `(h.is_published = 1 OR h.vendor_id IN (${ids.map(() => '?').join(',')}))`;
+        params.push(...ids);
+      }
+      let sql = `SELECT h.*,
+        (SELECT MIN(base_price_thb) FROM hotel_room_types rt WHERE rt.hotel_id = h.id) AS min_room_price
+      FROM hotels h
+      WHERE ${visibility}`;
       if (city && city.toLowerCase() !== 'all' && city.toLowerCase() !== 'all thailand') {
         sql += ' AND (h.city = ? OR h.area LIKE ?)';
         params.push(city, `%${city}%`);
@@ -522,11 +733,12 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       const mapped = rows.map(h => {
         const hid = h.id;
         const lowestRoomPrice = parseFloat(h.min_room_price) || 0;
+        // "From" price = the cheapest room the hotel sells today
         let price = 4500;
-        if (hid === 'th-htl-01') price = 8500;
+        if (lowestRoomPrice > 0) price = lowestRoomPrice;
+        else if (hid === 'th-htl-01') price = 8500;
         else if (hid === 'th-htl-02') price = 5200;
         else if (hid === 'th-htl-04') price = 4200;
-        else if (lowestRoomPrice > 0) price = lowestRoomPrice;
         else if (h.price) price = parseFloat(h.price);
         else if (h.selling_price) price = parseFloat(h.selling_price);
 
@@ -539,6 +751,8 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
 
         return {
           ...h,
+          // Tells the hotel vendor portal which hotels belong to the signed-in vendor
+          ...(isHotelVendorViewer ? { is_mine: myVendorIds.has(String(h.vendor_id)) } : {}),
           stars: h.star_rating,
           price,
           original_price: Math.round(price * 1.35),
@@ -560,6 +774,9 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     // HOTEL ACTIONS (Add, Update, Delete)
     // -------------------------------------------------------------
     if (action === 'add_master_hotel' || action === 'add_hotel' || action === 'create_hotel') {
+      if (!req.user || !(ADMIN_ROLES.includes(req.user.role) || req.user.role === 'hotel_vendor')) {
+        return res.status(403).json({ success: false, error: 'Only hotel vendors and admins can add hotels.' });
+      }
       const {
         name,
         city = 'Bangkok',
@@ -638,7 +855,10 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
 
       // Resolve valid vendor_id to satisfy foreign key constraint on vendors(id)
       let validVendorId = null;
-      const candidateVendorId = vendor_id || req.user?.id;
+      // A hotel vendor always adds hotels under their own vendor account
+      const candidateVendorId = req.user?.role === 'hotel_vendor'
+        ? await resolveVendorId(req.user)
+        : (vendor_id || req.user?.id);
       if (candidateVendorId) {
         try {
           const vCheck = await query('SELECT id FROM vendors WHERE id = ? OR user_id = ? LIMIT 1', [candidateVendorId, candidateVendorId]);
@@ -694,18 +914,19 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     }
 
     if (action === 'update_hotel' || action === 'edit_hotel') {
+      // Only the fields the form sent are changed; missing ones keep their saved value
       const {
         id,
         name,
-        city = 'Bangkok',
+        city,
         location,
         area,
-        stars = 4,
+        stars,
         amenities = '',
         facilities_json,
         images_json,
         images,
-        address = ''
+        address
       } = req.body;
 
       const hotelId = id || req.body.hotel_id;
@@ -714,8 +935,8 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       }
 
       const validCities = ['Bangkok', 'Phuket', 'Pattaya', 'Krabi', 'Koh Samui', 'Chiang Mai'];
-      const hotelCity = validCities.includes(city) ? city : 'Bangkok';
-      const hotelArea = area || location || 'Thailand';
+      const hotelCity = validCities.includes(city) ? city : null;
+      const hotelArea = area || location || null;
 
       let amenitiesArr = [];
       if (Array.isArray(facilities_json)) amenitiesArr = facilities_json;
@@ -755,7 +976,8 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
           ]
         );
       } catch (dbErr) {
-        console.warn('[update_hotel] Database update notice:', dbErr.message);
+        console.error('[update_hotel] Could not save:', dbErr.message);
+        return res.status(500).json({ success: false, error: 'Could not save the hotel changes. Please try again.' });
       }
 
       return res.json({
@@ -768,10 +990,17 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
 
     if (action === 'delete_master_hotel' || action === 'delete_hotel') {
       const id = req.query.id || req.body?.id;
-      if (id) {
-        try {
-          await query('DELETE FROM hotels WHERE id = ?', [id]);
-        } catch (e) { }
+      if (!id) {
+        return res.status(400).json({ success: false, error: 'Hotel ID is required.' });
+      }
+      try {
+        await query('DELETE FROM hotels WHERE id = ?', [id]);
+      } catch (e) {
+        console.error('[delete_hotel] Could not delete:', e.message);
+        return res.status(409).json({
+          success: false,
+          error: 'This hotel has rooms or bookings linked to it, so it cannot be deleted. Unpublish it instead.'
+        });
       }
       return res.json({ success: true, message: 'Hotel deleted successfully.' });
     }
@@ -789,16 +1018,27 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
         const isPhuket = r.id.includes('phuket') || actualId === 'th-htl-01';
         const isBkk = r.id.includes('bkk') || actualId === 'th-htl-02';
 
-        const roomImages = isPhuket ? [
-          'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
-          'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=1200&q=80'
-        ] : isBkk ? [
-          'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
-          'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80'
-        ] : [
-          'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80',
-          'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=1200&q=80'
-        ];
+        let roomImages = [];
+        if (r.images_json) {
+          try {
+            const parsed = typeof r.images_json === 'string' ? JSON.parse(r.images_json) : r.images_json;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              roomImages = parsed.filter(Boolean);
+            }
+          } catch (e) { }
+        }
+        if (roomImages.length === 0) {
+          roomImages = isPhuket ? [
+            'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=1400&q=80',
+            'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1400&q=80'
+          ] : isBkk ? [
+            'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1400&q=80',
+            'https://images.unsplash.com/photo-1591088398332-8a7791972843?auto=format&fit=crop&w=1400&q=80'
+          ] : [
+            'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?auto=format&fit=crop&w=1400&q=80',
+            'https://images.unsplash.com/photo-1587985064135-0366536eab42?auto=format&fit=crop&w=1400&q=80'
+          ];
+        }
 
         return {
           ...r,
@@ -845,8 +1085,20 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
         };
       });
 
+      let currentHotel = null;
+      try {
+        const hotelRows = await query('SELECT * FROM hotels WHERE id = ? OR id = ? LIMIT 1', [actualId, hotelId]);
+        if (hotelRows && hotelRows.length > 0) {
+          currentHotel = hotelRows[0];
+          if (currentHotel.images_json && typeof currentHotel.images_json === 'string') {
+            try { currentHotel.images = JSON.parse(currentHotel.images_json); } catch(e) {}
+          }
+        }
+      } catch (err) {}
+
       return res.json({
         success: true,
+        hotel: currentHotel,
         room_types: mappedRooms,
         rooms: mappedRooms
       });
@@ -867,13 +1119,39 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     if (resource === 'hotel_availability_calendar') {
       const hotelId = req.query.hotel_id || 'th-htl-01';
       const rows = await query(`
-        SELECT a.*, r.hotel_id, r.name as room_type_name 
-        FROM hotel_room_availability a 
-        JOIN hotel_room_types r ON a.room_type_id = r.id 
-        WHERE r.hotel_id = ? 
+        SELECT a.*, r.hotel_id, r.name as room_type_name
+        FROM hotel_room_availability a
+        JOIN hotel_room_types r ON a.room_type_id = r.id
+        WHERE r.hotel_id = ?
         ORDER BY a.calendar_date ASC LIMIT 90
       `, [hotelId]);
-      return res.json({ success: true, availability: rows });
+
+      // Per-day view for the PMS availability calendar: { date, status, available_rooms, price_override }
+      const isDay = (d) => /^\d{4}-\d{2}-\d{2}$/.test(String(d || ''));
+      const where = ['r.hotel_id = ?'];
+      const params = [hotelId];
+      if (req.query.room_type_id) { where.push('a.room_type_id = ?'); params.push(req.query.room_type_id); }
+      if (isDay(req.query.from_date)) { where.push('a.calendar_date >= ?'); params.push(req.query.from_date); }
+      if (isDay(req.query.to_date)) { where.push('a.calendar_date <= ?'); params.push(req.query.to_date); }
+      const dayRows = await query(`
+        SELECT DATE_FORMAT(a.calendar_date, '%Y-%m-%d') AS day,
+               MIN(a.is_blackout) AS all_blocked,
+               SUM(CASE WHEN a.is_blackout = 1 THEN 0 ELSE a.available_rooms END) AS rooms_left,
+               MIN(a.price_override_thb) AS price_override
+        FROM hotel_room_availability a
+        JOIN hotel_room_types r ON a.room_type_id = r.id
+        WHERE ${where.join(' AND ')}
+        GROUP BY a.calendar_date
+        ORDER BY a.calendar_date ASC
+        LIMIT 400
+      `, params);
+      const calendar = dayRows.map(d => ({
+        date: d.day,
+        status: Number(d.all_blocked) === 1 ? 'Blocked' : (Number(d.rooms_left) <= 0 ? 'Sold Out' : 'Available'),
+        available_rooms: Number(d.rooms_left) || 0,
+        price_override: d.price_override !== null ? Number(d.price_override) : null
+      }));
+      return res.json({ success: true, availability: rows, calendar });
     }
 
     if (resource === 'pms_stats') {
@@ -1185,7 +1463,51 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     }
 
     if (action === 'pms_update_availability') {
-      return res.json({ success: true, message: 'Room availability updated.' });
+      // Availability calendar: block dates, mark sold out, set rooms left / price per date.
+      // Checkout already refuses blocked or sold-out nights (bookingService.js).
+      const p = req.body || {};
+      const roomTypeIds = [...new Set([...(Array.isArray(p.room_type_ids) ? p.room_type_ids : []), p.room_type_id].filter(Boolean))];
+      const dates = (Array.isArray(p.dates) ? p.dates : [])
+        .map(d => String(d).slice(0, 10))
+        .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
+      if (roomTypeIds.length === 0 || dates.length === 0) {
+        return res.status(400).json({ success: false, error: 'Choose a room type and at least one date.' });
+      }
+      const roomTypes = await query(
+        `SELECT id, hotel_id, total_rooms FROM hotel_room_types WHERE id IN (${roomTypeIds.map(() => '?').join(',')})`,
+        roomTypeIds
+      );
+      if (roomTypes.length !== roomTypeIds.length || (p.hotel_id && roomTypes.some(rt => rt.hotel_id !== p.hotel_id))) {
+        return res.status(404).json({ success: false, error: 'This room type is not set up for this hotel yet. Add it under Rooms & Room Types first.' });
+      }
+
+      const status = String(p.status || 'Available').toLowerCase();
+      const roomsSent = p.available_rooms !== undefined && p.available_rooms !== null && p.available_rooms !== '';
+      const priceSent = p.price_override !== undefined && p.price_override !== null && p.price_override !== '';
+      const price = priceSent ? parseFloat(p.price_override) : null;
+      const blackout = status === 'blocked' || Number(p.stop_sale) === 1 ? 1 : 0;
+
+      // Rooms left: the number sent, 0 for "Sold Out", otherwise keep what the date has
+      let rooms = roomsSent ? Math.max(0, parseInt(p.available_rooms, 10) || 0) : null;
+      if (status === 'sold out') rooms = 0;
+
+      await withTransaction(async (conn) => {
+        for (const rt of roomTypes) {
+          const fullRooms = parseInt(rt.total_rooms, 10) || 10;
+          for (const day of dates) {
+            await conn.execute(
+              `INSERT INTO hotel_room_availability (room_type_id, calendar_date, available_rooms, price_override_thb, is_blackout)
+               VALUES (?, ?, ?, ?, ?)
+               ON DUPLICATE KEY UPDATE
+                 is_blackout = VALUES(is_blackout),
+                 available_rooms = COALESCE(?, available_rooms),
+                 price_override_thb = COALESCE(?, price_override_thb)`,
+              [rt.id, day, rooms ?? fullRooms, price, blackout, rooms, price]
+            );
+          }
+        }
+      });
+      return res.json({ success: true, updated_dates: dates.length, room_types: roomTypes.length, message: 'Room availability updated.' });
     }
 
     if (action === 'pms_create_guest' || action === 'pms_update_guest' || action === 'pms_delete_guest') {
@@ -1209,7 +1531,82 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     }
 
     if (action === 'pms_create_manual_booking') {
-      return res.json({ success: true, message: 'Reservation created successfully.' });
+      // Walk-in / phone booking made by the hotel in its PMS: a real booking, with voucher and
+      // room inventory, under the hotel's vendor.
+      const p = req.body || {};
+      const hotelRows = await query('SELECT id, vendor_id, name FROM hotels WHERE id = ? LIMIT 1', [p.hotel_id]);
+      if (hotelRows.length === 0) {
+        return res.status(404).json({ success: false, error: 'Hotel not found.' });
+      }
+      const hotelRow = hotelRows[0];
+      const total = Number(p.total_amount);
+      if (!(total > 0)) {
+        return res.status(400).json({ success: false, error: 'Enter the room price so the booking has a total.' });
+      }
+      if (!String(p.guest_name || '').trim() || !String(p.guest_phone || '').trim()) {
+        return res.status(400).json({ success: false, error: 'Guest name and phone are required.' });
+      }
+
+      // The form's room type is typed in; use the hotel's matching room type when there is one
+      let roomTypeId = p.room_type_id || null;
+      if (!roomTypeId && p.room_type) {
+        const match = await query(
+          'SELECT id FROM hotel_room_types WHERE hotel_id = ? AND LOWER(name) = LOWER(?) LIMIT 1',
+          [hotelRow.id, String(p.room_type).trim()]
+        );
+        roomTypeId = match[0]?.id || null;
+      }
+
+      const notes = [
+        p.special_request,
+        p.guest_address ? `Guest address: ${p.guest_address}` : null,
+        p.internal_note ? `Internal note: ${p.internal_note}` : null
+      ].filter(Boolean).join(' | ');
+
+      const bookingPayload = {
+        customer_name: p.guest_name,
+        customer_phone: p.guest_phone,
+        customer_email: p.guest_email || '',
+        start_date: p.pickup_date,
+        end_date: p.drop_date,
+        vendor_id: hotelRow.vendor_id,
+        total_amount: total,
+        quantity: 1,
+        hotel_id: hotelRow.id,
+        hotel_name: hotelRow.name,
+        room_type: p.room_type || null,
+        type: 'hotel',
+        package_type: 'Hotel Booking',
+        adults: p.adults,
+        children: p.children,
+        payment_method: p.payment_method,
+        booking_channel: p.booking_source || 'Manual',
+        special_requests: notes || null,
+        idempotency_key: p.idempotency_key
+      };
+      if (roomTypeId) bookingPayload.room_type_id = roomTypeId;
+
+      const result = await withTransaction(conn => createBookingTransaction(conn, bookingPayload, { trustedPricing: true }));
+
+      // Made at the desk, so it is confirmed; record any advance the guest paid
+      const paid = Math.max(0, Number(p.amount_paid) || 0);
+      await query(
+        "UPDATE bookings SET booking_status = 'Confirmed', payment_amount = ?, payment_status = ? WHERE id = ?",
+        [paid, paid >= total ? 'PAID' : 'PENDING', result.booking_id]
+      );
+
+      if (bookingPayload.customer_email) {
+        sendBookingVoucherEmail({ ...bookingPayload, id: result.booking_id, item_name: hotelRow.name }, result.voucher_code)
+          .catch(err => console.warn('[pms_create_manual_booking] Voucher email error:', err.message));
+      }
+
+      return res.json({
+        success: true,
+        booking_id: result.booking_id,
+        voucher_code: result.voucher_code,
+        voucher_access_key: voucherAccessKey(result.booking_id),
+        message: 'Reservation created successfully.'
+      });
     }
 
     if (resource === 'hotel_menu_items') {
@@ -1672,11 +2069,13 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     // Direct Official Voucher PDF Stream / Download
     // -------------------------------------------------------------
     if (action === 'download_voucher_pdf' || action === 'download_pdf') {
-      if (!req.user) {
+      const bkgId = req.query.id || req.query.booking_id || req.query.pnr;
+      // The PDF link in the confirmation email carries a key for this one booking
+      const viaVoucherLink = hasVoucherAccess(bkgId, req.query.vk);
+      if (!req.user && !viaVoucherLink) {
         return res.status(401).send('Authentication required to access booking vouchers.');
       }
 
-      const bkgId = req.query.id || req.query.booking_id || req.query.pnr;
       if (!bkgId) {
         return res.status(400).send('Booking ID reference is required.');
       }
@@ -1687,7 +2086,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
           return res.status(404).send('Booking voucher not found.');
         }
 
-        const isAuthorized = await isBookingOwnerOrStaff(bookings[0], req.user);
+        const isAuthorized = viaVoucherLink || await isBookingOwnerOrStaff(bookings[0], req.user);
         if (!isAuthorized) {
           return res.status(403).send('Access denied: You do not have permission to download this voucher.');
         }
@@ -1710,16 +2109,18 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
           }
         }
 
+        // What was booked (activity, tour, cab ride, …) for non-hotel vouchers
+        const [view] = await addPortalFields([bookingRecord]);
         const enriched = {
-          ...bookingRecord,
+          ...view,
           name: bookingRecord.customer_name,
           phone: bookingRecord.customer_phone,
           email: bookingRecord.customer_email,
-          hotel_name: hotelName || bookingRecord.hotel_name || 'Thailand Travel Reservation',
-          item_name: hotelName || bookingRecord.item_name || 'Thailand Travel Reservation',
-          room_type: roomTypeName,
+          hotel_name: hotelName || view.hotel_name || undefined,
+          item_name: hotelName || view.item_name || 'Thailand Travel Reservation',
+          room_type: roomTypeName || view.room_type || '',
           total_amount: bookingRecord.base_amount_thb || bookingRecord.customer_total_amount,
-          total_paid: bookingRecord.payment_amount || 0,
+          total_paid: view.total_paid || 0,
           voucher_code: vouchers[0]?.voucher_code || `VCH-${bkgId}`
         };
 
@@ -1795,14 +2196,26 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
           where.push('vendor_id = ?');
           params.push(req.query.vendor_id);
         }
+      } else if (['b2b_agent', 'b2b', 'agent'].includes(req.user.role)) {
+        // B2B partners see the bookings they made (b2b_book saves the partner as user_id)
+        where.push('user_id = ?');
+        params.push(req.user.id);
+      } else {
+        // Drivers and other roles: their work comes from the driver endpoints, not this list
+        return res.json([]);
       }
 
       if (where.length > 0) {
         sql += ' WHERE ' + where.join(' AND ');
       }
-      sql += ' ORDER BY created_at DESC LIMIT 50';
+      // Portals load the whole list at once, so return all of it (up to a safety cap)
+      const maxRows = req.user.role === 'customer' ? 200 : 2000;
+      const requestedLimit = parseInt(req.query.limit, 10);
+      const limit = requestedLimit > 0 ? Math.min(requestedLimit, maxRows) : maxRows;
+      sql += ` ORDER BY created_at DESC LIMIT ${limit}`;
       const bookings = await query(sql, params);
-      return res.json(bookings);
+      // Every portal gets what each booking is (cab ride, hotel, activity, …), its price, dates and status
+      return res.json(await addPortalFields(bookings));
     }
 
     if (action === 'update_booking_checkin') {
@@ -1899,19 +2312,45 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
         });
       }
 
+      // Portals send these in different cases ("Cancelled", "cancelled", "Pending", …)
+      const wanted = String(rawStatus).trim().toLowerCase();
       let dbStatus = 'Confirmed';
-      if (rawStatus === 'Checked Out' || rawStatus === 'Completed') dbStatus = 'Completed';
-      else if (rawStatus === 'Cancelled') dbStatus = 'Cancelled';
-      else if (rawStatus === 'Awaiting Payment') dbStatus = 'Awaiting Payment';
+      if (wanted === 'checked out' || wanted === 'completed') dbStatus = 'Completed';
+      else if (wanted === 'cancelled' || wanted === 'canceled') dbStatus = 'Cancelled';
+      else if (wanted === 'awaiting payment' || wanted === 'pending') dbStatus = 'Awaiting Payment';
+
+      // payment_status column only takes PENDING / PAID / REJECTED / REFUNDED
+      const paidText = String(paymentStatus || '').trim().toLowerCase();
+      let dbPaymentStatus = null;
+      if (paidText.includes('refund')) dbPaymentStatus = 'REFUNDED';
+      else if (paidText.includes('reject') || paidText.includes('fail')) dbPaymentStatus = 'REJECTED';
+      else if (paidText.includes('unpaid') || paidText.includes('partial') || paidText.includes('pending')) dbPaymentStatus = 'PENDING';
+      else if (/paid|full|success|captured|received/.test(paidText)) dbPaymentStatus = 'PAID';
 
       try {
-        if (paymentStatus) {
-          await query('UPDATE bookings SET booking_status = ?, payment_status = ? WHERE id = ?', [dbStatus, paymentStatus, bookingId]);
+        // Cancelling gives the hotel rooms back to the calendar (once)
+        if (dbStatus === 'Cancelled' && booking.booking_status !== 'Cancelled') {
+          await withTransaction(conn => restoreBookingInventory(conn, bookingId));
+        }
+        if (dbPaymentStatus) {
+          await query('UPDATE bookings SET booking_status = ?, payment_status = ? WHERE id = ?', [dbStatus, dbPaymentStatus, bookingId]);
         } else {
           await query('UPDATE bookings SET booking_status = ? WHERE id = ?', [dbStatus, bookingId]);
         }
       } catch (dbErr) {
-        console.warn('[update_booking_status] Database notice:', dbErr.message);
+        console.error('[update_booking_status] Could not save:', dbErr.message);
+        return res.status(500).json({ success: false, error: 'Could not save the booking status. Please try again.' });
+      }
+
+      // B2B bookings: cancelling refunds the agent's wallet, completing pays the commission
+      try {
+        await onBookingStatusChange(bookingId, dbStatus, req.user.id);
+      } catch (walletErr) {
+        console.error('[update_booking_status] B2B wallet update failed:', walletErr.message);
+        return res.status(500).json({
+          success: false,
+          error: 'Status saved, but the B2B wallet could not be updated. Please save the status again to retry.'
+        });
       }
 
       return res.json({
@@ -1973,6 +2412,35 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     // -------------------------------------------------------------
     // 6. USERS & VENDORS (PORTALS: Admin, SuperAdmin, SubAdmin)
     // -------------------------------------------------------------
+    // Admin "activate / suspend user" (and approve / reject for B2B partner applications)
+    if (action === 'toggle_user_status') {
+      const payload = req.body || {};
+      const userId = String(payload.id || payload.user_id || '').trim();
+      const status = String(payload.status || '').trim().toLowerCase();
+      if (!userId || !['active', 'suspended', 'pending', 'rejected'].includes(status)) {
+        return res.status(400).json({ success: false, error: 'A user and a status (active, pending or suspended) are required.' });
+      }
+      const target = (await query('SELECT id, role FROM users WHERE id = ? LIMIT 1', [userId]))[0];
+      if (!target) {
+        return res.status(404).json({ success: false, error: 'User not found.' });
+      }
+      if (target.id === req.user.id && status !== 'active') {
+        return res.status(400).json({ success: false, error: 'You cannot suspend your own account.' });
+      }
+      if (['superadmin', 'super_admin'].includes(target.role) && !['superadmin', 'super_admin'].includes(req.user.role)) {
+        return res.status(403).json({ success: false, error: 'Only a super admin can change another super admin.' });
+      }
+      const partner = await setPartnerStatus(userId, status, req.user);
+      if (partner) {
+        return res.json({ success: true, id: userId, status: partner.status, partner });
+      }
+      if (status === 'rejected') {
+        return res.status(400).json({ success: false, error: 'Only B2B partner applications can be rejected.' });
+      }
+      await query('UPDATE users SET status = ? WHERE id = ?', [status, userId]);
+      return res.json({ success: true, id: userId, status });
+    }
+
     if (resource === 'users' || resource === 'assignable_users') {
       const users = await query('SELECT id, username, email, role, phone, date_of_birth, status, created_at FROM users');
       return res.json(users);
@@ -1991,9 +2459,9 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
         return res.json(vendors);
       }
 
-      // Anonymous / public: hide contact details
+      // Anonymous / public: hide contact details, login names and commercial terms
       const sanitized = vendors.map(v => {
-        const { email, contact_phone, user_phone, ...rest } = v;
+        const { email, contact_phone, user_phone, username, role, user_status, commission_rate, ...rest } = v;
         return rest;
       });
       return res.json(sanitized);
@@ -2047,8 +2515,11 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
       const resolvedVendorId = await resolveVendorId(req.user);
       const requestedVendorId = req.query.vendor_id;
 
-      // Ownership enforcement: prevent Vendor A from querying Vendor B's wallet
-      if (resolvedVendorId && requestedVendorId && String(requestedVendorId) !== String(resolvedVendorId)) {
+      // Ownership enforcement: prevent Vendor A from querying Vendor B's wallet.
+      // The vendor screens may ask with the login's own user ID; that is still their own wallet.
+      if (resolvedVendorId && requestedVendorId &&
+          String(requestedVendorId) !== String(resolvedVendorId) &&
+          String(requestedVendorId) !== String(req.user.id)) {
         return res.status(403).json({
           success: false,
           error: 'Access denied: Vendors are strictly limited to viewing their own wallet.'
@@ -2211,145 +2682,7 @@ router.all('/api.php', upload.any(), async (req, res, next) => {
     // -------------------------------------------------------------
     // 9. B2B PARTNER PORTAL
     // -------------------------------------------------------------
-    if (action === 'b2b_book') {
-      const payload = req.body || {};
-      const rawPartnerId = payload.b2b_partner_id || 'usr-b2b-01';
-      const userMatch = (await query('SELECT id FROM users WHERE id = ? OR username = ? LIMIT 1', [rawPartnerId, rawPartnerId]))[0];
-      const validUserId = userMatch ? userMatch.id : null;
-
-      const customerName = (payload.guest_name || payload.name || 'B2B Client').trim();
-      const customerPhone = (payload.guest_phone || payload.phone || '+66 80 000 0000').trim();
-      const customerEmail = (payload.guest_email || payload.email || '').trim().toLowerCase();
-      const startDate = (payload.pickup_date || payload.start_date || new Date().toISOString().slice(0, 10)).slice(0, 10);
-      const endDate = (payload.drop_date || payload.end_date || startDate).slice(0, 10);
-      const totalAmount = parseFloat(payload.extra_details?.total_amount || payload.total_amount || 0.00);
-      const bookingId = `TH-B2B-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 900 + 100)}`;
-      const voucherCode = `VCH-${bookingId.replace('TH-B2B-', 'B2B-')}`;
-
-      try {
-        await query(
-          `INSERT INTO bookings (
-            id, user_id, customer_name, customer_phone, customer_email,
-            start_date, end_date, base_amount_thb, customer_total_amount,
-            customer_currency, payment_status, payment_verification_status,
-            booking_status, special_requests
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'THB', 'PAID', 'Verified', 'Confirmed', ?)`,
-          [
-            bookingId, validUserId, customerName, customerPhone, customerEmail,
-            startDate, endDate, totalAmount, totalAmount,
-            JSON.stringify(payload.extra_details || {})
-          ]
-        );
-
-        let rawType = (payload.service_type || 'HOTEL').toUpperCase();
-        let itemType = 'HOTEL';
-        if (rawType.includes('CAB') || rawType.includes('CAR') || rawType.includes('TRANSFER')) {
-          itemType = 'TRANSFER';
-        } else if (rawType.includes('TOUR')) {
-          itemType = 'TOUR';
-        } else if (rawType.includes('ACT')) {
-          itemType = 'ACTIVITY';
-        }
-
-        const itemId = `b2b_itm_${Date.now()}`;
-        await query(
-          `INSERT INTO booking_items (id, booking_id, item_type, reference_id, unit_price_thb, quantity, subtotal_thb, details_json)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            itemId, bookingId, itemType,
-            payload.item_id || 'general', totalAmount, payload.qty || 1, totalAmount,
-            JSON.stringify({ item_name: payload.item_name, b2b_mode: payload.b2b_mode })
-          ]
-        );
-
-        return res.json({
-          success: true,
-          booking_id: bookingId,
-          voucher_code: voucherCode,
-          status: 'Confirmed',
-          message: 'B2B booking confirmed successfully',
-          data: { id: bookingId, status: 'Confirmed', total_amount: totalAmount }
-        });
-      } catch (err) {
-        console.error('B2B booking error:', err);
-        return res.status(500).json({ success: false, error: err.message || 'Failed to process B2B booking' });
-      }
-    }
-
-    if (resource === 'b2b_dashboard') {
-      const partnerId = req.query.b2b_partner_id || req.user?.id || 'b2b-01';
-      return res.json({
-        success: true,
-        partner: {
-          id: partnerId,
-          name: 'Siam Luxury Travel B2B',
-          company_name: 'Siam Luxury Travel Group Co., Ltd.',
-          tier: 'Diamond',
-          allow_commission: 1,
-          allow_non_commission: 1,
-          status: 'active'
-        },
-        stats: {
-          total_bookings: 14,
-          total_revenue: 185000,
-          wallet_balance: 50000,
-          credit_limit: 100000
-        },
-        recent_bookings: []
-      });
-    }
-
-    if (resource === 'b2b_partners') {
-      return res.json([
-        { id: 'b2b-01', name: 'Siam Luxury Travel B2B', email: 'agent@siamluxury.th', phone: '+66 89 234 5678', tier: 'Diamond', balance: 50000, credit_limit: 100000 }
-      ]);
-    }
-
-    if (resource === 'b2b_wallet') {
-      return res.json({
-        success: true,
-        balance: 50000,
-        credit_limit: 100000,
-        currency: 'THB',
-        reserved_amount: 5000
-      });
-    }
-
-    if (resource === 'b2b_all_wallet_transactions') {
-      return res.json([
-        { id: 'b2b-tx-01', partner_id: 'b2b-01', amount: 12500, type: 'credit', description: 'Top-up deposit via Bangkok Bank QR', created_at: '2026-10-19' }
-      ]);
-    }
-
-    if (resource === 'b2b_customers') {
-      return res.json([
-        { id: 'b2b-c-01', name: 'James Patterson', phone: '+44 7911 123456', total_bookings: 2 }
-      ]);
-    }
-
-    if (resource === 'b2b_reports') {
-      return res.json({
-        success: true,
-        total_sales: 185000,
-        bookings_count: 14,
-        commission_earned: 18500
-      });
-    }
-
-    if (resource === 'b2b_pricing_rules' || resource === 'b2b_pricing_preview') {
-      return res.json([
-        { id: 'rule-gold', tier: 'Gold', discount_pct: 10, min_monthly_bookings: 5 },
-        { id: 'rule-diamond', tier: 'Diamond', discount_pct: 15, min_monthly_bookings: 15 }
-      ]);
-    }
-
-    if (resource === 'b2b_mode_requests') {
-      return res.json([]);
-    }
-
-    if (resource === 'b2b_notifications' || resource === 'admin_b2b_notifications') {
-      return res.json({ success: true, notifications: [], unread_count: 0 });
-    }
+    // Handled by controllers/b2bPortalController.js (see handleB2BRequest above)
 
     // -------------------------------------------------------------
     // 10. PLATFORM SETTINGS, REVENUE & GATEWAYS

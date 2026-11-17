@@ -284,7 +284,7 @@ export default function HotelFoodMenuManager({ currentUser, vendorHotels = [], s
       {/* Header bar */}
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
         <div className="d-flex align-items-center gap-2.5">
-          <div className="rounded-3 p-2 d-flex align-items-center justify-content-center text-white" style={{ background: 'linear-gradient(135deg, #FF6333, #FF8A00)' }}>
+          <div className="rounded-3 p-2 d-flex align-items-center justify-content-center text-dark" style={{ background: 'linear-gradient(135deg, #F5C518, #E5A826)' }}>
             <Utensils size={22} />
           </div>
           <div>
@@ -319,8 +319,8 @@ export default function HotelFoodMenuManager({ currentUser, vendorHotels = [], s
 
           <button
             type="button"
-            className="btn btn-sm text-white d-flex align-items-center gap-1 rounded-pill px-3 fw-bold"
-            style={{ background: 'linear-gradient(90deg, #FF6333, #FF8A00)' }}
+            className="btn btn-sm text-dark d-flex align-items-center gap-1 rounded-pill px-3 fw-bold"
+            style={{ background: 'linear-gradient(90deg, #F5C518, #E5A826)' }}
             onClick={openAddModal}
           >
             <Plus size={14} /> Add New Dish
@@ -411,8 +411,8 @@ export default function HotelFoodMenuManager({ currentUser, vendorHotels = [], s
           <p className="text-muted small mb-3">Add breakfast dishes, local Thai specialties, or drinks to showcase on your hotel profile.</p>
           <button
             type="button"
-            className="btn btn-sm text-white rounded-pill px-4 fw-bold"
-            style={{ background: 'linear-gradient(90deg, #FF6333, #FF8A00)' }}
+            className="btn btn-sm text-dark rounded-pill px-4 fw-bold"
+            style={{ background: 'linear-gradient(90deg, #F5C518, #E5A826)' }}
             onClick={openAddModal}
           >
             <Plus size={14} className="me-1" /> Add First Dish
@@ -728,8 +728,8 @@ export default function HotelFoodMenuManager({ currentUser, vendorHotels = [], s
                 </button>
                 <button
                   type="submit"
-                  className="btn btn-sm text-white px-4 rounded-pill fw-bold"
-                  style={{ background: 'linear-gradient(90deg, #FF6333, #FF8A00)' }}
+                  className="btn btn-sm text-dark px-4 rounded-pill fw-bold"
+                  style={{ background: 'linear-gradient(90deg, #F5C518, #E5A826)' }}
                   disabled={actionLoading || uploadingImage}
                 >
                   {actionLoading ? 'Saving...' : editingItem ? 'Update Dish' : 'Add to Menu'}

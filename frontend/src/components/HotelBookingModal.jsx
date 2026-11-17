@@ -572,6 +572,7 @@ export default function HotelBookingModal({
         children: itemChildren,
         nightlyRate,
         roomNightsTotal,
+        extraAdultsCount,
         extraAdultTotal,
         extraChildTotal,
         lineTotal: roomNightsTotal + extraAdultTotal + extraChildTotal
@@ -581,6 +582,8 @@ export default function HotelBookingModal({
 
   const baseRoomTotal = roomLineItems.reduce((acc, r) => acc + r.roomNightsTotal, 0);
   const extraAdultTotal = roomLineItems.reduce((acc, r) => acc + r.extraAdultTotal, 0);
+  // shown in the price breakdown ("Extra Adults (2)"); it was only defined inside the loop above
+  const extraAdultsCount = roomLineItems.reduce((acc, r) => acc + (r.extraAdultsCount || 0), 0);
   const extraChildTotal = roomLineItems.reduce((acc, r) => acc + r.extraChildTotal, 0);
   const roomTotal = roomLineItems.reduce((acc, r) => acc + r.lineTotal, 0);
   const nightlyRoomRate = selectedRooms[0]?.plan?.calculated_price || selectedRooms[0]?.plan?.base_price || selectedRooms[0]?.room?.selling_price || (roomLineItems[0]?.nightlyRate || 0);
@@ -1743,7 +1746,7 @@ export default function HotelBookingModal({
                 className="btn btn-primary px-5 py-2.5 fw-bold w-100 shadow-sm rounded-3" 
                 onClick={handleConfirmBooking}
                 disabled={isProcessing || !policyAgreed}
-                style={{ fontSize: '0.95rem', opacity: (!policyAgreed || isProcessing) ? 0.65 : 1, background: '#FF6333', borderColor: '#FF6333' }}
+                style={{ fontSize: '0.95rem', opacity: (!policyAgreed || isProcessing) ? 0.65 : 1, background: '#F5C518', borderColor: '#F5C518' }}
               >
                 {isProcessing ? 'Confirming Reservation...' : <>Confirm &amp; Reserve Stay (<CurrencyPriceDisplay amountInr={payableNow} size="sm" color="#ffffff" />)</>}
               </button>

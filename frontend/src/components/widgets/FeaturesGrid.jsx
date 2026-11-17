@@ -38,7 +38,7 @@ export default function FeaturesGrid({ config }) {
           <h2 className="section-title fw-bold text-white mt-1 mb-2" style={{ fontSize: '2.2rem', letterSpacing: '-0.5px' }}>
             {config?.heading || 'Why Choose Us?'}
           </h2>
-          <div className="mx-auto mb-3" style={{ width: '48px', height: '3px', background: '#FF6333', borderRadius: '2px' }}></div>
+          <div className="mx-auto mb-3" style={{ width: '48px', height: '3px', background: '#F5C518', borderRadius: '2px' }}></div>
           <p className="mt-2 mx-auto" style={{ color: '#E2E8F0', maxWidth: '600px', fontSize: '0.98rem', lineHeight: '1.6' }}>
             {config?.subtext || 'We deliver excellence across all our services'}
           </p>
@@ -58,7 +58,7 @@ export default function FeaturesGrid({ config }) {
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-4px)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 99, 51, 0.4)';
+                  e.currentTarget.style.borderColor = 'rgba(245, 197, 24, 0.4)';
                   e.currentTarget.style.background = 'rgba(255, 255, 255, 0.07)';
                 }}
                 onMouseLeave={(e) => {
@@ -72,9 +72,9 @@ export default function FeaturesGrid({ config }) {
                   style={{ 
                     width: '64px', 
                     height: '64px', 
-                    background: 'rgba(255, 99, 51, 0.15)', 
-                    color: '#FF6333',
-                    border: '1px solid rgba(255, 99, 51, 0.25)'
+                    background: 'rgba(245, 197, 24, 0.15)', 
+                    color: '#B8860B',
+                    border: '1px solid rgba(245, 197, 24, 0.25)'
                   }}
                 >
                   {f.icon}

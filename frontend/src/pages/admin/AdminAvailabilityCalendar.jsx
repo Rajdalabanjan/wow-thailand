@@ -839,7 +839,7 @@ export default function AdminAvailabilityCalendar({
           bg: '#fff7ed',
           color: '#c2410c',
           border: '#fed7aa',
-          dot: '#ea580c',
+          dot: '#CA8A04',
           emoji: '📦',
           label: 'Package'
         };
@@ -893,8 +893,8 @@ export default function AdminAvailabilityCalendar({
               onClick={handleTodayClick}
               className="btn btn-sm shadow-xs rounded-pill px-3 fw-bold d-flex align-items-center gap-1.5 transition-all"
               style={{
-                background: '#FF6333',
-                color: '#ffffff',
+                background: '#F5C518',
+                color: '#06101E',
                 border: '1px solid #e05325',
                 fontSize: '0.82rem',
                 cursor: 'pointer'
@@ -1058,7 +1058,7 @@ export default function AdminAvailabilityCalendar({
               className={`btn btn-sm rounded-pill px-3 fw-semibold border-0 transition-all ${typeFilter === 'package' ? 'text-white' : 'text-secondary'}`}
               style={{ background: typeFilter === 'package' ? '#0D1B2E' : 'transparent', fontSize: '0.8rem', cursor: 'pointer' }}
             >
-              <span style={{ color: typeFilter === 'package' ? '#fff' : '#ea580c' }}>📦</span> Trips ({packageList.length})
+              <span style={{ color: typeFilter === 'package' ? '#fff' : '#CA8A04' }}>📦</span> Trips ({packageList.length})
             </button>
           </div>
 
@@ -1126,7 +1126,7 @@ export default function AdminAvailabilityCalendar({
               <span style={{ color: '#475569', fontWeight: 500 }}>Hotels</span>
             </div>
             <div className="d-flex align-items-center gap-1.5 cursor-pointer" onClick={() => setTypeFilter(prev => prev === 'package' ? 'all' : 'package')}>
-              <span className="rounded-circle" style={{ width: '7px', height: '7px', background: '#ea580c', display: 'inline-block' }} />
+              <span className="rounded-circle" style={{ width: '7px', height: '7px', background: '#CA8A04', display: 'inline-block' }} />
               <span style={{ color: '#475569', fontWeight: 500 }}>Packages</span>
             </div>
             <div className="d-flex align-items-center gap-1.5 cursor-pointer" onClick={() => setTypeFilter(prev => prev === 'flight' ? 'all' : 'flight')}>
@@ -1134,7 +1134,7 @@ export default function AdminAvailabilityCalendar({
               <span style={{ color: '#475569', fontWeight: 500 }}>Flights</span>
             </div>
             <div className="d-flex align-items-center gap-1.5 cursor-pointer" onClick={handleTodayClick}>
-              <span className="rounded-circle" style={{ width: '7px', height: '7px', background: '#FF6333', display: 'inline-block' }} />
+              <span className="rounded-circle" style={{ width: '7px', height: '7px', background: '#F5C518', display: 'inline-block' }} />
               <span style={{ color: '#475569', fontWeight: 500 }}>Today</span>
             </div>
           </div>
@@ -1246,7 +1246,7 @@ export default function AdminAvailabilityCalendar({
                           : '#ffffff',
                   opacity: isCurrentMonth ? 1 : 0.4,
                   border: isToday 
-                    ? '1px solid rgba(255, 99, 51, 0.45)' 
+                    ? '1px solid rgba(245, 197, 24, 0.45)' 
                     : isSelected 
                       ? '1px solid #2563eb' 
                       : 'none',
@@ -1264,7 +1264,7 @@ export default function AdminAvailabilityCalendar({
                     <span 
                       style={{ 
                         fontWeight: isToday ? 700 : isWeekend ? 600 : 500,
-                        color: isToday ? '#FF6333' : isCurrentMonth ? (isSunday ? '#e11d48' : '#1e293b') : '#94a3b8',
+                        color: isToday ? '#F5C518' : isCurrentMonth ? (isSunday ? '#e11d48' : '#1e293b') : '#94a3b8',
                         fontSize: '0.82rem',
                         lineHeight: 1
                       }}
@@ -1278,9 +1278,9 @@ export default function AdminAvailabilityCalendar({
                         style={{ 
                           fontSize: '0.58rem', 
                           fontWeight: 700, 
-                          color: '#FF6333', 
+                          color: '#B8860B', 
                           background: '#fff5f0', 
-                          border: '1px solid rgba(255, 99, 51, 0.35)', 
+                          border: '1px solid rgba(245, 197, 24, 0.35)', 
                           padding: '1px 5px', 
                           borderRadius: '4px',
                           letterSpacing: '0.2px',
@@ -1477,7 +1477,7 @@ export default function AdminAvailabilityCalendar({
               width: '580px',
               maxWidth: '94vw',
               background: '#fff',
-              borderLeft: '4px solid #FF6333',
+              borderLeft: '4px solid #F5C518',
               overflowY: 'auto'
             }}
           >
@@ -1485,8 +1485,8 @@ export default function AdminAvailabilityCalendar({
             <div className="p-3.5 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2 sticky-top" style={{ background: '#f8fafc', zIndex: 10 }}>
               <div className="d-flex align-items-center gap-2.5">
                 <div 
-                  className="rounded-circle d-flex align-items-center justify-content-center text-white" 
-                  style={{ width: '40px', height: '40px', background: selectedDayDetails.isToday ? '#FF6333' : '#0D1B2E', flexShrink: 0 }}
+                  className="rounded-circle d-flex align-items-center justify-content-center" 
+                  style={{ width: '40px', height: '40px', background: selectedDayDetails.isToday ? '#F5C518' : '#0D1B2E', color: selectedDayDetails.isToday ? '#06101E' : '#fff', flexShrink: 0 }}
                 >
                   <Calendar size={19} />
                 </div>
@@ -1715,7 +1715,7 @@ export default function AdminAvailabilityCalendar({
             <div className="modal-content border-0 shadow-2xl rounded-4 overflow-hidden">
               <div className="modal-header border-0 px-4 pt-4 pb-3" style={{ background: '#0D1B2E', color: '#fff' }}>
                 <div className="d-flex align-items-center gap-3">
-                  <div className="rounded-circle d-flex align-items-center justify-content-center" style={{ width: '42px', height: '42px', background: 'rgba(255,99,51,0.15)', color: '#FF6333' }}>
+                  <div className="rounded-circle d-flex align-items-center justify-content-center" style={{ width: '42px', height: '42px', background: 'rgba(245, 197, 24, 0.15)', color: '#B8860B' }}>
                     <Calendar size={22} />
                   </div>
                   <div>
@@ -1867,7 +1867,7 @@ export default function AdminAvailabilityCalendar({
             <div className="modal-content border-0 shadow-2xl rounded-4 overflow-hidden">
               <div className="modal-header border-0 px-4 pt-4 pb-3" style={{ background: '#0D1B2E', color: '#fff' }}>
                 <div className="d-flex align-items-center gap-3">
-                  <div className="rounded-circle d-flex align-items-center justify-content-center" style={{ width: '42px', height: '42px', background: 'rgba(0,184,217,0.18)', color: '#00B8D9' }}>
+                  <div className="rounded-circle d-flex align-items-center justify-content-center" style={{ width: '42px', height: '42px', background: 'rgba(245, 197, 24, 0.18)', color: '#B8860B' }}>
                     <BarChart3 size={22} />
                   </div>
                   <div>
@@ -1940,7 +1940,7 @@ export default function AdminAvailabilityCalendar({
                                   style={{
                                     width: `${item.occupancy}%`,
                                     height: '100%',
-                                    background: item.occupancy >= 70 ? '#ea580c' : item.occupancy >= 30 ? '#d97706' : '#16a34a'
+                                    background: item.occupancy >= 70 ? '#CA8A04' : item.occupancy >= 30 ? '#d97706' : '#16a34a'
                                   }}
                                 />
                               </div>

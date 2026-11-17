@@ -473,8 +473,8 @@ export default function AdminPaymentManager({
                         {(verifStatus === 'Approved' || verifStatus === 'Verified') && payoutStatus === 'Pending' && !isCancelled && (
                           <button
                             type="button"
-                            className="btn btn-sm text-white fw-bold rounded-pill px-2.5 py-1 text-xxs shadow-xs"
-                            style={{ background: 'linear-gradient(90deg, #FF6333, #FF8A00)' }}
+                            className="btn btn-sm text-dark fw-bold rounded-pill px-2.5 py-1 text-xxs shadow-xs"
+                            style={{ background: 'linear-gradient(90deg, #F5C518, #E5A826)' }}
                             onClick={() => {
                               setSettlingBooking(b);
                               setPayoutUtr('');
@@ -639,8 +639,8 @@ export default function AdminPaymentManager({
                   </button>
                   <button
                     type="submit"
-                    className="btn btn-sm text-white rounded-pill px-4 text-xs fw-bold shadow-sm"
-                    style={{ background: 'linear-gradient(90deg, #FF6333, #FF8A00)' }}
+                    className="btn btn-sm text-dark rounded-pill px-4 text-xs fw-bold shadow-sm"
+                    style={{ background: 'linear-gradient(90deg, #F5C518, #E5A826)' }}
                     disabled={payoutSubmitting}
                   >
                     {payoutSubmitting ? 'Recording Payout...' : 'Confirm & Record Payout'}

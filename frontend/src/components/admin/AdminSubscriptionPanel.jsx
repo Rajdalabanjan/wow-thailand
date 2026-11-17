@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { apiFetch, API_BASE } from '../../services/api';
 
-const COLORS = { primary: '#FF6333', dark: '#0D1B2E' };
+const COLORS = { primary: '#F5C518', dark: '#0D1B2E' };
 
 function StatusBadge({ status }) {
   const map = {
@@ -159,7 +159,7 @@ export default function AdminSubscriptionPanel({ currentUser }) {
               </div>
             </div>
             {!isActive && (
-              <button className="btn px-4 py-2 fw-bold text-white rounded-3" style={{ background: `linear-gradient(90deg,${COLORS.primary},#FF8A00)` }} onClick={() => setStep('plans')}>
+              <button className="btn px-4 py-2 fw-bold text-white rounded-3" style={{ background: `linear-gradient(90deg,${COLORS.primary},#E5A826)` }} onClick={() => setStep('plans')}>
                 Renew Subscription <ChevronRight size={14} className="ms-1" />
               </button>
             )}
@@ -208,7 +208,7 @@ export default function AdminSubscriptionPanel({ currentUser }) {
                       background: isSelected ? `linear-gradient(135deg,#fff7f5,#fff)` : '#fff',
                       border: isSelected ? `2px solid ${COLORS.primary}` : '1px solid rgba(0,0,0,0.07)',
                       cursor: 'pointer', transition: 'all 0.2s ease',
-                      boxShadow: isSelected ? `0 8px 24px rgba(255,99,51,0.15)` : '0 2px 8px rgba(0,0,0,0.04)'
+                      boxShadow: isSelected ? `0 8px 24px rgba(245, 197, 24, 0.15)` : '0 2px 8px rgba(0,0,0,0.04)'
                     }}
                     onClick={() => setSelectedPlan(isSelected ? null : plan)}
                   >
@@ -239,7 +239,7 @@ export default function AdminSubscriptionPanel({ currentUser }) {
 
           {selectedPlan && (
             <div className="mt-4">
-              <button className="btn px-5 py-3 fw-bold text-white rounded-3 w-100" style={{ background: `linear-gradient(90deg,${COLORS.primary},#FF8A00)`, fontSize: '1rem' }} onClick={() => setStep('checkout')}>
+              <button className="btn px-5 py-3 fw-bold text-white rounded-3 w-100" style={{ background: `linear-gradient(90deg,${COLORS.primary},#E5A826)`, fontSize: '1rem' }} onClick={() => setStep('checkout')}>
                 Proceed to Payment — ฿{getPrice(selectedPlan).toLocaleString()} <ChevronRight size={16} className="ms-1" />
               </button>
             </div>
@@ -324,7 +324,7 @@ export default function AdminSubscriptionPanel({ currentUser }) {
               <div className="d-flex justify-content-between mb-4" style={{ fontSize: '1rem', color: '#fff', fontWeight: 700 }}>
                 <span>Total</span><span>฿{getPrice(selectedPlan).toLocaleString()}</span>
               </div>
-              <button className="btn w-100 fw-bold text-white py-3 rounded-3" style={{ background: `linear-gradient(90deg,${COLORS.primary},#FF8A00)`, fontSize: '0.9rem' }} onClick={handleSubmitSubscription} disabled={submitting || !selectedGateway}>
+              <button className="btn w-100 fw-bold text-white py-3 rounded-3" style={{ background: `linear-gradient(90deg,${COLORS.primary},#E5A826)`, fontSize: '0.9rem' }} onClick={handleSubmitSubscription} disabled={submitting || !selectedGateway}>
                 {submitting ? 'Submitting...' : 'Submit Payment'}
               </button>
               <button className="btn w-100 mt-2 fw-bold" style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)', fontSize: '0.82rem' }} onClick={() => setStep('plans')}>
@@ -341,7 +341,7 @@ export default function AdminSubscriptionPanel({ currentUser }) {
           <CheckCircle size={48} style={{ color: '#16a34a' }} className="mb-3" />
           <h5 className="fw-bold" style={{ color: COLORS.dark }}>Payment Submitted!</h5>
           <p style={{ color: '#374151', fontSize: '0.85rem' }}>Your subscription payment has been submitted for verification. You'll be notified once it's approved.</p>
-          <button className="btn px-4 py-2 fw-bold text-white rounded-3 mt-2" style={{ background: `linear-gradient(90deg,${COLORS.primary},#FF8A00)` }} onClick={() => { setStep('plans'); load(); }}>
+          <button className="btn px-4 py-2 fw-bold text-white rounded-3 mt-2" style={{ background: `linear-gradient(90deg,${COLORS.primary},#E5A826)` }} onClick={() => { setStep('plans'); load(); }}>
             View Plans
           </button>
         </div>

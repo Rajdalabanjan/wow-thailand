@@ -223,24 +223,27 @@ async function runTests() {
     // -------------------------------------------------------------
     console.log('\n4. Testing B2B Partner Portal API Contracts:');
     
-    // B2B Dashboard
-    const b2bDashRes = await fetch(`${baseUrl}/api.php?resource=b2b_dashboard&b2b_partner_id=b2b-01`, { headers: auth(adminToken) });
+    // B2B Dashboard (admin looking at a real partner account)
+    const b2bDashRes = await fetch(`${baseUrl}/api.php?resource=b2b_dashboard&b2b_partner_id=usr-b2b-01`, { headers: auth(adminToken) });
     assert(b2bDashRes.status === 200, 'GET /api.php?resource=b2b_dashboard returns 200 OK');
     const b2bDash = await b2bDashRes.json();
     assert(b2bDash.success === true, 'B2B dashboard success is true');
-    assert(b2bDash.partner.name.includes('Siam'), 'Contains B2B partner details');
+    assert(b2bDash.partner?.id === 'usr-b2b-01' && typeof b2bDash.partner.company_name === 'string', 'Contains the real B2B partner profile');
+    assert(b2bDash.metrics && typeof b2bDash.metrics.total_bookings === 'number', 'Contains dashboard metrics from real bookings');
 
-    // B2B Wallet & Limits
-    const b2bWalRes = await fetch(`${baseUrl}/api.php?resource=b2b_wallet&partner_id=b2b-01`, { headers: auth(adminToken) });
+    // B2B Wallet & Limits (real ledger; balance comes from confirmed top-ups and bookings)
+    const b2bWalRes = await fetch(`${baseUrl}/api.php?resource=b2b_wallet&partner_id=usr-b2b-01`, { headers: auth(adminToken) });
     assert(b2bWalRes.status === 200, 'GET /api.php?resource=b2b_wallet returns 200 OK');
     const b2bWal = await b2bWalRes.json();
-    assert(b2bWal.success === true && b2bWal.balance > 0, 'B2B wallet has active credit balance');
+    assert(b2bWal.success === true && typeof b2bWal.wallet_balance === 'number' && Array.isArray(b2bWal.transactions), 'B2B wallet returns balance and statement');
 
-    // B2B Pricing Rules
-    const b2bRulesRes = await fetch(`${baseUrl}/api.php?resource=b2b_pricing_rules`);
-    assert(b2bRulesRes.status === 200, 'GET /api.php?resource=b2b_pricing_rules returns 200 OK');
+    // B2B Pricing Rules (admin only)
+    const b2bRulesAnon = await fetch(`${baseUrl}/api.php?resource=b2b_pricing_rules`);
+    assert(b2bRulesAnon.status === 401, 'B2B pricing rules are not public (401)');
+    const b2bRulesRes = await fetch(`${baseUrl}/api.php?resource=b2b_pricing_rules`, { headers: auth(adminToken) });
+    assert(b2bRulesRes.status === 200, 'GET /api.php?resource=b2b_pricing_rules returns 200 OK for admins');
     const b2bRules = await b2bRulesRes.json();
-    assert(Array.isArray(b2bRules) && b2bRules.some(r => r.tier === 'Diamond'), 'Returns B2B tier pricing rules');
+    assert(Array.isArray(b2bRules), 'Returns the B2B pricing rules list');
 
     // -------------------------------------------------------------
     // 5. PORTAL 4: DRIVER PORTAL CONTRACTS
@@ -253,14 +256,18 @@ async function runTests() {
     const dJobs = await dJobsRes.json();
     assert(Array.isArray(dJobs), 'Driver jobs returned as array');
 
-    // Drivers List
-    const dListRes = await fetch(`${baseUrl}/api.php?resource=drivers`);
-    assert(dListRes.status === 200, 'GET /api.php?resource=drivers returns 200 OK');
+    // Drivers List (names, phones, licences and live locations: admins only)
+    const dListAnon = await fetch(`${baseUrl}/api.php?resource=drivers`);
+    assert(dListAnon.status === 401, 'GET /api.php?resource=drivers without login is refused (401)');
+    const dListRes = await fetch(`${baseUrl}/api.php?resource=drivers`, { headers: auth(adminToken) });
+    assert(dListRes.status === 200, 'GET /api.php?resource=drivers as admin returns 200 OK');
     const drivers = await dListRes.json();
     assert(Array.isArray(drivers) && drivers.length >= 1, 'Drivers list returned from database');
 
-    // Driver Profile
-    const dProfRes = await fetch(`${baseUrl}/api.php?resource=driver_details&id=usr-driver-somchai`);
+    // Driver Profile (admins, or the driver themself)
+    const dProfAnon = await fetch(`${baseUrl}/api.php?resource=driver_details&id=usr-driver-somchai`);
+    assert(dProfAnon.status === 401, 'GET /api.php?resource=driver_details without login is refused (401)');
+    const dProfRes = await fetch(`${baseUrl}/api.php?resource=driver_details&id=usr-driver-somchai`, { headers: auth(adminToken) });
     assert(dProfRes.status === 200, 'GET /api.php?resource=driver_details returns 200 OK');
     const dProf = await dProfRes.json();
     assert(dProf.success === true && dProf.data.name.includes('Somchai'), 'Driver profile contains Somchai Prasert');

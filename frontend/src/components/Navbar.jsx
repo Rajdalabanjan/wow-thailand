@@ -55,6 +55,7 @@ export default function Navbar({ activeTab, setActiveTab, currentUser, triggerOp
           display: inline-flex;
           align-items: center;
           gap: 6px;
+          text-decoration: none !important;
           color: rgba(255, 255, 255, 0.85) !important;
           font-size: 13.5px !important;
           font-weight: 600 !important;

@@ -1,0 +1,128 @@
+/* ==========================================================================
+   WOW THAILAND brand theme for every page and portal
+   Navy for primary actions and text, gold for the accent.
+   Bootstrap's blue "primary" (btn-primary, text-primary, bg-primary, links,
+   checkboxes, pagination, nav pills…) is remapped here, in one place.
+   Loaded after Bootstrap (see main.jsx).
+   ========================================================================== */
+
+:root {
+  --brand-navy: #0B192C;
+  --brand-navy-2: #1E3E62;
+  --brand-gold: #F5C518;
+  --brand-gold-deep: #E5A826;
+
+  --bs-primary: #1E3E62;
+  --bs-primary-rgb: 30, 62, 98;
+  --bs-primary-text-emphasis: #0B192C;
+  --bs-primary-bg-subtle: #E8EEF5;
+  --bs-primary-border-subtle: #C5D3E3;
+  --bs-link-color: #1E3E62;
+  --bs-link-color-rgb: 30, 62, 98;
+  --bs-link-hover-color: #0B192C;
+  --bs-link-hover-color-rgb: 11, 25, 44;
+  --bs-focus-ring-color: rgba(245, 197, 24, 0.35);
+}
+
+/* Primary buttons: navy (gold stays for the main call to action, .btn-brand) */
+.btn-primary {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: #0B192C;
+  --bs-btn-border-color: #0B192C;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #1E3E62;
+  --bs-btn-hover-border-color: #1E3E62;
+  --bs-btn-focus-shadow-rgb: 245, 197, 24;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #06101E;
+  --bs-btn-active-border-color: #06101E;
+  --bs-btn-disabled-color: #fff;
+  --bs-btn-disabled-bg: #0B192C;
+  --bs-btn-disabled-border-color: #0B192C;
+}
+.btn-outline-primary {
+  --bs-btn-color: #0B192C;
+  --bs-btn-border-color: #0B192C;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #0B192C;
+  --bs-btn-hover-border-color: #0B192C;
+  --bs-btn-focus-shadow-rgb: 245, 197, 24;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #0B192C;
+  --bs-btn-active-border-color: #0B192C;
+  --bs-btn-disabled-color: #0B192C;
+  --bs-btn-disabled-border-color: #0B192C;
+}
+.btn-link {
+  --bs-btn-color: #1E3E62;
+  --bs-btn-hover-color: #0B192C;
+  --bs-btn-active-color: #0B192C;
+}
+
+/* Form controls: gold focus glow, navy checked state */
+.form-control:focus,
+.form-select:focus {
+  border-color: #E5A826;
+  box-shadow: 0 0 0 0.2rem rgba(245, 197, 24, 0.25);
+}
+.form-check-input:checked {
+  background-color: #0B192C;
+  border-color: #0B192C;
+}
+.form-check-input:focus {
+  border-color: #E5A826;
+  box-shadow: 0 0 0 0.2rem rgba(245, 197, 24, 0.25);
+}
+.form-range::-webkit-slider-thumb { background-color: #0B192C; }
+.form-range::-moz-range-thumb { background-color: #0B192C; }
+
+/* Navigation pieces */
+.nav-pills {
+  --bs-nav-pills-link-active-bg: #0B192C;
+  --bs-nav-pills-link-active-color: #fff;
+}
+.nav-link { --bs-nav-link-color: #1E3E62; --bs-nav-link-hover-color: #0B192C; }
+.pagination {
+  --bs-pagination-color: #1E3E62;
+  --bs-pagination-hover-color: #0B192C;
+  --bs-pagination-focus-color: #0B192C;
+  --bs-pagination-focus-box-shadow: 0 0 0 0.2rem rgba(245, 197, 24, 0.25);
+  --bs-pagination-active-bg: #0B192C;
+  --bs-pagination-active-border-color: #0B192C;
+}
+.dropdown-menu {
+  --bs-dropdown-link-active-bg: #0B192C;
+}
+.list-group {
+  --bs-list-group-active-bg: #0B192C;
+  --bs-list-group-active-border-color: #0B192C;
+}
+.progress,
+.progress-stacked {
+  --bs-progress-bar-bg: #0B192C;
+}
+
+/* Luzia chat window header is gold: its title, status and buttons are navy */
+.luzia-header .text-white,
+.luzia-header h6,
+.luzia-header button {
+  color: #06101E !important;
+}
+.luzia-header button {
+  background: rgba(6, 16, 30, 0.1) !important;
+  border-color: rgba(6, 16, 30, 0.12) !important;
+}
+.luzia-header button:hover {
+  background: rgba(6, 16, 30, 0.18) !important;
+}
+.luzia-header .luzia-drag-pill {
+  background: rgba(6, 16, 30, 0.35) !important;
+  box-shadow: none !important;
+}
+
+/* Dark portal sidebars (admin, super admin, vendor consoles): the active menu item
+   sits on the gold highlight, so its text and icon are navy */
+.sidebar-glide [data-glide][data-glide-active="true"],
+.sidebar-glide [data-glide][data-glide-active="true"] * {
+  color: #06101E !important;
+}

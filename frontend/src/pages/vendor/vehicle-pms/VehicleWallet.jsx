@@ -26,7 +26,7 @@ export default function VehicleWallet() {
           <p className="mb-0 mt-1" style={{ fontSize: '0.78rem', color: '#64748b' }}>Track earnings, commissions and wallet balance</p>
         </div>
         <div className="d-flex gap-2">
-          <button onClick={() => setShowRecharge(true)} className="btn px-4 py-2 fw-bold text-white d-flex align-items-center gap-2 rounded-3" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)', fontSize: '0.83rem' }}>
+          <button onClick={() => setShowRecharge(true)} className="btn px-4 py-2 fw-bold text-dark d-flex align-items-center gap-2 rounded-3" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', fontSize: '0.83rem' }}>
             <RefreshCw size={14} /> Request Recharge
           </button>
           <button className="btn px-3 py-2 rounded-3 fw-bold d-flex align-items-center gap-1" style={{ background: '#dcfce7', color: '#16a34a', fontSize: '0.82rem' }}>
@@ -39,7 +39,7 @@ export default function VehicleWallet() {
       <div className="row g-3 mb-4">
         <div className="col-md-4">
           <div className="rounded-3 p-4 text-center" style={{ background: 'linear-gradient(135deg,#0D1B2E,#1e3a5f)', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <Wallet size={28} style={{ color: '#FF6333' }} className="mb-2" />
+            <Wallet size={28} style={{ color: '#B8860B' }} className="mb-2" />
             <div className="fw-bold text-white" style={{ fontSize: '2rem' }}>฿{balance.toLocaleString()}</div>
             <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.78rem' }}>Available Balance</div>
           </div>
@@ -117,7 +117,7 @@ export default function VehicleWallet() {
               </div>
               <div className="d-flex gap-2">
                 <button onClick={() => setShowRecharge(false)} className="btn flex-grow-1 py-2 rounded-3" style={{ background: '#f1f5f9', color: '#475569', fontWeight: 600 }}>Cancel</button>
-                <button onClick={() => { alert('Recharge request submitted to admin!'); setShowRecharge(false); }} className="btn flex-grow-1 py-2 rounded-3 fw-bold text-white" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }}>Submit Request</button>
+                <button onClick={() => { alert('Recharge request submitted to admin!'); setShowRecharge(false); }} className="btn flex-grow-1 py-2 rounded-3 fw-bold text-dark" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}>Submit Request</button>
               </div>
             </div>
           </div>

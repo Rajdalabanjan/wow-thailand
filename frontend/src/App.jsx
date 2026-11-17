@@ -230,7 +230,7 @@ export default function App() {
         }
         const hotelId = urlParams.get('hotel') || (p.startsWith('/hotels') ? urlParams.get('id') : null);
         if (hotelId && defaultHotels) {
-          const match = defaultHotels.find(h => String(h.id) === String(hotelId));
+          const match = defaultHotels.find(h => String(h.id) === String(hotelId) || (h.db_id && String(h.db_id) === String(hotelId)));
           if (match) return match;
         }
       }
@@ -544,21 +544,34 @@ export default function App() {
     }
   }, [packages]);
 
-  // Auto-hydrate hotel details if direct URL or query parameter has ?hotel=id or ?id=id
+  // Auto-hydrate hotel details if direct URL or query parameter has ?hotel=id or ?id=id, or refresh selectedDetailItem
   useEffect(() => {
     if (hotels && hotels.length > 0 && typeof window !== 'undefined') {
       const p = window.location.pathname.toLowerCase();
       const urlParams = new URLSearchParams(window.location.search);
       const hotelId = urlParams.get('hotel') || urlParams.get('id');
       if (hotelId && p.startsWith('/hotels')) {
-        const matchedHotel = hotels.find(h => String(h.id) === String(hotelId));
-        if (matchedHotel && (!selectedDetailItem || String(selectedDetailItem.id) !== String(hotelId))) {
-          setSelectedDetailItem(matchedHotel);
-          setActiveTab('hotel-details');
-          try {
-            sessionStorage.setItem('tg_activeTab', 'hotel-details');
-            sessionStorage.setItem('tg_selectedDetailItem', JSON.stringify(matchedHotel));
-          } catch (e) {}
+        const matchedHotel = hotels.find(h => String(h.id) === String(hotelId) || (h.db_id && String(h.db_id) === String(hotelId)));
+        if (matchedHotel) {
+          if (!selectedDetailItem || String(selectedDetailItem.id) !== String(matchedHotel.id)) {
+            setSelectedDetailItem(matchedHotel);
+            try {
+              sessionStorage.setItem('tg_selectedDetailItem', JSON.stringify(matchedHotel));
+            } catch (e) {}
+          }
+        }
+      } else if (selectedDetailItem) {
+        // Keep selectedDetailItem synced with fresh database images & fields if already viewing
+        const matchedHotel = hotels.find(h => String(h.id) === String(selectedDetailItem.id) || (h.db_id && String(h.db_id) === String(selectedDetailItem.id)));
+        if (matchedHotel) {
+          const prevImgs = JSON.stringify(selectedDetailItem.images_json || selectedDetailItem.images || []);
+          const newImgs = JSON.stringify(matchedHotel.images_json || matchedHotel.images || []);
+          if (prevImgs !== newImgs) {
+            setSelectedDetailItem(matchedHotel);
+            try {
+              sessionStorage.setItem('tg_selectedDetailItem', JSON.stringify(matchedHotel));
+            } catch (e) {}
+          }
         }
       }
     }
@@ -2569,12 +2582,17 @@ export default function App() {
                     });
                   });
                 }
+                const origin = sessionStorage.getItem('tg_detailOriginTab') || detailOriginTab || 'hotels';
+                const returnTab = origin === 'customer' ? 'customer' : 'hotels';
                 setSelectedDetailItem(null);
-                setActiveTab('hotels');
+                setActiveTab(returnTab);
                 try {
                   sessionStorage.removeItem('tg_selectedDetailItem');
-                  sessionStorage.setItem('tg_activeTab', 'hotels');
+                  sessionStorage.setItem('tg_activeTab', returnTab);
                 } catch (e) {}
+                const targetPath = returnTab === 'customer' ? '/customer' : '/hotels';
+                window.history.pushState({}, '', targetPath);
+                setCurrentPath(targetPath);
                 setTimeout(() => {
                   document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
                 }, 50);

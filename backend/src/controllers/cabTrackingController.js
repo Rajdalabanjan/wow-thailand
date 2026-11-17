@@ -52,40 +52,51 @@ export async function getTrackingDetails(req, res, next) {
 
       if (drivers.length > 0) {
         const drv = drivers[0];
+        // Colour helps the customer spot the car at pickup
+        const vehicles = dispatch.vehicle_id
+          ? await query('SELECT color FROM cab_vehicles WHERE id = ? LIMIT 1', [dispatch.vehicle_id])
+          : [];
         driverData = {
           id: drv.id,
-          name: drv.full_name || 'Somchai Prasert',
+          name: drv.full_name || 'Verified Chauffeur',
           phone: drv.phone,
           license_number: drv.license_number,
           vehicle_model: dispatch.vehicle_model || drv.vehicle_model,
           vehicle_plate: dispatch.vehicle_plate || drv.vehicle_plate,
-          rating: 4.95,
-          total_trips: 342,
-          photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
+          vehicle_color: vehicles[0]?.color || null,
+          rating: 5.0,
+          total_trips: 0,
+          photo: null,
           status: drv.status
         };
 
-        // Fetch latest GPS location
-        const locations = await query(
-          `SELECT latitude, longitude, heading, speed, recorded_at
-           FROM taxi_driver_locations
-           WHERE driver_id = ? 
-           ORDER BY recorded_at DESC LIMIT 1`,
-          [drv.id]
-        );
+        // The driver's real GPS position, only while they are on the way or on the trip.
+        // Tracking links can be shared, so the driver's position is not shown before
+        // they set off for this ride or after it has ended.
+        const LIVE_STATUSES = ['DISPATCHED', 'ARRIVED', 'ON_TRIP'];
+        if (LIVE_STATUSES.includes(String(dispatch.ride_status || '').toUpperCase())) {
+          const locations = await query(
+            `SELECT latitude, longitude, heading, speed, recorded_at,
+                    TIMESTAMPDIFF(SECOND, recorded_at, NOW()) AS age_sec
+             FROM taxi_driver_locations
+             WHERE driver_id = ?
+             ORDER BY recorded_at DESC LIMIT 1`,
+            [drv.id]
+          );
 
-        if (locations.length > 0) {
-          latestLocation = locations[0];
-        } else if (dispatch.pickup_lat && dispatch.pickup_lng) {
-          // Default simulated location slightly offset from pickup
-          latestLocation = {
-            latitude: parseFloat(dispatch.pickup_lat) + 0.005,
-            longitude: parseFloat(dispatch.pickup_lng) + 0.005,
-            heading: 45.0,
-            speed: 25.0,
-            recorded_at: new Date()
-          };
+          if (locations.length > 0) {
+            latestLocation = {
+              latitude: parseFloat(locations[0].latitude),
+              longitude: parseFloat(locations[0].longitude),
+              heading: parseFloat(locations[0].heading) || 0,
+              speed: parseFloat(locations[0].speed) || 0,
+              recorded_at: locations[0].recorded_at,
+              // Seconds since this position arrived (worked out by the database, so no timezone mix-ups)
+              age_sec: Math.max(0, Number(locations[0].age_sec) || 0)
+            };
+          }
         }
+        // No GPS from the driver yet: latestLocation stays null (never a made-up position)
       }
     }
 
@@ -117,9 +128,10 @@ export async function getTrackingDetails(req, res, next) {
     // Only the authenticated customer owner or authorized staff can view the 4-digit ride OTP
     let rideOtp = null;
     let otpInstruction = null;
+    let isOwner = false;
 
     if (req.user) {
-      const isOwner = await isBookingOwnerOrStaff(
+      isOwner = await isBookingOwnerOrStaff(
         {
           id: dispatch.booking_id,
           user_id: dispatch.bkg_user_id,
@@ -163,12 +175,16 @@ export async function getTrackingDetails(req, res, next) {
         distance_km: parseFloat(dispatch.distance_km),
         estimated_minutes: dispatch.estimated_minutes,
         total_fare_thb: parseFloat(dispatch.total_fare_thb),
-        customer: {
-          name: dispatch.customer_name,
-          phone: dispatch.customer_phone,
-          currency: dispatch.customer_currency,
-          total_amount: parseFloat(dispatch.customer_total_amount)
-        },
+        // Tracking links are shareable, so the customer's own details are only
+        // returned to the booking owner or staff
+        customer: isOwner
+          ? {
+              name: dispatch.customer_name,
+              phone: dispatch.customer_phone,
+              currency: dispatch.customer_currency,
+              total_amount: parseFloat(dispatch.customer_total_amount)
+            }
+          : null,
         driver: driverData,
         driver_location: latestLocation,
         timeline: events,

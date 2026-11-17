@@ -217,12 +217,12 @@ export default function CraftServiceDetailsModal({
         <div className="d-flex align-items-center justify-content-between px-4 py-3 border-bottom bg-light">
           <div className="d-flex align-items-center gap-2">
             <div
-              className="rounded-3 p-1.5 text-white d-flex align-items-center justify-content-center"
+              className="rounded-3 p-1.5 text-dark d-flex align-items-center justify-content-center"
               style={{
                 background: isVehicle
                   ? 'linear-gradient(135deg, #0052ff, #00c6ff)'
                   : isHotel
-                  ? 'linear-gradient(135deg, #ff6b35, #f7c59f)'
+                  ? 'linear-gradient(135deg, #F5C518, #f7c59f)'
                   : 'linear-gradient(135deg, #10b981, #059669)',
                 width: 34,
                 height: 34

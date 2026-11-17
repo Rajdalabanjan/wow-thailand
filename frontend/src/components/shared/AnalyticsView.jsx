@@ -26,7 +26,7 @@ function MiniBar({ data, color, labels }) {
 
 function DonutChart({ segments = [], labels = [] }) {
   const total = segments.reduce((s, v) => s + (Number(v) || 0), 0);
-  const colors = ['#FF6333', '#2563eb', '#16a34a', '#7c3aed', '#d97706'];
+  const colors = ['#F5C518', '#2563eb', '#16a34a', '#7c3aed', '#d97706'];
   const safeTotal = total > 0 ? total : 1;
   return (
     <div className="d-flex align-items-center gap-4">
@@ -203,11 +203,11 @@ export default function AnalyticsView({ bookings, hotels, cars, bikes, vendors =
             <div className="d-flex align-items-center justify-content-between mb-4">
               <div className="fw-bold" style={{ color: '#0D1B2E', fontSize: '13px' }}>Revenue vs Bookings</div>
               <div className="d-flex gap-3">
-                <div className="d-flex align-items-center gap-1"><div className="rounded-circle" style={{ width: '8px', height: '8px', background: '#FF6333' }} /><span style={{ fontSize: '0.68rem', color: '#64748b' }}>Revenue</span></div>
+                <div className="d-flex align-items-center gap-1"><div className="rounded-circle" style={{ width: '8px', height: '8px', background: '#F5C518' }} /><span style={{ fontSize: '0.68rem', color: '#64748b' }}>Revenue</span></div>
                 <div className="d-flex align-items-center gap-1"><div className="rounded-circle" style={{ width: '8px', height: '8px', background: '#2563eb' }} /><span style={{ fontSize: '0.68rem', color: '#64748b' }}>Bookings</span></div>
               </div>
             </div>
-            <MiniBar data={weekRevenue} color="#FF6333" labels={DAYS} />
+            <MiniBar data={weekRevenue} color="#B8860B" labels={DAYS} />
           </div>
         </div>
         <div className="col-md-4">
@@ -234,7 +234,7 @@ export default function AnalyticsView({ bookings, hotels, cars, bikes, vendors =
               { label: 'Total Vehicles', value: (cars?.length || 0) + (bikes?.length || 0), color: '#d97706' },
               { label: 'Total Packages', value: (allPackages || []).length, color: '#7c3aed' },
               { label: 'Active Vendors', value: (vendors || []).length, color: '#2563eb' },
-              { label: 'Total Bookings', value: b.length, color: '#FF6333' },
+              { label: 'Total Bookings', value: b.length, color: '#B8860B' },
             ].map(s => (
               <div key={s.label} className="d-flex align-items-center justify-content-between py-2" style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
                 <div className="d-flex align-items-center gap-2">

@@ -205,7 +205,7 @@ export default function UnifiedFilterPopover({
              'Filters'}
           </span>
           {activeCount > 0 && (
-            <span className="badge rounded-pill" style={{ background: '#fff7ed', color: '#ff6333', border: '1px solid #ffedd5', fontSize: '0.70rem', fontWeight: 700 }}>
+            <span className="badge rounded-pill" style={{ background: '#fff7ed', color: '#B8860B', border: '1px solid #ffedd5', fontSize: '0.70rem', fontWeight: 700 }}>
               {activeCount} Applied
             </span>
           )}
@@ -979,8 +979,8 @@ export default function UnifiedFilterPopover({
         </button>
         <button
           type="button"
-          className="btn btn-sm text-white px-4 fw-bold shadow-sm"
-          style={{ background: '#FF6333', borderColor: '#FF6333', fontSize: '0.80rem' }}
+          className="btn btn-sm text-dark px-4 fw-bold shadow-sm"
+          style={{ background: '#F5C518', borderColor: '#F5C518', fontSize: '0.80rem' }}
           onClick={onApply}
         >
           Apply Filters

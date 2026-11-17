@@ -156,7 +156,7 @@ function ProgressBar({ current, total }) {
         <span className="fw-bold" style={{ fontSize: '0.78rem', color: '#0D1B2E' }}>{pct}% complete</span>
       </div>
       <div className="rounded-pill overflow-hidden" style={{ height: '6px', background: '#dee2e6' }}>
-        <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, #0D1B2E, #FF6333)', transition: 'width 0.4s' }}></div>
+        <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, #0D1B2E, #F5C518)', transition: 'width 0.4s' }}></div>
       </div>
       <div className="d-flex gap-1 mt-3 flex-wrap">
         {STEPS.map(s => (
@@ -874,7 +874,7 @@ export default function PMSAddHotelWizard({ currentUser, onAddHotel, onUpdateHot
             <label className="form-label fw-semibold" style={{ fontSize: '0.82rem' }}>Upload Hotel Images (Select Multiple Files)</label>
             <div 
               className="border-2 border-dashed rounded-4 p-4 text-center" 
-              style={{ borderColor: isDragging ? '#FF6333' : '#dee2e6', background: isDragging ? '#FFF5F2' : '#FAFAFA', cursor: 'pointer', transition: 'all 0.2s' }}
+              style={{ borderColor: isDragging ? '#F5C518' : '#dee2e6', background: isDragging ? '#FFF5F2' : '#FAFAFA', cursor: 'pointer', transition: 'all 0.2s' }}
               onClick={() => document.getElementById('hotelImageUpload').click()}
               onDragOver={e => { e.preventDefault(); e.stopPropagation(); setIsDragging(true); }}
               onDragLeave={e => { e.preventDefault(); e.stopPropagation(); setIsDragging(false); }}
@@ -948,7 +948,7 @@ export default function PMSAddHotelWizard({ currentUser, onAddHotel, onUpdateHot
                       src={img} 
                       alt="" 
                       className="w-100 rounded-3 border" 
-                      style={{ height: '85px', objectFit: 'cover', cursor: 'pointer', border: i === 0 ? '2px solid #FF6333 !important' : '1px solid #dee2e6' }} 
+                      style={{ height: '85px', objectFit: 'cover', cursor: 'pointer', border: i === 0 ? '2px solid #F5C518 !important' : '1px solid #dee2e6' }} 
                       onClick={() => {
                         if (i !== 0) {
                           const updated = [...form.images];
@@ -960,7 +960,7 @@ export default function PMSAddHotelWizard({ currentUser, onAddHotel, onUpdateHot
                       title="Click to set as cover image"
                     />
                     {i === 0 ? (
-                      <span className="position-absolute top-0 start-0 badge" style={{ background: '#FF6333', fontSize: '0.6rem', margin: '4px' }}>Cover</span>
+                      <span className="position-absolute top-0 start-0 badge" style={{ background: '#F5C518', fontSize: '0.6rem', margin: '4px' }}>Cover</span>
                     ) : (
                       <span className="position-absolute bottom-0 start-0 badge bg-dark bg-opacity-75" style={{ fontSize: '0.55rem', margin: '4px' }}>#{i+1}</span>
                     )}
@@ -1788,7 +1788,7 @@ export default function PMSAddHotelWizard({ currentUser, onAddHotel, onUpdateHot
         {savingStatusMsg && <div className="alert alert-info py-2 px-3 mb-3" style={{ fontSize: '0.82rem' }}>⏳ {savingStatusMsg}</div>}
 
         <div className="mb-4">
-          <h6 className="fw-bold mb-3" style={{ color: '#1a2b4a', borderBottom: '2px solid #FF6333', paddingBottom: '8px', display: 'inline-block' }}>
+          <h6 className="fw-bold mb-3" style={{ color: '#1a2b4a', borderBottom: '2px solid #F5C518', paddingBottom: '8px', display: 'inline-block' }}>
             Step {step}: {STEPS[step - 1].label}
           </h6>
           {renderStep()}

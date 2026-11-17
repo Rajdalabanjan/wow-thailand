@@ -505,7 +505,7 @@ export default function SelfDrivePage({
               <button 
                 type="button" 
                 className="btn btn-primary rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center gap-2"
-                style={{ background: '#FF6333', borderColor: '#FF6333' }}
+                style={{ background: '#F5C518', borderColor: '#F5C518' }}
                 onClick={handleClearAllFilters}
               >
                 <RotateCcw size={15} /> Clear All Filters
@@ -625,7 +625,7 @@ export default function SelfDrivePage({
                           <button 
                             type="button" 
                             className="btn btn-primary btn-sm px-4 py-2 rounded-pill fw-bold d-inline-flex align-items-center gap-1.5 shadow-sm"
-                            style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', borderColor: '#FF6333' }}
+                            style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', borderColor: '#F5C518' }}
                             onClick={(e) => {
                               if (document.activeElement && typeof document.activeElement.blur === 'function') {
                                 document.activeElement.blur();

@@ -404,7 +404,7 @@ export default function BookingConfirmationCard({
               type="button" 
               id="view-voucher-direct-btn"
               className="btn btn-dark text-white fw-bold rounded-pill px-4 py-2.5 text-xs d-flex align-items-center justify-content-center gap-2 shadow-sm w-100 font-heading mb-1"
-              style={{ background: 'linear-gradient(135deg, #070f1e 0%, #0f172a 100%)', border: '1.5px solid #ff9f1c' }}
+              style={{ background: 'linear-gradient(135deg, #070f1e 0%, #0f172a 100%)', border: '1.5px solid #E5A826' }}
               onClick={() => {
                 if (onViewVoucher && typeof onViewVoucher === 'function') {
                   onViewVoucher();

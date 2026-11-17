@@ -485,7 +485,7 @@ export default function CustomTripEnquiryPage({ setActiveTab, currentUser, prefi
                 type="submit" 
                 disabled={isSubmitting} 
                 className="btn btn-primary btn-lg px-5 py-3 rounded-pill fw-bold w-100 shadow-sm d-flex align-items-center justify-content-center mx-auto" 
-                style={{ maxWidth: '400px', background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', borderColor: '#FF6333' }}
+                style={{ maxWidth: '400px', background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', borderColor: '#F5C518' }}
               >
                 {isSubmitting ? (
                   <>

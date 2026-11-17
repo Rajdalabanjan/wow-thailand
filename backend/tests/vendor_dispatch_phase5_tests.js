@@ -88,6 +88,12 @@ export async function runVendorDispatchPhase5Tests() {
     // Ensure Vendor A has drv-bkk-01
     await query(`UPDATE drivers SET vendor_id = 'vnd-bangkok-cabs' WHERE id = 'drv-bkk-01'`);
 
+    // Clean slate: no active trips for the test drivers. drv-bkk-01 drives the approved
+    // sedan, drv-other-99 the approved SUV, so assignments can be checked against vehicle size.
+    await query("UPDATE taxi_dispatches SET ride_status = 'COMPLETED' WHERE driver_id IN ('drv-bkk-01', 'drv-other-99') AND ride_status IN ('DISPATCHED', 'ARRIVED', 'ON_TRIP')");
+    await query("UPDATE drivers SET active_vehicle_id = 'veh-camry-01', status = 'available' WHERE id = 'drv-bkk-01'");
+    await query("UPDATE drivers SET vendor_id = 'vnd-bangkok-cabs', active_vehicle_id = 'veh-fortuner-01', status = 'available' WHERE id = 'drv-other-99'");
+
     // Vendor A queries drivers
     const vAdrvRes = await getJson('/api/v1/vendor/drivers', authHeader(vendorAToken));
     testAssert(vAdrvRes.status === 200, 'Vendor A queries drivers returns 200 OK');
@@ -160,7 +166,7 @@ export async function runVendorDispatchPhase5Tests() {
     // Insert dispatch for Vendor A
     await query(
       `INSERT INTO bookings (id, user_id, customer_name, customer_phone, customer_email, start_date, end_date, vendor_id, base_amount_thb, customer_total_amount, payment_status, booking_status)
-       VALUES (?, NULL, 'Alice A', '+66 80 111 1111', 'alice@test.com', CURRENT_DATE(), CURRENT_DATE(), 'vnd-bangkok-cabs', 900.00, 900.00, 'PENDING', 'Confirmed')`,
+       VALUES (?, NULL, 'Alice A', '+66 80 111 1111', 'alice@example.com', CURRENT_DATE(), CURRENT_DATE(), 'vnd-bangkok-cabs', 900.00, 900.00, 'PENDING', 'Confirmed')`,
       [bkgAId]
     );
     await query(
@@ -172,7 +178,7 @@ export async function runVendorDispatchPhase5Tests() {
     // Insert dispatch for Vendor B
     await query(
       `INSERT INTO bookings (id, user_id, customer_name, customer_phone, customer_email, start_date, end_date, vendor_id, base_amount_thb, customer_total_amount, payment_status, booking_status)
-       VALUES (?, NULL, 'Bob B', '+66 80 222 2222', 'bob@test.com', CURRENT_DATE(), CURRENT_DATE(), 'vnd-1792584528326', 1500.00, 1500.00, 'PENDING', 'Confirmed')`,
+       VALUES (?, NULL, 'Bob B', '+66 80 222 2222', 'bob@example.com', CURRENT_DATE(), CURRENT_DATE(), 'vnd-1792584528326', 1500.00, 1500.00, 'PENDING', 'Confirmed')`,
       [bkgBId]
     );
     await query(
@@ -235,12 +241,27 @@ export async function runVendorDispatchPhase5Tests() {
     const adminHasB = adminDispJson.data.some(d => d.id === dispBId);
     testAssert(adminHasA && adminHasB, 'Admin console sees all dispatches across all vendors');
 
-    // Admin reassigns Vendor B's dispatch to drv-other-99
+    // Admin cannot give the SUV job to a driver whose active vehicle is a sedan
+    const tooSmallRes = await postJson('/api/v1/admin/cab-assign-driver', {
+      dispatch_id: dispBId,
+      driver_id: 'drv-bkk-01'
+    }, authHeader(adminToken));
+    const tooSmallJson = await tooSmallRes.json();
+    if (tooSmallRes.status !== 400) console.log('DEBUG tooSmallRes:', tooSmallRes.status, tooSmallJson);
+    testAssert(tooSmallRes.status === 400, 'Assigning a sedan driver to an SUV job is rejected (400)');
+    testAssert(/SEDAN|seats|bags/.test(tooSmallJson.error || ''), 'Rejection explains the vehicle does not fit');
+
+    // Admin reassigns Vendor B's dispatch to drv-other-99 (drives an SUV)
     const adminReassignRes = await postJson('/api/v1/admin/cab-assign-driver', {
       dispatch_id: dispBId,
       driver_id: 'drv-other-99'
     }, authHeader(adminToken));
     testAssert(adminReassignRes.status === 200, 'Admin can reassign any vendor dispatch (200 OK)');
+
+    // The job moves to the driver's vendor and records the vehicle that will be sent
+    const [chkB] = await query('SELECT vendor_id, vehicle_id FROM taxi_dispatches WHERE id = ?', [dispBId]);
+    testAssert(chkB.vendor_id === 'vnd-bangkok-cabs', 'Dispatch ownership moves to the assigned driver\'s vendor');
+    testAssert(chkB.vehicle_id === 'veh-fortuner-01', 'Dispatch records the assigned driver\'s active vehicle');
 
     // Admin filters by status
     const filterRes = await getJson('/api/v1/admin/cab-dispatches?status=DISPATCHED', authHeader(adminToken));
@@ -285,6 +306,7 @@ export async function runVendorDispatchPhase5Tests() {
     // Cleanup test records
     await query('DELETE FROM taxi_dispatches WHERE id IN (?, ?)', [dispAId, dispBId]);
     await query('DELETE FROM bookings WHERE id IN (?, ?)', [bkgAId, bkgBId]);
+    await query("UPDATE drivers SET active_vehicle_id = NULL WHERE id = 'drv-other-99'");
 
     console.log(`\n============================================================`);
     console.log(`PHASE 5 TESTS FINISHED: ${passed} PASSED, ${failed} FAILED`);

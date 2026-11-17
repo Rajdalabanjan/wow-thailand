@@ -131,9 +131,9 @@ export default function FlightVendorDashboard({
       ────────────────────────────────────────────────────────────────────────────── */}
       {activeTab === 'add_flight' && (
         <div className="col-12 col-lg-8 mx-auto">
-          <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%)', border: '1px solid rgba(0, 184, 217, 0.2)' }}>
+          <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%)', border: '1px solid rgba(245, 197, 24, 0.2)' }}>
             <div className="d-flex align-items-center gap-3 position-relative z-1">
-              <div className="bg-white p-2 rounded-circle shadow-sm" style={{ color: '#00B8D9' }}>
+              <div className="bg-white p-2 rounded-circle shadow-sm" style={{ color: '#B8860B' }}>
                 <Sparkles size={24} />
               </div>
               <div>
@@ -366,8 +366,8 @@ export default function FlightVendorDashboard({
 
       {activeTab === 'billing' && (
         <div className="col-12 mt-2 text-start">
-          <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(255, 99, 51, 0.1)' }}>
-            <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #FF8A00 0%, transparent 70%)', pointerEvents: 'none' }}></div>
+          <div className="p-4 rounded-4 mb-4 shadow-sm position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff0e6 0%, #ffe0cc 100%)', border: '1px solid rgba(245, 197, 24, 0.1)' }}>
+            <div className="position-absolute top-0 end-0 h-100 opacity-25" style={{ width: '40%', background: 'radial-gradient(circle at right, #E5A826 0%, transparent 70%)', pointerEvents: 'none' }}></div>
             <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 position-relative z-1">
               <div>
                 <h4 className="fw-extrabold mb-2 text-dark font-heading" style={{ letterSpacing: '0.5px' }}>Flight Vendor Billing</h4>

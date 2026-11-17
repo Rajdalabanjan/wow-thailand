@@ -8,6 +8,9 @@ import { createBookingTransaction, restoreBookingInventory } from '../services/b
 import { confirmBookingAndDeductPlatformFee } from '../services/walletService.js';
 import { sendBookingVoucherEmail } from '../services/emailService.js';
 import { isBookingOwnerOrStaff, resolveVendorId } from '../utils/identityResolver.js';
+import { addPortalFields } from '../services/customerBookingView.js';
+import { hasVoucherAccess, voucherAccessKey } from '../utils/voucherLink.js';
+import { onBookingStatusChange } from '../services/b2bService.js';
 
 const STAFF_PRICING_ROLES = [
   'admin', 'superadmin', 'subadmin', 'sub_admin', 'super_admin',
@@ -30,7 +33,10 @@ export async function createBooking(req, res, next) {
       });
     }
 
-    res.status(201).json(result);
+    // Lets the confirmation screen share a voucher link that opens without signing in
+    res.status(201).json(result?.booking_id
+      ? { ...result, voucher_access_key: voucherAccessKey(result.booking_id) }
+      : result);
   } catch (err) {
     next(err);
   }
@@ -75,21 +81,23 @@ export async function verifyPayment(req, res, next) {
 
 export async function getBookingById(req, res, next) {
   try {
-    if (!req.user) {
+    const { id } = req.params;
+    // The voucher link from the confirmation email / WhatsApp opens this one booking
+    const viaVoucherLink = hasVoucherAccess(id, req.query.vk);
+    if (!req.user && !viaVoucherLink) {
       return res.status(401).json({
         success: false,
         error: 'Authentication required to access booking details.'
       });
     }
 
-    const { id } = req.params;
     const bookings = await query('SELECT * FROM bookings WHERE id = ?', [id]);
     if (bookings.length === 0) {
       return res.status(404).json({ success: false, error: 'Booking not found.' });
     }
 
     const bookingRecord = { ...bookings[0] };
-    const isAuthorized = await isBookingOwnerOrStaff(bookingRecord, req.user);
+    const isAuthorized = viaVoucherLink || await isBookingOwnerOrStaff(bookingRecord, req.user);
     if (!isAuthorized) {
       return res.status(403).json({
         success: false,
@@ -115,18 +123,22 @@ export async function getBookingById(req, res, next) {
       }
     }
 
+    // What was booked (activity, tour, cab ride, …), dates, status and amounts
+    const [view] = await addPortalFields([bookingRecord]);
     const enriched = {
-      ...bookingRecord,
+      ...view,
       name: bookingRecord.customer_name,
       phone: bookingRecord.customer_phone,
       email: bookingRecord.customer_email,
-      hotel_name: hotelName || bookingRecord.hotel_name || 'Thailand Travel Reservation',
-      item_name: hotelName || bookingRecord.item_name || 'Thailand Travel Reservation',
-      room_type: roomTypeName,
-      location: location,
+      // hotel_name only for hotel stays: the voucher treats any booking with one as a hotel
+      hotel_name: hotelName || view.hotel_name || undefined,
+      item_name: hotelName || view.item_name || 'Thailand Travel Reservation',
+      room_type: roomTypeName || view.room_type || '',
+      location: location || view.location || '',
       total_amount: bookingRecord.base_amount_thb || bookingRecord.customer_total_amount,
-      total_paid: bookingRecord.payment_amount || 0,
+      total_paid: view.total_paid || 0,
       voucher_code: vouchers[0]?.voucher_code || `VCH-${id}`,
+      voucher_access_key: voucherAccessKey(id),
       items,
       voucher: vouchers[0] || null
     };
@@ -163,8 +175,10 @@ export async function cancelBooking(req, res, next) {
     const result = await withTransaction(async (conn) => {
       return await restoreBookingInventory(conn, id);
     });
+    // B2B bookings: return the amount paid from the agent's wallet
+    const refund = await onBookingStatusChange(id, 'Cancelled', req.user.id);
 
-    res.json(result);
+    res.json(refund?.refunded ? { ...result, refunded_amount: refund.refunded } : result);
   } catch (err) {
     next(err);
   }

@@ -156,6 +156,27 @@ async function runSecurityTests() {
     const replayRes = await postJson('action=verify_customer_otp', { phone: '66811112222', email: 'customer_a@test.com', otp: '789123' });
     assert(replayRes.status === 400, 'Replay attack prevented: used OTP cannot be reused (400)');
 
+    // 1.7 Password reset cannot be completed without the emailed code (visitor from another computer)
+    const outsider = { 'X-Forwarded-For': '198.51.100.201' };
+    const resetReq = await postJson('action=forgot_password_request', { identifier: 'admin' }, outsider);
+    const resetReqData = await resetReq.json();
+    assert(resetReq.status === 200 && !resetReqData.reset_token && !resetReqData.dev_otp,
+      'forgot_password_request never hands out a reset token or code');
+    const hijack = await postJson('action=reset_password',
+      { identifier: 'admin', new_password: 'hijack123', reset_token: resetReqData.reset_token || 'rst-guess' }, outsider);
+    assert(hijack.status === 400, 'reset_password without the emailed code is rejected');
+    const testCodeOutside = await postJson('action=verify_reset_otp', { identifier: 'admin', otp: '123456' }, outsider);
+    assert(testCodeOutside.status === 400, 'Test reset code "123456" is rejected from other computers');
+
+    // 1.8 Guessing passwords from another computer locks that address out after 5 tries
+    const guesser = { 'X-Forwarded-For': '198.51.100.202' };
+    const guessStatuses = [];
+    for (let i = 0; i < 6; i++) {
+      guessStatuses.push((await postJson('action=login', { username: 'admin', password: `guess-${i}` }, guesser)).status);
+    }
+    assert(guessStatuses.slice(0, 5).every(s => s === 401) && guessStatuses[5] === 429,
+      'Sixth wrong password from the same address is blocked (429)');
+
     // =============================================================
     // 2. CUSTOMER IDOR & DATA ISOLATION TESTS
     // =============================================================
@@ -400,6 +421,27 @@ async function runSecurityTests() {
     );
     const badSecretRes = await get('resource=users', authHeader(badSecretToken));
     assert(badSecretRes.status === 401, 'Token signed with invalid secret is strictly rejected (401)');
+
+    // =============================================================
+    // 9. B2B PARTNER PORTAL
+    // =============================================================
+    console.log('\n--- 9. B2B Partner Portal ---');
+    const adminOnB2B = await postJson('action=b2b_login', { username: 'admin', password: 'TestPassword123!' });
+    assert(adminOnB2B.status === 403, 'B2B sign-in refuses non-partner accounts (403)');
+    const partnerToken = signJwtToken({ id: 'usr-b2b-01', username: 'partner_a', role: 'b2b_agent' }, '1h');
+    assert((await get('resource=b2b_partners', authHeader(partnerToken))).status === 403, 'Partner cannot list other B2B partners');
+    assert((await get('resource=b2b_dashboard', authHeader(vendorAToken))).status === 403, 'Hotel vendor cannot open the B2B portal');
+    const ownWallet = await (await get('resource=b2b_wallet&b2b_partner_id=usr-other', authHeader(partnerToken))).json();
+    assert(ownWallet.partner_id === 'usr-b2b-01', 'Partner always gets their own wallet, whatever id is asked for');
+    assert(ownWallet.transactions.every(t => t.partner_id === 'usr-b2b-01'), 'Wallet statement contains only the partner\'s own entries');
+    const selfConfirm = await postJson('action=b2b_approve_wallet_recharge', { transaction_id: 'any' }, authHeader(partnerToken));
+    assert(selfConfirm.status === 403, 'Partner cannot confirm wallet top-ups');
+    const selfAdjust = await postJson('action=b2b_admin_adjust_wallet', { partner_id: 'usr-b2b-01', adjustment_type: 'CREDIT', amount: 100000, reason: 'x' }, authHeader(partnerToken));
+    assert(selfAdjust.status === 403, 'Partner cannot adjust wallet balances');
+    const anonBook = await postJson('action=b2b_book', { b2b_mode: 'COMMISSION', service_type: 'hotel', item_id: 'th-htl-04' });
+    assert(anonBook.status === 401 || anonBook.status === 403, 'Anonymous B2B booking is rejected');
+    const toggleByPartner = await postJson('action=toggle_user_status', { id: 'usr-admin-01', status: 'suspended' }, authHeader(partnerToken));
+    assert(toggleByPartner.status === 403, 'Partner cannot suspend users');
 
     // Clean up test bookings, jobs and users
     await query('DELETE FROM driver_assignments WHERE id IN (?, ?)', [jobSomchaiId, jobOtherId]);

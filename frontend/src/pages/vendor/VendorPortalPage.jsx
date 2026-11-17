@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import HoverGlider, { useEnterAnimation } from '../../components/common/HoverGlider';
+import TempleMark from '../../components/common/TempleMark';
 import {
   Compass, LogOut, Car, Shield, ShieldCheck, LayoutDashboard, Calendar,
   Wallet, BarChart2, Settings, CreditCard, Users, DollarSign,
@@ -88,8 +89,8 @@ function SidebarGroup({ group, activeTab, onSelect, defaultOpen }) {
       {open && (
         <div className="d-flex flex-column gap-0 px-1">
           {group.items.map(item => (
-            <button key={item.id} onClick={() => onSelect(item.id)} data-glide data-glide-active={activeTab === item.id ? 'true' : 'false'} className="btn w-100 text-start d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3 mb-1" style={{ fontSize: '0.83rem', background: 'transparent', color: activeTab === item.id ? '#fff' : 'rgba(255,255,255,0.65)', boxShadow: 'none', fontWeight: activeTab === item.id ? 700 : 400 }}>
-              <span style={{ color: activeTab === item.id ? '#fff' : '#00B8D9', flexShrink: 0 }}>{item.icon}</span>
+            <button key={item.id} onClick={() => onSelect(item.id)} data-glide data-glide-active={activeTab === item.id ? 'true' : 'false'} className="btn w-100 text-start d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3 mb-1" style={{ fontSize: '0.83rem', background: 'transparent', color: activeTab === item.id ? '#06101E' : 'rgba(255,255,255,0.72)', boxShadow: 'none', fontWeight: activeTab === item.id ? 700 : 500 }}>
+              <span style={{ color: activeTab === item.id ? '#06101E' : 'rgba(245, 197, 24, 0.8)', flexShrink: 0 }}>{item.icon}</span>
               <span>{item.label}</span>
             </button>
           ))}
@@ -152,12 +153,12 @@ export default function VendorPortalPage({
     return (
       <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#0D1B2E 0%,#1a3050 100%)' }}>
         <div className="text-center p-5">
-          <div className="mx-auto mb-4 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '90px', height: '90px', background: 'rgba(255,99,51,0.15)', border: '2px solid rgba(255,99,51,0.3)' }}>
-            <Car size={42} style={{ color: '#FF6333' }} />
+          <div className="mx-auto mb-4 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '90px', height: '90px', background: 'rgba(245, 197, 24, 0.15)', border: '2px solid rgba(245, 197, 24, 0.3)' }}>
+            <Car size={42} style={{ color: '#B8860B' }} />
           </div>
           <h3 className="fw-bold text-white mb-2">Vehicle Vendor Console</h3>
           <p className="mb-4" style={{ color: 'rgba(255,255,255,0.5)' }}>Sign in with your vehicle vendor account to continue</p>
-          <button type="button" className="btn px-5 py-2 fw-bold text-white rounded-pill" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }} onClick={triggerOpenLogin}>
+          <button type="button" className="btn px-5 py-2 fw-bold text-dark rounded-pill" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }} onClick={triggerOpenLogin}>
             Sign In to Vendor Console
           </button>
         </div>
@@ -253,19 +254,19 @@ export default function VendorPortalPage({
       {/* Sidebar */}
       <div className="d-flex flex-column flex-shrink-0" style={{ width: sidebarOpen ? '256px' : '0px', minWidth: sidebarOpen ? '256px' : '0px', height: '100vh', overflowY: 'auto', overflowX: 'hidden', backgroundColor: '#0D1B2E', borderRight: '1px solid rgba(255,255,255,0.06)', transition: 'all 0.3s ease' }}>
         <div className="px-3 py-3 d-flex align-items-center gap-2 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-          <Compass size={22} style={{ color: '#FF6333' }} />
+          <TempleMark size={26} style={{ color: '#F5C518', filter: 'drop-shadow(0 2px 6px rgba(245, 197, 24, 0.4))' }} />
           <div>
-            <div className="fw-extrabold text-white" style={{ fontSize: '15px' }}>WOW THAILAND</div>
-            <div className="fw-bold text-uppercase" style={{ fontSize: '0.55rem', letterSpacing: '2px', color: '#00B8D9' }}>Partner PMS</div>
+            <div className="brand-wordmark text-white" style={{ fontSize: '15px' }}>WOW <span className="brand-gold">THAILAND</span></div>
+            <div className="fw-bold text-uppercase" style={{ fontSize: '0.55rem', letterSpacing: '2px', color: 'rgba(255, 255, 255, 0.55)' }}>Partner PMS</div>
           </div>
         </div>
-        <HoverGlider className="flex-grow-1 py-2 sidebar-glide" gliderClassName="hover-glider--sidebar" activeGliderClassName="hover-glider--sidebar-active">
+        <HoverGlider className="flex-grow-1 py-2 sidebar-glide" gliderClassName="hover-glider--sidebar-gold" activeGliderClassName="hover-glider--sidebar-active-gold">
           {SIDEBAR_GROUPS.map((group, idx) => (
             <SidebarGroup key={group.label} group={group} activeTab={activeTab} onSelect={(id) => handleNavigate(id, {})} defaultOpen={idx < 2} />
           ))}
         </HoverGlider>
         <div className="p-3 flex-shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <button onClick={onLogout} className="btn w-100 d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3" style={{ background: 'rgba(255,99,51,0.1)', color: '#FF6333', fontSize: '0.85rem', fontWeight: 600 }}>
+          <button onClick={onLogout} className="btn w-100 d-flex align-items-center gap-2 py-2 px-3 border-0 rounded-3" style={{ background: 'rgba(255, 255, 255, 0.05)', color: '#FCA5A5', fontSize: '0.85rem', fontWeight: 600 }}>
             <LogOut size={15} /> Sign Out
           </button>
         </div>
@@ -282,7 +283,7 @@ export default function VendorPortalPage({
             </div>
           </div>
           <div className="d-flex align-items-center gap-3">
-            <span className="d-flex align-items-center gap-1 px-3 py-1 rounded-pill" style={{ background: 'rgba(0,184,217,0.1)', color: '#00B8D9', fontSize: '0.7rem', fontWeight: 700 }}>
+            <span className="d-flex align-items-center gap-1 px-3 py-1 rounded-pill" style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#34D399', fontSize: '0.7rem', fontWeight: 700 }}>
               <span className="rounded-circle" style={{ width: '6px', height: '6px', background: '#00e676', display: 'inline-block' }}></span>
               Online
             </span>
@@ -296,17 +297,17 @@ export default function VendorPortalPage({
             />
 
             <div className="position-relative">
-              <button className="btn p-0 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px', border: '2px solid #FF6333', background: 'linear-gradient(135deg,#FFC107,#FF8A00)' }} onClick={() => setShowProfileDropdown(!showProfileDropdown)}>
+              <button className="btn p-0 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '36px', height: '36px', border: '2px solid rgba(255, 255, 255, 0.85)', background: 'linear-gradient(135deg, #F5C518, #E5A826)' }} onClick={() => setShowProfileDropdown(!showProfileDropdown)}>
                 <span className="fw-bold text-dark" style={{ fontSize: '14px' }}>{currentUser.username?.[0]?.toUpperCase()}</span>
               </button>
               {showProfileDropdown && (
                 <div className="position-absolute shadow-lg" style={{ right: 0, top: '48px', minWidth: '180px', background: '#10243A', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)', zIndex: 1050 }}>
                   <div className="text-center px-3 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                     <div className="fw-bold text-white" style={{ fontSize: '13px' }}>{currentUser.username}</div>
-                    <span className="badge mt-1" style={{ background: 'rgba(0,184,217,0.15)', color: '#00B8D9', fontSize: '0.6rem' }}>VEHICLE VENDOR</span>
+                    <span className="badge mt-1" style={{ background: 'rgba(245, 197, 24, 0.15)', color: '#F5C518', fontSize: '0.6rem' }}>VEHICLE VENDOR</span>
                   </div>
                   <div className="p-2">
-                    <button className="btn w-100 d-flex align-items-center gap-2 py-2 px-2 rounded fw-bold" style={{ color: '#FF6333', background: 'rgba(255,99,51,0.1)', fontSize: '0.82rem' }} onClick={onLogout}>
+                    <button className="btn w-100 d-flex align-items-center gap-2 py-2 px-2 rounded fw-bold" style={{ color: '#FCA5A5', background: 'rgba(255, 255, 255, 0.05)', fontSize: '0.82rem' }} onClick={onLogout}>
                       <LogOut size={13} /> Sign Out
                     </button>
                   </div>

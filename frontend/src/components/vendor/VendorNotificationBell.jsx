@@ -560,7 +560,7 @@ export default function VendorNotificationBell({
               notifications.slice(0, 10).map((n) => {
                 const isUnread = !n.is_read;
                 const isHotel = n.type === 'hotel';
-                const dotColor = isHotel ? '#00B8D9' : '#FF6333';
+                const dotColor = isHotel ? '#F5C518' : '#F5C518';
                 const { cleanTitle, status, badgeStyle } = parseNotificationTitleAndStatus(n.title, n.message);
 
                 return (

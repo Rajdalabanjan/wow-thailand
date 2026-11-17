@@ -4,52 +4,60 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WOW THAILAND | Luxury Hotels, Cabs & Signature Activities</title>
+    <title>WOW THAILAND | Luxury Hotels, Cabs &amp; Signature Activities</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,800&family=Bebas+Neue&family=Cinzel:wght@600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,400;1,600;1,700&display=swap" rel="stylesheet">
-    <!-- Opening intro styles (see public/intro/) -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,400;1,600;1,700&display=swap" rel="stylesheet">
+    <!-- Opening intro styles -->
     <link rel="stylesheet" href="/intro/wow-intro.css">
   </head>
   <body>
     <!-- WOW THAILAND opening intro (styles & script in public/intro/).
-         "Golden hour over the river": gold-leaf flakes assemble a golden temple on the
-         horizon, its reflection shimmering below, the brand name in the site's Cinzel
-         lettering, destinations drifting along the horizon. Navy & gold like the site.
-         Static markup so it paints before React loads; the temple, flakes, stars and
-         destinations are added by wow-intro.js. -->
+         Static markup so it paints before React loads.
+         The video element, stars and animations are injected by wow-intro.js. -->
     <div id="wow-intro" class="wow-intro" role="dialog" aria-label="Welcome to WOW THAILAND" hidden>
       <div class="wow-intro__sky" aria-hidden="true"></div>
       <div class="wow-intro__stars" aria-hidden="true"></div>
       <div class="wow-intro__frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-
       <div class="wow-intro__stage">
-        <div class="wow-intro__scene" aria-hidden="true">
-          <div class="wow-intro__glow"></div>
-          <div class="wow-intro__ribbon"></div>
-          <div class="wow-intro__temple"></div>
-          <div class="wow-intro__reflection"></div>
-          <div class="wow-intro__horizon"></div>
-          <div class="wow-intro__flakes"></div>
-          <div class="wow-intro__dust"></div>
+        <div class="wow-intro__scene"></div>
+        <div class="wow-intro__temple" aria-hidden="true"></div>
+        <div class="wow-intro__reflection" aria-hidden="true"></div>
+        <div class="wow-intro__glow" aria-hidden="true"></div>
+        <div class="wow-intro__ribbon" aria-hidden="true">
+          <svg class="wow-intro__ribbon-track" viewBox="0 0 1200 60" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M0 30 Q300 10 600 30 Q900 50 1200 30" stroke="url(#rg)" stroke-width="1.5" fill="none"/>
+            <defs>
+              <linearGradient id="rg" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#f5c518" stop-opacity="0"/>
+                <stop offset="30%" stop-color="#f5c518" stop-opacity="0.6"/>
+                <stop offset="70%" stop-color="#f5c518" stop-opacity="0.6"/>
+                <stop offset="100%" stop-color="#f5c518" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+          </svg>
         </div>
-
-        <h1 class="wow-intro__title" aria-label="WOW THAILAND">
-          <span class="wow-intro__word" aria-hidden="true"><span style="--i:0">W</span><span style="--i:1">O</span><span style="--i:2">W</span></span>
-          <span class="wow-intro__word wow-intro__word--gold" aria-hidden="true"><span style="--i:3">T</span><span style="--i:4">H</span><span style="--i:5">A</span><span style="--i:6">I</span><span style="--i:7">L</span><span style="--i:8">A</span><span style="--i:9">N</span><span style="--i:10">D</span></span>
-        </h1>
-        <p class="wow-intro__subtitle"><span class="wow-intro__rule"></span>Luxury Travel &amp; Transfers<span class="wow-intro__rule"></span></p>
+        <div class="wow-intro__title" role="img" aria-label="WOW THAILAND">
+          <span class="wow-intro__word wow-intro__word--wow" aria-hidden="true">
+            <span>W</span><span>O</span><span>W</span>
+          </span>
+          <span class="wow-intro__word wow-intro__word--thailand" aria-hidden="true">
+            <span>T</span><span>H</span><span>A</span><span>I</span><span>L</span><span>A</span><span>N</span><span>D</span>
+          </span>
+        </div>
+        <p class="wow-intro__subtitle" aria-hidden="true">Discover the Land of Smiles</p>
+        <p class="wow-intro__caption" aria-hidden="true"></p>
+        <div class="wow-intro__flakes" aria-hidden="true"></div>
+        <div class="wow-intro__dust" aria-hidden="true"></div>
       </div>
-
-      <div class="wow-intro__bottom">
-        <span class="wow-intro__caption">Hotels · Cabs · Signature Experiences</span>
-        <span class="wow-intro__progress" aria-hidden="true"><i></i></span>
-        <span class="wow-intro__cta" aria-hidden="true"><span class="wow-intro__fine">Click anywhere to enter</span><span class="wow-intro__coarse">Tap to enter</span></span>
+      <div class="wow-intro__sweep" aria-hidden="true"></div>
+      <div class="wow-intro__bottom" aria-hidden="true">
+        <span class="wow-intro__bottom-label">HOTELS · CABS · SIGNATURE EXPERIENCES</span>
+        <div class="wow-intro__progress"><i></i></div>
+        <span class="wow-intro__bottom-cta">CLICK ANYWHERE TO ENTER</span>
         <button type="button" class="wow-intro__skip" aria-label="Skip intro">Skip ›</button>
       </div>
-
-      <div class="wow-intro__sweep" aria-hidden="true"></div>
     </div>
 
     <script src="/intro/wow-intro.js"></script>

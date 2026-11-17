@@ -554,7 +554,7 @@ function Step2Hotel({ allHotels = [], pickupDate, dropDate, selectedHotel, setSe
   return (
     <div className="cmt-step-body animate-fade-in-up">
       <div className="cmt-step-header">
-        <div className="cmt-step-icon-wrap" style={{ background: 'linear-gradient(135deg,#ff6b35,#f7c59f)' }}>
+        <div className="cmt-step-icon-wrap" style={{ background: 'linear-gradient(135deg, #F5C518, #E5A826)', color: '#06101E' }}>
           <Hotel size={28} color="#fff" />
         </div>
         <div>
@@ -3034,8 +3034,7 @@ export default function CraftMyTripPage({
                 <button
                   type="button"
                   id="btn-create-trip-ai"
-                  className="btn text-white rounded-pill px-4 py-2 text-xs fw-bold d-flex align-items-center gap-2 shadow-sm hover-scale"
-                  style={{ background: 'linear-gradient(135deg, #FF6B35, #FF9F1C)', border: 'none' }}
+                  className="btn btn-brand rounded-pill px-4 py-2 text-xs fw-bold d-flex align-items-center gap-2"
                   onClick={handleOpenSophiaForCraft}
                 >
                   <Sparkles size={15} />
@@ -3068,8 +3067,7 @@ export default function CraftMyTripPage({
                   </button>
                   <button
                     type="button"
-                    className="btn btn-sm text-white rounded-pill px-3 py-2 text-xs fw-bold"
-                    style={{ background: 'linear-gradient(135deg, #FF6B35, #FF9F1C)', border: 'none' }}
+                    className="btn btn-sm btn-brand rounded-pill px-3 py-2 text-xs fw-bold"
                     onClick={handleConfirmReplaceWithAI}
                   >
                     Replace With Sophia's Plan

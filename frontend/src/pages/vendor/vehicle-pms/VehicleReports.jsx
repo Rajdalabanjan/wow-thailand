@@ -234,7 +234,7 @@ export default function VehicleReports({ cars = [], bikes = [], bookings = [], o
               </div>
               <span className="fw-bold text-success" style={{ fontSize: '0.85rem' }}>฿{totalRevenue.toLocaleString()}</span>
             </div>
-            <MiniBar data={weekRevenue} color="#FF6333" />
+            <MiniBar data={weekRevenue} color="#B8860B" />
             <div className="d-flex justify-content-between mt-2 pt-1 border-top">
               {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
                 <span key={d} style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 600 }}>{d}</span>

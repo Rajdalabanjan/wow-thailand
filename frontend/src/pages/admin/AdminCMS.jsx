@@ -207,8 +207,8 @@ export default function AdminCMS() {
       <div className="flex-shrink-0 p-3" style={{ width: '200px', background: '#fff', borderRight: '1px solid rgba(0,0,0,0.07)' }}>
         <div className="fw-bold mb-3" style={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.8px', color: '#94a3b8' }}>Content Types</div>
         {CMS_TYPES.map(t => (
-          <button key={t.id} onClick={() => setActiveType(t.id)} className="btn w-100 text-start d-flex align-items-center gap-2 py-2 px-2 rounded-2 mb-1" style={{ fontSize: '0.83rem', background: activeType === t.id ? '#FFF5F2' : 'transparent', color: activeType === t.id ? '#FF6333' : '#475569', fontWeight: activeType === t.id ? 700 : 400 }}>
-            <span style={{ color: activeType === t.id ? '#FF6333' : '#94a3b8' }}>{t.icon}</span>
+          <button key={t.id} onClick={() => setActiveType(t.id)} className="btn w-100 text-start d-flex align-items-center gap-2 py-2 px-2 rounded-2 mb-1" style={{ fontSize: '0.83rem', background: activeType === t.id ? '#FFF5F2' : 'transparent', color: activeType === t.id ? '#F5C518' : '#475569', fontWeight: activeType === t.id ? 700 : 400 }}>
+            <span style={{ color: activeType === t.id ? '#F5C518' : '#94a3b8' }}>{t.icon}</span>
             {t.label}
           </button>
         ))}
@@ -221,7 +221,7 @@ export default function AdminCMS() {
             <h5 className="fw-bold mb-0" style={{ color: '#0D1B2E', fontSize: '16px' }}>{CMS_TYPES.find(t => t.id === activeType)?.label}</h5>
             <p className="mb-0 mt-1" style={{ fontSize: '0.78rem', color: '#64748b' }}>Manage your website {activeType}</p>
           </div>
-          <button onClick={() => { setCreating(true); setFormData({ status: 'draft' }); }} className="btn px-4 py-2 fw-bold text-white d-flex align-items-center gap-2 rounded-3" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)', fontSize: '0.83rem' }}>
+          <button onClick={() => { setCreating(true); setFormData({ status: 'draft' }); }} className="btn px-4 py-2 fw-bold text-dark d-flex align-items-center gap-2 rounded-3" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', fontSize: '0.83rem' }}>
             <Plus size={14} /> Add New
           </button>
         </div>
@@ -290,7 +290,7 @@ export default function AdminCMS() {
             </div>
             <div className="px-4 py-3 d-flex justify-content-end gap-2" style={{ borderTop: '1px solid rgba(0,0,0,0.07)', background: '#f8fafc', flexShrink: 0 }}>
               <button onClick={() => { setEditing(null); setCreating(false); setFormData({}); }} className="btn px-4 py-2 rounded-3" style={{ background: '#f1f5f9', color: '#475569', fontSize: '0.83rem', fontWeight: 600 }}>Cancel</button>
-              <button onClick={handleSave} className="btn px-4 py-2 rounded-3 fw-bold text-white d-flex align-items-center gap-2" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)', fontSize: '0.83rem' }}><Save size={14} /> Save</button>
+              <button onClick={handleSave} className="btn px-4 py-2 rounded-3 fw-bold text-dark d-flex align-items-center gap-2" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', fontSize: '0.83rem' }}><Save size={14} /> Save</button>
             </div>
           </div>
         </div>

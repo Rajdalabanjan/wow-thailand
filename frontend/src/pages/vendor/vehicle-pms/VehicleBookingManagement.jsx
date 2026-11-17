@@ -55,7 +55,7 @@ function WorkflowBadge({ status, handover_status }) {
               style={{ 
                 width: '18px', 
                 height: '18px', 
-                background: isDone ? '#16a34a' : isCurrent ? '#FF6333' : '#e2e8f0', 
+                background: isDone ? '#16a34a' : isCurrent ? '#F5C518' : '#e2e8f0', 
                 flexShrink: 0 
               }}
             >
@@ -601,7 +601,7 @@ export default function VehicleBookingManagement({ bookings = [], cars = [], bik
           <p className="mb-0 mt-1" style={{ fontSize: '0.78rem', color: '#64748b' }}>Manage vehicle bookings, status workflow, and customer reservations</p>
         </div>
         <div className="d-flex gap-2">
-          <button onClick={() => { setShowCreateModal(true); setFormError(''); }} className="btn px-4 py-2 fw-bold text-white d-flex align-items-center gap-2 rounded-3 shadow-sm" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)', fontSize: '0.83rem' }}>
+          <button onClick={() => { setShowCreateModal(true); setFormError(''); }} className="btn px-4 py-2 fw-bold text-dark d-flex align-items-center gap-2 rounded-3 shadow-sm" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', fontSize: '0.83rem' }}>
             <Plus size={15} /> Create Booking
           </button>
         </div>
@@ -709,9 +709,9 @@ export default function VehicleBookingManagement({ bookings = [], cars = [], bik
                       }
                       return (
                         <button 
-                          className="btn btn-sm px-2 py-1 rounded-2 text-white fw-bold d-flex align-items-center gap-1 shadow-xs" 
+                          className="btn btn-sm px-2 py-1 rounded-2 text-dark fw-bold d-flex align-items-center gap-1 shadow-xs" 
                           title="Vehicle Handover & Live Customer Dispatch" 
-                          style={{ background: '#FF6333', fontSize: '0.68rem' }} 
+                          style={{ background: '#F5C518', fontSize: '0.68rem' }} 
                           onClick={() => openHandoverModal(b)}
                         >
                           <Key size={11} /> Handover
@@ -762,7 +762,7 @@ export default function VehicleBookingManagement({ bookings = [], cars = [], bik
               {formError && <div className="alert alert-danger py-2 px-3 mb-3 rounded-3" style={{ fontSize: '0.82rem' }}>{formError}</div>}
 
               {/* Customer Info */}
-              <div className="fw-bold mb-2" style={{ fontSize: '0.75rem', color: '#FF6333', textTransform: 'uppercase', letterSpacing: '0.5px' }}>1. Customer Details</div>
+              <div className="fw-bold mb-2" style={{ fontSize: '0.75rem', color: '#B8860B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>1. Customer Details</div>
               <div className="row g-2 mb-3">
                 <div className="col-12 col-md-6">
                   <label className="form-label fw-bold" style={{ fontSize: '0.78rem', color: '#475569' }}>Customer Name *</label>
@@ -787,7 +787,7 @@ export default function VehicleBookingManagement({ bookings = [], cars = [], bik
               </div>
 
               {/* Vehicle & Dates */}
-              <div className="fw-bold mb-2" style={{ fontSize: '0.75rem', color: '#FF6333', textTransform: 'uppercase', letterSpacing: '0.5px' }}>2. Vehicle & Rental Dates</div>
+              <div className="fw-bold mb-2" style={{ fontSize: '0.75rem', color: '#B8860B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>2. Vehicle & Rental Dates</div>
               <div className="row g-2 mb-3">
                 <div className="col-12">
                   <label className="form-label fw-bold" style={{ fontSize: '0.78rem', color: '#475569' }}>Select Vehicle *</label>
@@ -815,7 +815,7 @@ export default function VehicleBookingManagement({ bookings = [], cars = [], bik
               </div>
 
               {/* Payment & Amount */}
-              <div className="fw-bold mb-2" style={{ fontSize: '0.75rem', color: '#FF6333', textTransform: 'uppercase', letterSpacing: '0.5px' }}>3. Pricing & Payment</div>
+              <div className="fw-bold mb-2" style={{ fontSize: '0.75rem', color: '#B8860B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>3. Pricing & Payment</div>
               <div className="row g-2 mb-4">
                 <div className="col-12 col-md-4">
                   <label className="form-label fw-bold" style={{ fontSize: '0.78rem', color: '#475569' }}>Duration (Days)</label>
@@ -845,7 +845,7 @@ export default function VehicleBookingManagement({ bookings = [], cars = [], bik
                 </div>
               </div>
 
-              <button type="submit" disabled={saving} className="btn w-100 py-2 fw-bold text-white rounded-3 d-flex align-items-center justify-content-center gap-2" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }}>
+              <button type="submit" disabled={saving} className="btn w-100 py-2 fw-bold text-dark rounded-3 d-flex align-items-center justify-content-center gap-2" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}>
                 <Check size={15} />{saving ? 'Creating Booking...' : 'Confirm & Save Booking'}
               </button>
             </form>
@@ -911,7 +911,7 @@ export default function VehicleBookingManagement({ bookings = [], cars = [], bik
                 </div>
               </div>
 
-              <button type="submit" disabled={saving} className="btn w-100 py-2 fw-bold text-white rounded-3 d-flex align-items-center justify-content-center gap-2" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }}>
+              <button type="submit" disabled={saving} className="btn w-100 py-2 fw-bold text-dark rounded-3 d-flex align-items-center justify-content-center gap-2" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}>
                 <Save size={15} />{saving ? 'Saving Changes...' : 'Save Booking Changes'}
               </button>
             </form>
@@ -965,7 +965,7 @@ export default function VehicleBookingManagement({ bookings = [], cars = [], bik
                             style={{ 
                               width: '24px', 
                               height: '24px', 
-                              background: isDone ? '#16a34a' : isCurrent ? '#FF6333' : '#e2e8f0' 
+                              background: isDone ? '#16a34a' : isCurrent ? '#F5C518' : '#e2e8f0' 
                             }}
                           >
                             {isDone ? (
@@ -980,7 +980,7 @@ export default function VehicleBookingManagement({ bookings = [], cars = [], bik
                             className="fw-bold" 
                             style={{ 
                               fontSize: '0.82rem', 
-                              color: isDone ? '#16a34a' : isCurrent ? '#FF6333' : '#94a3b8' 
+                              color: isDone ? '#16a34a' : isCurrent ? '#F5C518' : '#94a3b8' 
                             }}
                           >
                             {step}
@@ -1269,9 +1269,9 @@ export default function VehicleBookingManagement({ bookings = [], cars = [], bik
               <>
                 <button 
                   onClick={() => advanceStatus(selected)} 
-                  className="btn flex-grow-1 py-2 rounded-3 fw-bold text-white d-flex align-items-center justify-content-center gap-1" 
+                  className="btn flex-grow-1 py-2 rounded-3 fw-bold text-dark d-flex align-items-center justify-content-center gap-1" 
                   style={{ 
-                    background: 'linear-gradient(90deg,#FF6333,#FF8A00)', 
+                    background: 'linear-gradient(90deg,#F5C518,#E5A826)', 
                     fontSize: '0.82rem' 
                   }}
                   title={selected.status === 'Return' ? 'Advance to Completed' : selected.status === 'Payment Verification' ? 'Confirm Booking and Process Platform Fee' : 'Advance to next workflow step'}
@@ -1591,8 +1591,8 @@ export default function VehicleBookingManagement({ bookings = [], cars = [], bik
                 <button 
                   type="button" 
                   disabled={savingHandover}
-                  className="btn text-white rounded-pill px-4 fw-bold shadow-xs d-flex align-items-center gap-1.5" 
-                  style={{ background: '#FF6333' }}
+                  className="btn text-dark rounded-pill px-4 fw-bold shadow-xs d-flex align-items-center gap-1.5" 
+                  style={{ background: '#F5C518' }}
                   onClick={async () => {
                     setHandoverError('');
                     // Validations

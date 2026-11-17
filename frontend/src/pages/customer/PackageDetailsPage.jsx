@@ -746,7 +746,7 @@ export default function PackageDetailsPage({
           </button>
 
           {/* Selected Package Summary Header */}
-          <div className="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white" style={{ borderLeft: '4px solid #FF6333' }}>
+          <div className="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white" style={{ borderLeft: '4px solid #F5C518' }}>
             <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
               <div>
                 <span className="badge bg-primary bg-opacity-10 text-primary fw-bold text-uppercase mb-1" style={{ fontSize: '0.68rem', letterSpacing: '0.5px' }}>
@@ -978,7 +978,7 @@ export default function PackageDetailsPage({
                   type="button" 
                   onClick={handleProceedToPayment} 
                   className="btn btn-primary rounded-pill px-5 py-3 fw-bold shadow-sm d-flex align-items-center gap-2"
-                  style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', borderColor: '#FF6333', fontSize: '0.95rem' }}
+                  style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', borderColor: '#F5C518', fontSize: '0.95rem' }}
                 >
                   <span>Continue to Booking Summary</span>
                   <ChevronRight size={18} />
@@ -1013,14 +1013,14 @@ export default function PackageDetailsPage({
                 )}
                 <div className="d-flex justify-content-between align-items-center pt-2 border-top mb-3">
                   <span className="fw-bold text-dark">Total Price:</span>
-                  <span className="fw-black text-primary fs-5" style={{ color: '#FF6333' }}>฿{totalAmount.toLocaleString('en-US')}</span>
+                  <span className="fw-black text-primary fs-5" style={{ color: '#B8860B' }}>฿{totalAmount.toLocaleString('en-US')}</span>
                 </div>
 
                 <button 
                   type="button" 
                   onClick={handleProceedToPayment} 
                   className="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2"
-                  style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', borderColor: '#FF6333' }}
+                  style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', borderColor: '#F5C518' }}
                 >
                   <span>Continue to Summary</span>
                   <ChevronRight size={18} />
@@ -1284,7 +1284,7 @@ export default function PackageDetailsPage({
                   )}
                   <div className="d-flex justify-content-between align-items-center pt-2 border-top mt-2">
                     <strong className="text-dark">Amount Payable Now:</strong>
-                    <strong className="fs-4 text-primary" style={{ color: '#FF6333' }}>฿{payableAmount.toLocaleString('en-US')}</strong>
+                    <strong className="fs-4 text-primary" style={{ color: '#B8860B' }}>฿{payableAmount.toLocaleString('en-US')}</strong>
                   </div>
                   {paymentMode === 'advance' && (
                     <div className="text-muted text-xxs text-end mt-1">
@@ -1299,7 +1299,7 @@ export default function PackageDetailsPage({
                   onClick={handleConfirmAndPay}
                   disabled={isSubmitting}
                   className="btn btn-primary w-100 py-3.5 rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2"
-                  style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', borderColor: '#FF6333', fontSize: '1.05rem', opacity: isSubmitting ? 0.75 : 1 }}
+                  style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', borderColor: '#F5C518', fontSize: '1.05rem', opacity: isSubmitting ? 0.75 : 1 }}
                 >
                   {isSubmitting ? (
                     <>
@@ -1424,7 +1424,7 @@ export default function PackageDetailsPage({
                     type="button" 
                     onClick={() => setShowVoucherModal(true)}
                     className="btn btn-primary rounded-pill px-4 py-2.5 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm w-100 w-sm-auto"
-                    style={{ background: '#00B8D9', borderColor: '#00B8D9' }}
+                    style={{ background: '#F5C518', borderColor: '#F5C518' }}
                     id="btn-view-voucher"
                   >
                     <Download size={16} />
@@ -1540,7 +1540,7 @@ export default function PackageDetailsPage({
         <div className="d-flex align-items-center gap-3">
           <div className="text-end d-none d-md-block">
             <span className="text-muted text-xxs d-block">Starting from</span>
-            <span className="fw-black text-primary fs-6" style={{ color: '#FF6333' }}>
+            <span className="fw-black text-primary fs-6" style={{ color: '#B8860B' }}>
               ฿{pricePerPerson.toLocaleString('en-US')} <span className="text-muted fw-normal text-xxs">/ person</span>
             </span>
           </div>
@@ -1549,7 +1549,7 @@ export default function PackageDetailsPage({
             type="button" 
             onClick={handleStartBooking} 
             className="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-1.5"
-            style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', borderColor: '#FF6333', fontSize: '0.9rem' }}
+            style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', borderColor: '#F5C518', fontSize: '0.9rem' }}
           >
             <Sparkles size={15} />
             <span>BOOK PACKAGE</span>
@@ -1610,7 +1610,7 @@ export default function PackageDetailsPage({
               <div className="p-3.5 bg-light rounded-3 border">
                 <div className="text-muted small mb-1">Starting from</div>
                 <div className="d-flex align-items-baseline gap-2">
-                  <h2 className="fw-black text-primary mb-0" style={{ color: '#FF6333' }}>
+                  <h2 className="fw-black text-primary mb-0" style={{ color: '#B8860B' }}>
                     ฿{pricePerPerson.toLocaleString('en-US')}
                   </h2>
                   <span className="text-muted small">/ person</span>
@@ -1620,7 +1620,7 @@ export default function PackageDetailsPage({
                   type="button" 
                   onClick={handleStartBooking} 
                   className="btn btn-primary w-100 mt-3 py-3 rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 font-heading"
-                  style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', borderColor: '#FF6333', fontSize: '1rem', letterSpacing: '0.5px' }}
+                  style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', borderColor: '#F5C518', fontSize: '1rem', letterSpacing: '0.5px' }}
                 >
                   <Sparkles size={18} />
                   <span>BOOK PACKAGE</span>
@@ -2143,7 +2143,7 @@ export default function PackageDetailsPage({
               <div className="p-3 bg-light rounded-3 mb-3 border">
                 <div className="text-muted small">Starting from</div>
                 <div className="d-flex align-items-baseline gap-2 mb-2">
-                  <h3 className="fw-black text-primary mb-0" style={{ color: '#FF6333' }}>
+                  <h3 className="fw-black text-primary mb-0" style={{ color: '#B8860B' }}>
                     ฿{pricePerPerson.toLocaleString('en-US')}
                   </h3>
                   <span className="text-muted small">/ person</span>
@@ -2159,7 +2159,7 @@ export default function PackageDetailsPage({
                 type="button" 
                 onClick={handleStartBooking} 
                 className="btn btn-primary w-100 py-3.5 rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 font-heading"
-                style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', borderColor: '#FF6333', fontSize: '1rem', letterSpacing: '0.5px' }}
+                style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', borderColor: '#F5C518', fontSize: '1rem', letterSpacing: '0.5px' }}
               >
                 <Sparkles size={18} />
                 <span>BOOK PACKAGE</span>

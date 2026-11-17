@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { apiFetch, API_BASE } from '../../services/api';
 
-const COLORS = { primary: '#FF6333', dark: '#0D1B2E' };
+const COLORS = { primary: '#F5C518', dark: '#0D1B2E' };
 
 const GATEWAY_TYPES = [
   { id: 'bank_transfer', label: 'Bank Transfer', icon: <Landmark size={16} />, color: '#2563eb' },
@@ -196,7 +196,7 @@ function GatewayModal({ gateway, onClose, onSave }) {
             type="submit"
             form="gateway-form"
             className="btn fw-bold px-5 text-white shadow-sm"
-            style={{ background: `linear-gradient(90deg,${COLORS.primary},#FF8A00)` }}
+            style={{ background: `linear-gradient(90deg,${COLORS.primary},#E5A826)` }}
             disabled={saving}
           >
             {saving ? 'Saving...' : (form.id ? 'Update Gateway' : 'Add Gateway')}
@@ -251,7 +251,7 @@ export default function PaymentGatewayManager() {
           <h5 className="fw-bold mb-0" style={{ color: COLORS.dark, fontSize: '16px' }}>Payment Gateways</h5>
           <p className="mb-0 mt-1" style={{ fontSize: '0.78rem', color: '#64748b' }}>Configure payment methods available for Admin subscriptions and Vendor wallet recharges</p>
         </div>
-        <button className="btn px-4 py-2 fw-bold text-white d-flex align-items-center gap-2 rounded-3" style={{ background: `linear-gradient(90deg,${COLORS.primary},#FF8A00)` }} onClick={() => { setEditGateway(null); setShowModal(true); }}>
+        <button className="btn px-4 py-2 fw-bold text-white d-flex align-items-center gap-2 rounded-3" style={{ background: `linear-gradient(90deg,${COLORS.primary},#E5A826)` }} onClick={() => { setEditGateway(null); setShowModal(true); }}>
           <Plus size={14} /> Add Gateway
         </button>
       </div>
@@ -320,7 +320,7 @@ export default function PaymentGatewayManager() {
               <Globe size={40} className="mb-3" style={{ color: '#94a3b8' }} />
               <h6 className="fw-bold" style={{ color: COLORS.dark }}>No Payment Gateways Configured</h6>
               <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Add at least one payment method to accept subscriptions and wallet recharges.</p>
-              <button className="btn px-4 py-2 fw-bold text-white rounded-3" style={{ background: `linear-gradient(90deg,${COLORS.primary},#FF8A00)` }} onClick={() => { setEditGateway(null); setShowModal(true); }}>
+              <button className="btn px-4 py-2 fw-bold text-white rounded-3" style={{ background: `linear-gradient(90deg,${COLORS.primary},#E5A826)` }} onClick={() => { setEditGateway(null); setShowModal(true); }}>
                 <Plus size={14} className="me-1" /> Add First Gateway
               </button>
             </div>

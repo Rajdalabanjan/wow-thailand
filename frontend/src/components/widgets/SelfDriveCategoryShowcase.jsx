@@ -454,7 +454,7 @@ function CategoryRow({
                 <span className={`sd-dash ${idx % 3 === 2 ? 'active' : ''}`} />
               </div>
               <div className="sd-explore-hint mt-1 text-center">
-                <span className="text-xxs fw-bold d-inline-flex align-items-center gap-1" style={{ fontSize: '10.5px', color: '#FF6333' }}>
+                <span className="text-xxs fw-bold d-inline-flex align-items-center gap-1" style={{ fontSize: '10.5px', color: '#B8860B' }}>
                   Explore All {badgeTitle} →
                 </span>
               </div>

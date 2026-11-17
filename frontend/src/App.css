@@ -110,7 +110,7 @@
 
 .btn-premium-nav {
   background: linear-gradient(135deg, var(--accent), var(--accent-hover));
-  color: var(--white) !important;
+  color: var(--on-accent) !important;
   font-family: var(--font-body);
   font-weight: 600;
   font-size: 13px;
@@ -118,13 +118,13 @@
   padding: 7px 18px;
   border-radius: 20px;
   white-space: nowrap;
-  box-shadow: 0 3px 10px rgba(255, 107, 53, 0.3);
+  box-shadow: 0 3px 10px rgba(245, 197, 24, 0.3);
   transition: var(--transition-smooth);
 }
 
 .btn-premium-nav:hover {
   transform: translateY(-1px);
-  box-shadow: 0 5px 14px rgba(255, 107, 53, 0.45);
+  box-shadow: 0 5px 14px rgba(245, 197, 24, 0.45);
   color: var(--white);
 }
 
@@ -206,7 +206,7 @@
 }
 
 .widget-tab-btn.active {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .widget-tab-btn.active::after {
@@ -339,7 +339,7 @@
 
 .btn-widget-search {
   background: linear-gradient(135deg, var(--accent), var(--accent-hover));
-  color: var(--white);
+  color: var(--on-accent);
   border: none;
   font-weight: 700;
   font-size: 18px;
@@ -347,14 +347,14 @@
   letter-spacing: 1px;
   padding: 14px 60px;
   border-radius: 30px;
-  box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
+  box-shadow: 0 8px 24px rgba(245, 197, 24, 0.4);
   transition: var(--transition-smooth);
   cursor: pointer;
 }
 
 .btn-widget-search:hover {
   transform: scale(1.03);
-  box-shadow: 0 12px 30px rgba(255, 107, 53, 0.6);
+  box-shadow: 0 12px 30px rgba(245, 197, 24, 0.6);
 }
 
 /* ─── WOW THAILAND Search Widget Scoped Popovers & Components ─────────────── */
@@ -419,8 +419,8 @@
 }
 
 .tg-counter-btn:hover:not(:disabled) {
-  border-color: #ff6333;
-  color: #ff6333;
+  border-color: #F5C518;
+  color: #B8860B;
   background: #fff7ed;
 }
 
@@ -451,8 +451,8 @@
 
 .tg-filter-chip.active {
   background: #fff7ed;
-  border-color: #ff6333;
-  color: #ff6333;
+  border-color: #F5C518;
+  color: #B8860B;
   font-weight: 700;
 }
 
@@ -470,14 +470,14 @@
 
 .tg-calendar-day:hover:not(:disabled) {
   background: #f1f5f9;
-  color: #ff6333;
+  color: #B8860B;
 }
 
 .tg-calendar-day.selected {
-  background: linear-gradient(135deg, #ff6333, #ff8a00) !important;
-  color: #ffffff !important;
+  background: linear-gradient(135deg, #F5C518, #E5A826) !important;
+  color: #06101E !important;
   font-weight: 700;
-  box-shadow: 0 4px 10px rgba(255, 99, 51, 0.3);
+  box-shadow: 0 4px 10px rgba(245, 197, 24, 0.3);
 }
 
 .tg-calendar-day.disabled {
@@ -660,8 +660,8 @@
 
 .btn-card-book:hover {
   background: var(--accent);
-  color: var(--white);
-  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.2);
+  color: var(--on-accent);
+  box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.3);
 }
 
 /* Glassmorphism Accent elements */
@@ -951,8 +951,22 @@
 }
 
 .footer-link:hover {
-  color: var(--teal);
+  color: #F5C518;
   transform: translateX(3px);
+}
+
+/* Footer link lists: readable size, icon lined up with the first line of the text */
+footer .footer-link {
+  font-size: 14.5px;
+  line-height: 1.45;
+  margin-bottom: 0;
+}
+footer .footer-link.d-flex { align-items: flex-start !important; }
+footer .footer-link > svg {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin-top: 3px;
 }
 
 /* ==========================================
@@ -1014,7 +1028,7 @@
 
 .calendar-day-btn.active {
   background: var(--accent);
-  color: var(--white) !important;
+  color: var(--on-accent) !important;
 }
 
 .datepicker-time-list {
@@ -1181,7 +1195,7 @@
 
 .selection-item-card.active {
   border: 2px solid var(--accent) !important;
-  background: rgba(255, 107, 53, 0.02);
+  background: rgba(var(--accent-rgb), 0.06);
 }
 
 .custom-horizontal-scroll::-webkit-scrollbar {
@@ -1208,11 +1222,11 @@
 }
 
 .bg-warning-light {
-  background: rgba(255, 107, 53, 0.08);
+  background: rgba(245, 197, 24, 0.08);
 }
 
 .text-warning-important {
-  color: var(--accent) !important;
+  color: var(--accent-ink) !important;
 }
 
 /* Custom Login Modal Backdrop */
@@ -1330,13 +1344,13 @@
 }
 .custom-login-input:focus {
   border-color: var(--accent) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.25) !important;
+  box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.25) !important;
 }
 
 /* Premium Thailand travel Dashboard CSS Theme */
 .thailand-beach-bg {
   background: #f7f4ee !important; /* Soft Sand Base */
-  background-image: radial-gradient(rgba(255, 107, 53, 0.03) 1px, transparent 0), radial-gradient(rgba(0, 168, 204, 0.03) 1px, transparent 0) !important;
+  background-image: radial-gradient(rgba(245, 197, 24, 0.03) 1px, transparent 0), radial-gradient(rgba(0, 168, 204, 0.03) 1px, transparent 0) !important;
   background-size: 24px 24px !important;
   background-position: 0 0, 12px 12px !important;
 }
@@ -1353,7 +1367,7 @@
 
 .luxury-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 35px rgba(255, 107, 53, 0.06) !important;
+  box-shadow: 0 12px 35px rgba(245, 197, 24, 0.06) !important;
 }
 
 /* Custom premium inputs */
@@ -1367,24 +1381,24 @@
 
 .premium-input-field:focus {
   border-color: var(--accent) !important;
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15) !important;
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.22) !important;
   background-color: var(--white) !important;
 }
 
 /* Amber gradient premium buttons */
 .btn-amber-gradient {
-  background: linear-gradient(135deg, #FF9F1C, #FF6B35) !important;
-  color: var(--white) !important;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover)) !important;
+  color: var(--on-accent) !important;
   border: none !important;
   font-weight: 700 !important;
   letter-spacing: 0.5px;
-  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.25) !important;
+  box-shadow: 0 4px 15px rgba(245, 197, 24, 0.25) !important;
   transition: all 0.3s ease !important;
 }
 
 .btn-amber-gradient:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4) !important;
+  box-shadow: 0 6px 20px rgba(245, 197, 24, 0.4) !important;
 }
 
 /* Badge pills */
@@ -1418,7 +1432,7 @@
 
 .operator-row-card:hover {
   background: #faf9f6;
-  border-color: rgba(255, 107, 53, 0.15);
+  border-color: rgba(var(--accent-rgb), 0.22);
   box-shadow: 0 4px 15px rgba(11, 25, 44, 0.02);
 }
 
@@ -1456,6 +1470,122 @@
   position: relative;
 }
 
+/* Brand name, same lettering as the navbar logo (components/Navbar.jsx) */
+.brand-wordmark {
+  font-family: 'Cinzel', Georgia, serif !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em;
+}
+.brand-wordmark .brand-gold { color: #F5C518; font-weight: 900; }
+/* on white backgrounds the bright gold is too pale to read */
+.brand-wordmark--on-light .brand-gold { color: #B8860B; }
+
+/* The site's main action button: gold with navy text, like the navbar Login
+   and the hero Search buttons */
+.btn-brand {
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover)) !important;
+  border: 1px solid var(--accent-hover) !important;
+  color: var(--on-accent) !important;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+.btn-brand:hover,
+.btn-brand:focus-visible {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(var(--accent-rgb), 0.45);
+}
+
+/* Cabs page header (pages/customer/ThailandCustomerCabsPage.jsx).
+   Its styles are inline, so the phone rules below need !important. */
+.cabs-brand-tag {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #06101E;
+  background: linear-gradient(135deg, #F5C518, #E5A826);
+  border-radius: 6px;
+  padding: 2px 7px;
+}
+@media (max-width: 767.98px) {
+  .cabs-header {
+    padding: 10px 14px !important;
+    gap: 10px;
+  }
+  .cabs-header > div:first-child { gap: 10px !important; min-width: 0; }
+  .cabs-header-badge { display: none; }
+  .cabs-brand .brand-wordmark { font-size: 15px !important; }
+}
+@media (max-width: 575.98px) {
+  /* icon-only header buttons on phones (they keep their aria-labels) */
+  .cabs-btn-label { display: none; }
+  .cabs-header > div:last-child { gap: 8px !important; }
+  .cabs-header > div:last-child > * { padding: 8px 10px !important; }
+  .cabs-brand-tag { display: none; }
+}
+
+/* Scrollbar above wide tables (components/common/TopScrollbar.jsx) */
+.top-scrollbar {
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  scrollbar-width: auto;
+  scrollbar-color: #cbd5e1 #f8fafc;
+}
+.top-scrollbar::-webkit-scrollbar { height: 12px; }
+.top-scrollbar::-webkit-scrollbar-track { background: #f8fafc; }
+.top-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+  border: 2px solid #f8fafc;
+}
+.top-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Floating WhatsApp button (components/WhatsAppWidget.jsx) */
+.wa-float {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #25D366;
+  box-shadow: 0 10px 26px rgba(37, 211, 102, 0.32);
+  z-index: 1040;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.wa-float svg { width: 29px; height: 29px; }
+.wa-float:hover {
+  transform: scale(1.06);
+  box-shadow: 0 14px 34px rgba(37, 211, 102, 0.45);
+}
+@media (max-width: 640px) {
+  .wa-float { left: 14px; bottom: 14px; width: 48px; height: 48px; }
+  .wa-float svg { width: 25px; height: 25px; }
+}
+
+/* Phones: the photo panel is hidden, so the form takes the whole card */
+@media (max-width: 767.98px) {
+  .login-split-card {
+    min-height: 0;
+    max-height: 92vh;
+    overflow-y: auto;
+    border-radius: 22px;
+  }
+  .login-right-form {
+    width: 100%;
+    padding: 36px 22px 26px;
+    /* centred content taller than the card overflowed off the top, out of reach */
+    justify-content: flex-start;
+    flex-shrink: 0;
+  }
+}
+
 /* Feature bullet circles */
 .login-feature-circle {
   width: 38px;
@@ -1482,7 +1612,7 @@
 
 .login-input-group:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.22);
   background: var(--white);
 }
 
@@ -1903,10 +2033,10 @@
   border: 2px solid #e5e7eb;
 }
 .cmt-step.active .cmt-step-circle {
-  background: linear-gradient(135deg, var(--accent), #ff9f1c);
-  color: #fff;
-  border-color: var(--accent);
-  box-shadow: 0 4px 14px rgba(255,107,53,0.4);
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  color: var(--on-accent);
+  border-color: var(--accent-hover);
+  box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.45);
   transform: scale(1.1);
 }
 .cmt-step.done .cmt-step-circle {
@@ -1922,7 +2052,7 @@
   color: #9ca3af;
   white-space: nowrap;
 }
-.cmt-step.active .cmt-step-label { color: var(--accent); }
+.cmt-step.active .cmt-step-label { color: var(--accent-ink); }
 .cmt-step.done .cmt-step-label { color: #10b981; }
 .cmt-step-line {
   flex: 1;
@@ -2341,13 +2471,13 @@
   background: #fff;
 }
 .cmt-hotel-card:hover { border-color: #fdba74; box-shadow: 0 4px 20px rgba(234,88,12,0.1); transform: translateY(-2px); }
-.cmt-hotel-card.selected { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,0.15); }
+.cmt-hotel-card.selected { border-color: #E5A826; box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.15); }
 .cmt-hotel-img-wrap { width: 160px; min-width: 160px; position: relative; }
 .cmt-hotel-img { width: 100%; height: 100%; object-fit: cover; }
 .cmt-hotel-selected-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(249,115,22,0.6);
+  background: rgba(245, 197, 24, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2667,6 +2797,27 @@
   .cmt-hotel-img-wrap { width: 100px; min-width: 100px; }
   .cmt-flight-card { flex-wrap: wrap; }
   .cmt-flight-route { min-width: 200px; }
+
+  /* Step indicator: five steps fit side by side; labels wrap instead of running together */
+  .cmt-step-indicator {
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 14px 10px;
+    border-radius: 16px;
+  }
+  .cmt-step { flex: 0 0 60px; min-width: 0; gap: 5px; }
+  .cmt-step-circle { width: 34px; height: 34px; }
+  .cmt-step-circle svg { width: 15px; height: 15px; }
+  .cmt-step.active .cmt-step-circle { transform: scale(1.06); }
+  .cmt-step-label {
+    font-size: 10px;
+    line-height: 1.2;
+    letter-spacing: 0;
+    text-transform: none;
+    white-space: normal;
+    text-align: center;
+  }
+  .cmt-step-line { min-width: 4px; margin-top: 17px; }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -2929,7 +3080,7 @@
   border: none;
   font-size: 12.5px;
   font-weight: 800;
-  color: #ea580c;
+  color: var(--accent-ink);
   cursor: pointer;
   transition: color 0.15s ease;
   padding: 0;

@@ -5,6 +5,7 @@
 // ========================================================================
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import TempleMark from '../../components/common/TempleMark';
 import HoverGlider, { useEnterAnimation } from '../../components/common/HoverGlider';
 import {
   Car, Shield, CheckCircle2, Clock, MapPin, Phone, MessageSquare,
@@ -14,6 +15,7 @@ import {
   ExternalLink, CheckSquare, Luggage, Users
 } from 'lucide-react';
 import * as api from '../../services/api';
+import OtpVerifyPanel from '../../components/common/OtpVerifyPanel';
 
 const PICKUP_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -61,7 +63,7 @@ export default function DriverPortalPage({ currentUser, onLogout, onNavigateHome
   const [otpDigits, setOtpDigits] = useState(['', '', '', '']);
   const [otpError, setOtpError] = useState('');
   const [otpVerifying, setOtpVerifying] = useState(false);
-  const otpInputRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
+  const [rideOtpStatus, setRideOtpStatus] = useState('idle'); // idle | verifying | success | error
 
   // Trip Completion & Toll Modal State
   const [showCompleteModal, setShowCompleteModal] = useState(false);
@@ -331,40 +333,23 @@ export default function DriverPortalPage({ currentUser, onLogout, onNavigateHome
   const handleOpenOtpModal = () => {
     setOtpDigits(['', '', '', '']);
     setOtpError('');
-    setShowOtpModal(true);
-    setTimeout(() => {
-      if (otpInputRefs[0].current) otpInputRefs[0].current.focus();
-    }, 150);
-  };
-
-  const handleOtpDigitChange = (index, val) => {
-    const clean = val.replace(/[^0-9]/g, '');
-    const updated = [...otpDigits];
-    updated[index] = clean.slice(-1);
-    setOtpDigits(updated);
-    setOtpError('');
-
-    if (clean && index < 3) {
-      otpInputRefs[index + 1].current?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (index, e) => {
-    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
-      otpInputRefs[index - 1].current?.focus();
-    }
+    setRideOtpStatus('idle');
+    setShowOtpModal(true); // the OTP boxes focus themselves
   };
 
   const handleVerifyOtpAndStartTrip = async (e) => {
-    if (e) e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
+    if (otpVerifying || rideOtpStatus === 'success') return;
     const fullOtp = otpDigits.join('');
     if (fullOtp.length !== 4) {
       setOtpError('Please enter the complete 4-digit Passenger Security Code.');
+      setRideOtpStatus('error');
       return;
     }
 
     setOtpVerifying(true);
     setOtpError('');
+    setRideOtpStatus('verifying');
     try {
       const res = await api.updateDriverDutyStatus({
         dispatch_id: activeDuty.id,
@@ -373,18 +358,27 @@ export default function DriverPortalPage({ currentUser, onLogout, onNavigateHome
       });
 
       if (res.success) {
-        setShowOtpModal(false);
-        setSuccessMsg('Ride OTP Verified! Journey is now in progress.');
-        setTimeout(() => setSuccessMsg(''), 4500);
-        await loadDriverData(true);
+        // the panel plays "verified"; finishRideOtp() then closes the window
+        setRideOtpStatus('success');
+        loadDriverData(true);
       } else {
         setOtpError(res.error || 'Incorrect Ride OTP. Please re-check the passenger screen.');
+        setRideOtpStatus('error');
       }
     } catch (err) {
       setOtpError(err.message || 'OTP verification failed. Please try again.');
+      setRideOtpStatus('error');
     } finally {
       setOtpVerifying(false);
     }
+  };
+
+  // Called by the OTP panel once its "Verified" animation has played
+  const finishRideOtp = () => {
+    setShowOtpModal(false);
+    setRideOtpStatus('idle');
+    setSuccessMsg('Ride OTP Verified! Journey is now in progress.');
+    setTimeout(() => setSuccessMsg(''), 4500);
   };
 
   // -------------------------------------------------------------
@@ -469,15 +463,10 @@ export default function DriverPortalPage({ currentUser, onLogout, onNavigateHome
               className="cursor-pointer d-flex align-items-center gap-2"
               title="Return to WOW THAILAND Home"
             >
-              <div 
-                className="rounded-3 p-1.5 d-flex align-items-center justify-content-center"
-                style={{ backgroundColor: '#1C2541', border: '1px solid #D4AF37' }}
-              >
-                <Car size={20} className="text-warning" />
-              </div>
+              <TempleMark size={28} style={{ color: '#F5C518', flexShrink: 0, filter: 'drop-shadow(0 2px 6px rgba(245, 197, 24, 0.4))' }} />
               <div>
-                <span className="fw-black text-white font-heading d-block" style={{ fontSize: '1rem', letterSpacing: '0.04em' }}>
-                  WOW THAILAND
+                <span className="brand-wordmark text-white d-block" style={{ fontSize: '1rem' }}>
+                  WOW <span className="brand-gold">THAILAND</span>
                 </span>
                 <span className="text-warning small d-block" style={{ fontSize: '0.66rem', letterSpacing: '0.08em', fontWeight: 600 }}>
                   ROYAL CHAUFFEUR COMPANION
@@ -1308,103 +1297,44 @@ export default function DriverPortalPage({ currentUser, onLogout, onNavigateHome
           className="position-fixed top-0 start-0 end-0 bottom-0 d-flex align-items-center justify-content-center p-3 z-3"
           style={{ backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 1080 }}
         >
-          <div 
-            className="card border-0 rounded-4 shadow-2xl overflow-hidden w-100"
-            style={{ maxWidth: '440px', backgroundColor: '#FFFFFF' }}
-          >
-            {/* Header */}
-            <div 
-              className="p-3.5 d-flex align-items-center justify-content-between text-white"
-              style={{ backgroundColor: '#0B132B', borderBottom: '2px solid #D4AF37' }}
+          {/* Glassy OTP panel: the boxes orbit while the code is checked. The driver still
+              presses the button: a trip never starts by itself. */}
+          <div className="position-relative w-100" style={{ maxWidth: '440px' }}>
+            <button
+              type="button"
+              onClick={() => { setShowOtpModal(false); setRideOtpStatus('idle'); }}
+              className="btn btn-sm rounded-circle p-1 border-0 position-absolute"
+              style={{ top: '14px', right: '14px', zIndex: 5, color: 'rgba(255,255,255,0.75)', background: 'rgba(255,255,255,0.08)' }}
+              aria-label="Close"
             >
-              <div className="d-flex align-items-center gap-2">
-                <KeyRound size={18} className="text-warning" />
-                <span className="fw-bold font-heading text-white fs-6">
-                  Verify Passenger Ride OTP
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowOtpModal(false)}
-                className="btn btn-outline-light btn-sm rounded-circle p-1 border-0"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <form onSubmit={handleVerifyOtpAndStartTrip} className="p-4">
-              <div className="text-center mb-3">
-                <span className="badge bg-warning text-dark px-2.5 py-1 rounded-pill small mb-2 fw-bold" style={{ fontSize: '0.72rem' }}>
-                  TRIP DEPARTURE SECURITY GATE
-                </span>
-                <p className="small text-muted mb-0" style={{ fontSize: '0.82rem' }}>
-                  Ask the passenger for the <strong>4-digit Private Chauffeur Security Code</strong> displayed on their booking confirmation screen.
-                </p>
-              </div>
-
-              {/* 4 Pin Inputs */}
-              <div className="d-flex justify-content-center gap-2.5 my-4">
-                {otpDigits.map((digit, idx) => (
-                  <input
-                    key={idx}
-                    ref={otpInputRefs[idx]}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleOtpDigitChange(idx, e.target.value)}
-                    onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                    className="form-control text-center fw-black font-monospace shadow-xs"
-                    style={{
-                      width: '56px',
-                      height: '64px',
-                      fontSize: '1.6rem',
-                      borderRadius: '12px',
-                      border: digit ? '2px solid #0B132B' : '2px solid #E2E8F0',
-                      backgroundColor: digit ? '#F8FAFC' : '#FFFFFF',
-                      color: '#0B132B'
-                    }}
-                  />
-                ))}
-              </div>
-
-              {otpError && (
-                <div className="alert alert-danger py-2 px-3 small rounded-3 d-flex align-items-center gap-2 mb-3">
-                  <AlertCircle size={15} className="flex-shrink-0" />
-                  <span>{otpError}</span>
-                </div>
-              )}
-
-              {/* Submit CTA */}
-              <button
-                type="submit"
-                disabled={otpVerifying || otpDigits.join('').length !== 4}
-                className="btn w-100 py-3 rounded-3 fw-bold d-flex align-items-center justify-content-center gap-2 shadow"
-                style={{
-                  backgroundColor: '#D4AF37',
-                  color: '#0B132B',
-                  borderColor: '#D4AF37',
-                  fontSize: '0.95rem'
-                }}
-              >
-                {otpVerifying ? (
-                  <>
-                    <div className="spinner-border spinner-border-sm" role="status" />
-                    <span>Verifying Code with Server...</span>
-                  </>
-                ) : (
-                  <>
-                    <Check size={18} />
-                    <span>Confirm OTP & Start Journey</span>
-                  </>
-                )}
-              </button>
-
-              <div className="text-center text-muted small mt-2.5" style={{ fontSize: '0.72rem' }}>
-                Trip will strictly not depart without authentic OTP verification.
-              </div>
-            </form>
+              <X size={16} />
+            </button>
+            <OtpVerifyPanel
+              length={4}
+              value={otpDigits.join('')}
+              onChange={(code) => {
+                setOtpDigits(Array.from({ length: 4 }, (_, i) => code[i] || ''));
+                setOtpError('');
+                if (rideOtpStatus === 'error') setRideOtpStatus('idle');
+              }}
+              onSubmit={() => handleVerifyOtpAndStartTrip()}
+              status={rideOtpStatus}
+              errorMessage={otpError}
+              onSuccessDone={finishRideOtp}
+              title="Verify"
+              highlight="Ride OTP"
+              subtitle="Ask the passenger for the 4-digit security code shown on their booking confirmation screen."
+              submitLabel="Confirm OTP & Start Journey"
+              verifyingLabel="Verifying code…"
+              successTitle="Journey"
+              successHighlight="Started"
+              successSubtitle="Passenger verified. Have a safe trip!"
+              label="4-digit passenger ride code"
+            >
+              <span className="d-inline-block px-3 py-1 rounded-pill fw-bold" style={{ background: 'rgba(245,197,24,0.12)', color: '#F5C518', fontSize: '0.68rem', letterSpacing: '0.08em' }}>
+                TRIP DEPARTURE SECURITY GATE
+              </span>
+            </OtpVerifyPanel>
           </div>
         </div>
       )}

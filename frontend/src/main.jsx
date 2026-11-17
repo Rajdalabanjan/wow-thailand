@@ -4,6 +4,8 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import 'bootstrap-icons/font/bootstrap-icons.css'
 import './index.css'
+import './utilities.css'
+import './theme.css'
 import App from './App.jsx'
 import { SiteConfigProvider } from './context/SiteConfigContext.jsx'
 import { CustomerCurrencyProvider } from './context/CustomerCurrencyContext.jsx'
@@ -31,12 +33,12 @@ class GlobalErrorBoundary extends Component {
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
               <span style={{ fontSize: '32px' }}>⚠️</span>
               <div>
-                <h3 style={{ margin: 0, color: '#FF6333', fontWeight: 700 }}>Something went wrong</h3>
+                <h3 style={{ margin: 0, color: '#B8860B', fontWeight: 700 }}>Something went wrong</h3>
                 <p style={{ margin: '4px 0 0', color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>An error occurred while rendering the page</p>
               </div>
             </div>
 
-            <div style={{ background: '#09131F', padding: '16px', borderRadius: '8px', border: '1px solid rgba(255,99,51,0.3)', marginBottom: '24px', overflowX: 'auto' }}>
+            <div style={{ background: '#09131F', padding: '16px', borderRadius: '8px', border: '1px solid rgba(245, 197, 24, 0.3)', marginBottom: '24px', overflowX: 'auto' }}>
               <div style={{ color: '#ef4444', fontWeight: 'bold', fontSize: '15px', marginBottom: '8px' }}>
                 {this.state.error && this.state.error.toString()}
               </div>
@@ -48,7 +50,7 @@ class GlobalErrorBoundary extends Component {
             <div style={{ display: 'flex', gap: '12px' }}>
               <button
                 onClick={() => { localStorage.clear(); window.location.reload(); }}
-                style={{ background: 'linear-gradient(90deg, #FF6333, #FF8A00)', border: 'none', color: '#fff', fontWeight: 600, padding: '10px 20px', borderRadius: '8px', cursor: 'pointer' }}
+                style={{ background: 'linear-gradient(90deg, #F5C518, #E5A826)', border: 'none', color: '#06101E', fontWeight: 600, padding: '10px 20px', borderRadius: '8px', cursor: 'pointer' }}
               >
                 Clear Cache & Reload
               </button>

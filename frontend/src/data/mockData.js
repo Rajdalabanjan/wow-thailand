@@ -33,10 +33,10 @@ export const hotelsData = [
     images: [
       'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1400&q=80',
       'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1400&q=80',
-      'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1400&q=80',
-      'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=1400&q=80',
-      'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1400&q=80',
-      'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1400&q=80'
+      'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?auto=format&fit=crop&w=1400&q=80'
     ],
     description: 'An award-winning adults-only beachfront sanctuary secluded along the emerald cove of Kata Noi Beach in Phuket. Each luxury villa features an intimate private infinity plunge pool, panoramic Andaman Sea vistas, sun decks, deep soaking marble tubs, and 24/7 personal butler service. Enjoy gourmet oceanfront dining at The Harbor and rejuvenating wellness therapies at Serenity Spa.',
     amenities: [
@@ -66,8 +66,8 @@ export const hotelsData = [
       cuisine: 'Contemporary Thai & Fresh Andaman Seafood',
       dress_code: 'Smart Casual',
       images: [
-        'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80'
+        'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1400&q=80',
+        'https://images.unsplash.com/photo-1578474846511-04ba529f0b88?auto=format&fit=crop&w=1400&q=80'
       ]
     },
     categorized_amenities: [
@@ -107,8 +107,8 @@ export const hotelsData = [
         price: 8500,
         price_per_night: 8500,
         images: [
-          'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
-          'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=1200&q=80'
+          'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=1400&q=80',
+          'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1400&q=80'
         ],
         amenities: ['Private Infinity Pool', 'Sun Terrace', 'Espresso Machine', 'Rain Shower', 'Deep Soaking Tub', 'Free Wi-Fi'],
         rate_plans: [
@@ -159,8 +159,8 @@ export const hotelsData = [
         price: 15500,
         price_per_night: 15500,
         images: [
-          'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1200&q=80',
-          'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80'
+          'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1400&q=80',
+          'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=1400&q=80'
         ],
         amenities: ['Double Private Pool', 'Grand Living Pavilion', 'Full Kitchenette', 'Dual Rain Showers', 'Butler Call Button'],
         rate_plans: [
@@ -201,16 +201,16 @@ export const hotelsData = [
     rating: 4.88,
     reviews_count: 2140,
     badge: 'Iconic Rooftop Sky Sanctuary',
-    image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1400&q=80',
-    image_url: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1400&q=80',
-    imageUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1400&q=80',
+    image: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=1400&q=80',
+    image_url: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=1400&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=1400&q=80',
     images: [
-      'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1400&q=80',
-      'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=1400&q=80',
-      'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=1400&q=80',
-      'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1400&q=80',
-      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1400&q=80',
-      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1400&q=80'
+      'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=1400&q=80'
     ],
     description: 'An iconic urban sanctuary situated in Bangkok’s central Sathorn district, celebrated for the legendary 61st-floor open-air Vertigo & Moon Bar offering 360-degree panoramic skyline views. Relax in spacious luxury suites equipped with aromatherapy burners, unwind at the multi-award-winning Banyan Tree Spa, swim in the rooftop sky pool, and savor world-class cuisine at Saffron Thai restaurant.',
     amenities: [
@@ -240,8 +240,8 @@ export const hotelsData = [
       cuisine: 'Premium Grilled Steaks & Sunset Mixology',
       dress_code: 'Smart Elegant',
       images: [
-        'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80'
+        'https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1400&q=80',
+        'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1400&q=80'
       ]
     },
     categorized_amenities: [
@@ -281,8 +281,8 @@ export const hotelsData = [
         price: 5200,
         price_per_night: 5200,
         images: [
-          'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
-          'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80'
+          'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1400&q=80',
+          'https://images.unsplash.com/photo-1591088398332-8a7791972843?auto=format&fit=crop&w=1400&q=80'
         ],
         amenities: ['Deep Soaking Tub', 'Aromatherapy Set', 'High-Speed Wi-Fi', 'Smart TV', 'Separate Living Area'],
         rate_plans: [
@@ -333,8 +333,8 @@ export const hotelsData = [
         price: 8200,
         price_per_night: 8200,
         images: [
-          'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
-          'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=1200&q=80'
+          'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1400&q=80',
+          'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1400&q=80'
         ],
         amenities: ['Club Lounge Access', 'Moon Bar VIP Pass', 'Butler Service', 'Complimentary Evening Canapés'],
         rate_plans: [
@@ -366,16 +366,16 @@ export const hotelsData = [
     rating: 4.82,
     reviews_count: 1670,
     badge: '5-Star Beachfront Luxury',
-    image: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1400&q=80',
-    image_url: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1400&q=80',
-    imageUrl: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1400&q=80',
+    image: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=1400&q=80',
+    image_url: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=1400&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=1400&q=80',
     images: [
-      'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1400&q=80',
       'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=1400&q=80',
-      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1400&q=80',
-      'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1400&q=80',
       'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1400&q=80',
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=80'
+      'https://images.unsplash.com/photo-1572331165267-854da2b10ccc?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=1400&q=80'
     ],
     description: 'Towering 34 levels above CentralFestival Pattaya Beach, Hilton Pattaya delivers unmatched coastal luxury with 180-degree unobstructed panoramas across the Gulf of Thailand. Features an expansive landscaped outdoor infinity pool on the 16th floor, private ocean-facing balconies in every room, eforea spa, Drift rooftop lounge, and direct elevator access to world-class dining, shopping, and watersports.',
     amenities: [
@@ -405,8 +405,8 @@ export const hotelsData = [
       cuisine: 'Artisan High Tea, Tapas & Coastal Cocktails',
       dress_code: 'Resort Casual',
       images: [
-        'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80'
+        'https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=1400&q=80',
+        'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=1400&q=80'
       ]
     },
     categorized_amenities: [
@@ -446,8 +446,8 @@ export const hotelsData = [
         price: 4200,
         price_per_night: 4200,
         images: [
-          'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
-          'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1200&q=80'
+          'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?auto=format&fit=crop&w=1400&q=80',
+          'https://images.unsplash.com/photo-1587985064135-0366536eab42?auto=format&fit=crop&w=1400&q=80'
         ],
         amenities: ['Private Balcony', 'Outdoor Seating', 'Free Wi-Fi', 'Marble Bath', 'Minibar'],
         rate_plans: [
@@ -498,8 +498,8 @@ export const hotelsData = [
         price: 7800,
         price_per_night: 7800,
         images: [
-          'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80',
-          'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80'
+          'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=80',
+          'https://images.unsplash.com/photo-1600565193348-f74bd3c7ccdf?auto=format&fit=crop&w=1400&q=80'
         ],
         amenities: ['Spacious Living Room', 'Two Bathrooms', 'Dual Balconies', 'Kids Welcome Pack'],
         rate_plans: [

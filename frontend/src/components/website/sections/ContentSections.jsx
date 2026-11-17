@@ -5,7 +5,7 @@ import * as api from '../../../services/api';
 export function FeaturesSection({ section, liveData, onAction }) {
   const p = section.props || {};
   const s = section.style || {};
-  const primary = p.primaryColor || 'var(--wb-primary, #FF6333)';
+  const primary = p.primaryColor || 'var(--wb-primary, #F5C518)';
 
   const defaultFeatures = [
     { icon: '🛡️', title: 'Trusted & Verified', desc: 'All hotels, vehicles and packages are verified by our expert team before listing.' },
@@ -46,7 +46,7 @@ function FeatureCard({ feature, primary, style }) {
     shadow: { background: '#fff', boxShadow: '0 4px 24px rgba(0,0,0,0.07)', border: 'none' },
     bordered: { background: '#fff', boxShadow: 'none', border: '1.5px solid #e2e8f0' },
     filled: { background: '#f8fafc', boxShadow: 'none', border: 'none' },
-    gradient: { background: 'linear-gradient(135deg, #fff8f5, #fff)', boxShadow: '0 4px 24px rgba(255,99,51,0.08)', border: `1px solid rgba(255,99,51,0.1)` }
+    gradient: { background: 'linear-gradient(135deg, #fff8f5, #fff)', boxShadow: '0 4px 24px rgba(245, 197, 24, 0.08)', border: `1px solid rgba(245, 197, 24, 0.1)` }
   };
 
   return (
@@ -69,7 +69,7 @@ function FeatureCard({ feature, primary, style }) {
 export function TestimonialsSection({ section, liveData, onAction }) {
   const p = section.props || {};
   const s = section.style || {};
-  const primary = p.primaryColor || 'var(--wb-primary, #FF6333)';
+  const primary = p.primaryColor || 'var(--wb-primary, #F5C518)';
 
   // Uses LIVE customer reviews from booking system
   const liveTestimonials = liveData.reviews || liveData.testimonials || [];
@@ -104,7 +104,7 @@ export function TestimonialsSection({ section, liveData, onAction }) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
             <div style={{
               width: '48px', height: '48px', borderRadius: '50%',
-              background: `linear-gradient(135deg, ${primary}, #FF8A00)`,
+              background: `linear-gradient(135deg, ${primary}, #E5A826)`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#fff', fontWeight: 700, fontSize: '18px'
             }}>
@@ -139,12 +139,12 @@ export function TestimonialsSection({ section, liveData, onAction }) {
 export function CTASection({ section, liveData, onAction }) {
   const p = section.props || {};
   const s = section.style || {};
-  const primary = p.primaryColor || 'var(--wb-primary, #FF6333)';
+  const primary = p.primaryColor || 'var(--wb-primary, #F5C518)';
 
   return (
     <section style={{
       padding: p.padding || '80px 24px',
-      background: p.sectionBg || `linear-gradient(135deg, ${primary} 0%, #FF8A00 100%)`,
+      background: p.sectionBg || `linear-gradient(135deg, ${primary} 0%, #E5A826 100%)`,
       textAlign: 'center', ...s
     }}>
       <div style={{ maxWidth: '700px', margin: '0 auto' }}>
@@ -192,7 +192,7 @@ export function CTASection({ section, liveData, onAction }) {
 export function FAQSection({ section, liveData, onAction }) {
   const p = section.props || {};
   const s = section.style || {};
-  const primary = p.primaryColor || 'var(--wb-primary, #FF6333)';
+  const primary = p.primaryColor || 'var(--wb-primary, #F5C518)';
   const [open, setOpen] = useState(null);
 
   const defaultFAQs = [
@@ -252,7 +252,7 @@ export function FAQSection({ section, liveData, onAction }) {
 export function ContactFormSection({ section, liveData, onAction }) {
   const p = section.props || {};
   const s = section.style || {};
-  const primary = p.primaryColor || 'var(--wb-primary, #FF6333)';
+  const primary = p.primaryColor || 'var(--wb-primary, #F5C518)';
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
   const [sent, setSent] = useState(false);
 
@@ -300,7 +300,7 @@ export function ContactFormSection({ section, liveData, onAction }) {
           <FormInput label="Message" placeholder="Tell us about your travel plans..." value={form.message} onChange={v => setForm(f => ({ ...f, message: v }))} multiline rows={5} />
           <button type="submit" style={{
             marginTop: '20px', width: '100%', padding: '14px',
-            background: `linear-gradient(135deg, ${primary}, #FF8A00)`,
+            background: `linear-gradient(135deg, ${primary}, #E5A826)`,
             color: '#fff', border: 'none', borderRadius: '10px',
             fontSize: '16px', fontWeight: 700, cursor: 'pointer'
           }}>
@@ -337,7 +337,7 @@ function FormInput({ label, placeholder, value, onChange, type = 'text', require
 export function TeamSection({ section, liveData, onAction }) {
   const p = section.props || {};
   const s = section.style || {};
-  const primary = p.primaryColor || 'var(--wb-primary, #FF6333)';
+  const primary = p.primaryColor || 'var(--wb-primary, #F5C518)';
 
   const members = p.team || [
     { name: 'Rajesh Kumar', role: 'CEO & Founder', image: '', bio: 'Travel enthusiast with 15 years in the tourism industry.' },
@@ -364,7 +364,7 @@ export function TeamSection({ section, liveData, onAction }) {
             >
               <div style={{
                 width: '80px', height: '80px', borderRadius: '50%', margin: '0 auto 16px',
-                background: m.image ? `url(${m.image}) center/cover` : `linear-gradient(135deg, ${primary}, #FF8A00)`,
+                background: m.image ? `url(${m.image}) center/cover` : `linear-gradient(135deg, ${primary}, #E5A826)`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '28px', fontWeight: 700, color: '#fff'
               }}>
@@ -385,7 +385,7 @@ export function TeamSection({ section, liveData, onAction }) {
 export function CounterSection({ section, liveData, onAction }) {
   const p = section.props || {};
   const s = section.style || {};
-  const primary = p.primaryColor || 'var(--wb-primary, #FF6333)';
+  const primary = p.primaryColor || 'var(--wb-primary, #F5C518)';
 
   const stats = p.stats || [
     { value: '10,000+', label: 'Happy Customers' },
@@ -531,7 +531,7 @@ export function HeadingSection({ section, liveData, onAction }) {
       <div style={{ maxWidth: p.maxWidth || '900px', margin: '0 auto' }}>
         {p.badge && (
           <div style={{
-            display: 'inline-block', background: '#FFF5F2', color: 'var(--wb-primary, #FF6333)',
+            display: 'inline-block', background: '#FFF5F2', color: 'var(--wb-primary, #F5C518)',
             padding: '6px 16px', borderRadius: '100px', fontSize: '12px', fontWeight: 700,
             marginBottom: '16px', letterSpacing: '1px', textTransform: 'uppercase'
           }}>{p.badge}</div>
@@ -563,8 +563,8 @@ export function HeadingSection({ section, liveData, onAction }) {
           <button onClick={() => onAction && onAction(p.buttonAction || 'scroll', {
               url: p.Url, phone: p.Phone, email: p.Email, fileUrl: p.FileUrl, popupId: p.PopupId
           })} style={{
-            padding: '14px 36px', background: 'linear-gradient(135deg, var(--wb-primary, #FF6333), #FF8A00)',
-            color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 700, cursor: 'pointer'
+            padding: '14px 36px', background: 'linear-gradient(135deg, var(--wb-primary, #F5C518), #E5A826)',
+            color: '#06101E', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 700, cursor: 'pointer'
           }}>{p.buttonText}</button>
         )}
       </div>

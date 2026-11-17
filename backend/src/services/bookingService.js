@@ -4,6 +4,48 @@
 // ========================================================================
 
 import { createCurrencySnapshot } from './currencyService.js';
+import { generateBookingId } from '../utils/bookingIds.js';
+
+// What the customer booked, as the checkout pages send it. Saved on the booking item so
+// staff, vendors and the customer can see it later (activity, package, pickup, guests, …).
+const DETAIL_FIELDS = [
+  'type', 'package_type', 'service_type', 'item_id', 'item_name', 'package_name',
+  'hotel_id', 'hotel_name', 'room_type', 'room_type_id', 'selected_rooms', 'meal_plan',
+  'vehicle_name', 'vehicle_image', 'vehicle_category',
+  'pickup_location', 'pickup_loc', 'pickup_time', 'drop_location', 'drop_loc', 'drop_time',
+  'booking_days', 'duration', 'total_members', 'guests', 'adults', 'children',
+  'activities', 'selected_activities', 'customizations', 'traveller_details_json', 'price_breakdown_json',
+  'subtotal', 'tax', 'fee', 'wallet_amount_used', 'tier_discount_applied',
+  'payment_method', 'payment_reference', 'booking_channel', 'source', 'notes',
+  'driver_required', 'driver_service_type', 'driver_charge', 'driver_days', 'driver_details',
+  'driver_pickup_enabled', 'driver_pickup_date', 'driver_pickup_time', 'driver_pickup_loc',
+  'driver_drop_enabled', 'driver_drop_date', 'driver_drop_time', 'driver_drop_loc',
+  'driver_fullday_enabled', 'driver_fullday_start', 'driver_fullday_end', 'driver_fullday_days'
+];
+const MAX_DETAIL_TEXT = 20000;
+
+function bookedItemDetails(payload) {
+  const details = {};
+  for (const key of DETAIL_FIELDS) {
+    let value = payload[key];
+    if (value === undefined || value === null || value === '') continue;
+    if (typeof value === 'string' && value.length > MAX_DETAIL_TEXT) value = value.slice(0, MAX_DETAIL_TEXT);
+    details[key] = value;
+  }
+  return details;
+}
+
+// booking_items.item_type is one of HOTEL | TRANSFER | TOUR | ACTIVITY
+function itemTypeFor(payload) {
+  const text = [payload.type, payload.package_type, payload.service_type]
+    .map(v => String(v || '').toLowerCase()).join(' ');
+  const ref = String(payload.item_id || '').toLowerCase();
+  if (/activity|sightseeing/.test(text) || ref.startsWith('act-') || ref.startsWith('sight-')) return 'ACTIVITY';
+  if (/package|tour|craft|self ?drive|holiday|trip/.test(text) || ref.startsWith('tour-') || ref.startsWith('pkg-')) return 'TOUR';
+  if (/hotel|stay|room/.test(text)) return 'HOTEL';
+  if (/car|cab|bike|transfer|vehicle|rental|taxi|chauffeur/.test(text)) return 'TRANSFER';
+  return 'TOUR';
+}
 
 /**
  * Generate a sequential date array between two dates [startDate, endDate)
@@ -179,51 +221,73 @@ export async function createBookingTransaction(connection, payload, { trustedPri
   const customerCurrency = payload.customer_currency || 'THB';
   const currencySnapshot = createCurrencySnapshot(baseAmountTHB, customerCurrency);
 
-  // 5. Generate Booking ID (PNR Format: TH-BKG-YYYYMMDD-XXXX)
-  const dateTag = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const randTag = Math.floor(Math.random() * 9000 + 1000);
-  const bookingId = `TH-BKG-${dateTag}-${randTag}`;
-
+  // 5. Generate Booking ID (PNR Format: TH-BKG-YYYYMMDD-XXXX), never one already in use
   // 6. Insert Booking Record (Status: Strictly PENDING / Awaiting Payment)
-  await connection.execute(
-    `INSERT INTO bookings (
-      id, idempotency_key, user_id, customer_name, customer_phone, customer_email,
-      start_date, end_date, vendor_id, base_amount_thb, platform_fee_thb,
-      customer_currency, exchange_rate_applied, customer_total_amount,
-      payment_status, payment_verification_status, wallet_deduction_status, booking_status, special_requests
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', 'Unverified', 'Pending', 'Awaiting Payment', ?)`,
-    [
-      bookingId,
-      idempotencyKey || null,
-      payload.user_id || null,
-      customerName,
-      customerPhone,
-      customerEmail,
-      startDate,
-      endDate,
-      payload.vendor_id || null,
-      currencySnapshot.base_amount_thb,
-      0.00,
-      currencySnapshot.customer_currency,
-      currencySnapshot.exchange_rate_applied,
-      currencySnapshot.customer_total_amount,
-      payload.special_requests || null
-    ]
-  );
+  let bookingId;
+  for (let attempt = 1; ; attempt++) {
+    bookingId = await generateBookingId(connection);
+    try {
+      await connection.execute(
+        `INSERT INTO bookings (
+          id, idempotency_key, user_id, customer_name, customer_phone, customer_email,
+          start_date, end_date, vendor_id, base_amount_thb, platform_fee_thb,
+          customer_currency, exchange_rate_applied, customer_total_amount,
+          payment_status, payment_verification_status, wallet_deduction_status, booking_status, special_requests
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', 'Unverified', 'Pending', 'Awaiting Payment', ?)`,
+        [
+          bookingId,
+          idempotencyKey || null,
+          payload.user_id || null,
+          customerName,
+          customerPhone,
+          customerEmail,
+          startDate,
+          endDate,
+          payload.vendor_id || null,
+          currencySnapshot.base_amount_thb,
+          0.00,
+          currencySnapshot.customer_currency,
+          currencySnapshot.exchange_rate_applied,
+          currencySnapshot.customer_total_amount,
+          payload.special_requests || payload.notes || null
+        ]
+      );
+      break;
+    } catch (err) {
+      // Another checkout took the same reference a moment ago: pick a new one
+      const sameReference = err.code === 'ER_DUP_ENTRY' && /PRIMARY/.test(err.message || '');
+      if (!sameReference || attempt >= 5) throw err;
+    }
+  }
 
-  // 7. Insert Booking Items
-  const effectiveItems = items.length > 0 ? items : (roomTypeId ? [{
-    item_type: 'HOTEL',
-    reference_id: roomTypeId,
-    unit_price_thb: baseAmountTHB,
-    quantity: requestedRooms,
-    subtotal_thb: baseAmountTHB,
-    details: { hotel_id: payload.hotel_id, dates: `${startDate} to ${endDate}` }
-  }] : []);
+  // 7. Insert Booking Items. Checkouts that don't send an item list (activities, packages,
+  // car rentals, …) still get one line describing what was booked.
+  const bookedDetails = bookedItemDetails(payload);
+  let effectiveItems = items;
+  if (effectiveItems.length === 0 && roomTypeId) {
+    effectiveItems = [{
+      item_type: 'HOTEL',
+      reference_id: roomTypeId,
+      unit_price_thb: baseAmountTHB,
+      quantity: requestedRooms,
+      subtotal_thb: baseAmountTHB,
+      details: { ...bookedDetails, hotel_id: payload.hotel_id, dates: `${startDate} to ${endDate}` }
+    }];
+  } else if (effectiveItems.length === 0) {
+    effectiveItems = [{
+      item_type: itemTypeFor(payload),
+      reference_id: String(payload.item_id || payload.hotel_id || 'general').slice(0, 50),
+      unit_price_thb: baseAmountTHB,
+      quantity: 1,
+      subtotal_thb: baseAmountTHB,
+      details: bookedDetails
+    }];
+  }
 
   if (effectiveItems.length > 0) {
-    for (const item of effectiveItems) {
-      const itemId = `itm_${Date.now()}_${Math.floor(Math.random() * 900 + 100)}`;
+    for (const [index, item] of effectiveItems.entries()) {
+      // Booking ids are unique, so this is too (a time+random id could clash under load)
+      const itemId = `itm_${bookingId}_${index}`;
       await connection.execute(
         `INSERT INTO booking_items (id, booking_id, item_type, reference_id, unit_price_thb, quantity, subtotal_thb, details_json) 
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -255,7 +319,7 @@ export async function createBookingTransaction(connection, payload, { trustedPri
 
   await connection.execute(
     'INSERT INTO vouchers (id, booking_id, voucher_code, qr_payload) VALUES (?, ?, ?, ?)',
-    [`vch_${Date.now()}`, bookingId, voucherCode, qrData]
+    [`vch_${bookingId}`, bookingId, voucherCode, qrData]
   );
 
   return {

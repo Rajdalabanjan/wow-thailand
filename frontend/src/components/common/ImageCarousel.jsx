@@ -185,7 +185,7 @@ export default function ImageCarousel({
                 backdropFilter: 'blur(6px)',
                 transition: 'all 0.2s ease'
               }}
-              onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.backgroundColor = '#00B8D9'; }}
+              onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.backgroundColor = '#F5C518'; }}
               onMouseOut={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.backgroundColor = 'rgba(15, 23, 42, 0.75)'; }}
             >
               <Maximize2 size={16} />
@@ -214,7 +214,7 @@ export default function ImageCarousel({
               border: '1px solid rgba(255,255,255,0.2)'
             }}
           >
-            <Layers size={13} color="#00B8D9" />
+            <Layers size={13} color="#B8860B" />
             <span>{activeIdx + 1} / {total}</span>
           </div>
         )}
@@ -246,7 +246,7 @@ export default function ImageCarousel({
                 backdropFilter: 'blur(6px)',
                 transition: 'all 0.2s ease'
               }}
-              onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; e.currentTarget.style.backgroundColor = '#00B8D9'; }}
+              onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; e.currentTarget.style.backgroundColor = '#F5C518'; }}
               onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; e.currentTarget.style.backgroundColor = 'rgba(13, 27, 46, 0.85)'; }}
             >
               <ChevronLeft size={22} strokeWidth={2.5} />
@@ -276,7 +276,7 @@ export default function ImageCarousel({
                 backdropFilter: 'blur(6px)',
                 transition: 'all 0.2s ease'
               }}
-              onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; e.currentTarget.style.backgroundColor = '#00B8D9'; }}
+              onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; e.currentTarget.style.backgroundColor = '#F5C518'; }}
               onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; e.currentTarget.style.backgroundColor = 'rgba(13, 27, 46, 0.85)'; }}
             >
               <ChevronRight size={22} strokeWidth={2.5} />
@@ -313,9 +313,9 @@ export default function ImageCarousel({
                   borderRadius: '8px',
                   overflow: 'hidden',
                   padding: 0,
-                  border: isActive ? '2.5px solid #00B8D9' : '2px solid transparent',
+                  border: isActive ? '2.5px solid #F5C518' : '2px solid transparent',
                   opacity: isActive ? 1 : 0.65,
-                  boxShadow: isActive ? '0 0 0 3px rgba(0,184,217,0.35)' : '0 1px 3px rgba(0,0,0,0.1)',
+                  boxShadow: isActive ? '0 0 0 3px rgba(245, 197, 24, 0.35)' : '0 1px 3px rgba(0,0,0,0.1)',
                   cursor: 'pointer',
                   backgroundColor: '#0f172a',
                   transform: isActive ? 'scale(1.03)' : 'scale(1)',
@@ -406,7 +406,7 @@ export default function ImageCarousel({
                   transition: 'all 0.2s ease'
                 }}
                 onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#FF6333';
+                  e.currentTarget.style.backgroundColor = '#F5C518';
                   e.currentTarget.style.borderColor = '#ffffff';
                   e.currentTarget.style.transform = 'scale(1.1)';
                 }}
@@ -480,7 +480,7 @@ export default function ImageCarousel({
                     transition: 'all 0.2s ease'
                   }}
                   onMouseOver={(e) => {
-                    e.currentTarget.style.backgroundColor = '#00B8D9';
+                    e.currentTarget.style.backgroundColor = '#F5C518';
                     e.currentTarget.style.borderColor = '#ffffff';
                     e.currentTarget.style.transform = 'translateY(-50%) scale(1.12)';
                   }}
@@ -521,7 +521,7 @@ export default function ImageCarousel({
                     transition: 'all 0.2s ease'
                   }}
                   onMouseOver={(e) => {
-                    e.currentTarget.style.backgroundColor = '#00B8D9';
+                    e.currentTarget.style.backgroundColor = '#F5C518';
                     e.currentTarget.style.borderColor = '#ffffff';
                     e.currentTarget.style.transform = 'translateY(-50%) scale(1.12)';
                   }}
@@ -563,9 +563,9 @@ export default function ImageCarousel({
                         borderRadius: '8px',
                         overflow: 'hidden',
                         padding: 0,
-                        border: isActive ? '2.5px solid #00B8D9' : '1.5px solid rgba(255,255,255,0.2)',
+                        border: isActive ? '2.5px solid #F5C518' : '1.5px solid rgba(255,255,255,0.2)',
                         opacity: isActive ? 1 : 0.5,
-                        boxShadow: isActive ? '0 0 0 3px rgba(0,184,217,0.45)' : 'none',
+                        boxShadow: isActive ? '0 0 0 3px rgba(245, 197, 24, 0.45)' : 'none',
                         cursor: 'pointer',
                         background: '#070f1a',
                         transform: isActive ? 'scale(1.05)' : 'scale(1)',

@@ -82,7 +82,7 @@ async function runDriverCompanionTests() {
   const customerToken = createToken({
     id: 'cust-cab-01',
     username: 'cust_somkiat',
-    email: 'somkiat@thailand.com',
+    email: 'somkiat@example.com',
     role: 'customer'
   });
 
@@ -97,11 +97,17 @@ async function runDriverCompanionTests() {
   await query(
     `INSERT INTO drivers (id, user_id, full_name, phone, license_number, vehicle_model, vehicle_plate, status)
      VALUES ('drv-bkk-01', 'usr-driver-somchai', 'Somchai Jaidee', '+66 83 456 7890', 'TH-DL-987234', 'Toyota Camry VIP', '1กข 4589', 'available')
-     ON DUPLICATE KEY UPDATE full_name = 'Somchai Jaidee', status = 'available'`
+     ON DUPLICATE KEY UPDATE full_name = 'Somchai Jaidee', vehicle_plate = '1กข 4589', vehicle_model = 'Toyota Camry VIP', status = 'available'`
   );
 
   // Clear any previous active trips for test driver so they start with clean slate
   await query("UPDATE taxi_dispatches SET ride_status = 'COMPLETED' WHERE driver_id = 'drv-bkk-01' AND ride_status IN ('DISPATCHED', 'ARRIVED', 'ON_TRIP')");
+
+  // Driver 1 works for vnd-bangkok-cabs and drives an approved SUV, so the SUV test job
+  // (3 passengers, 3 bags) is offered to them. Restored to the sedan at the end.
+  await query("UPDATE drivers SET vendor_id = 'vnd-bangkok-cabs', active_vehicle_id = 'veh-fortuner-01' WHERE id = 'drv-bkk-01'");
+  const restoreDriverVehicle = () =>
+    query("UPDATE drivers SET active_vehicle_id = 'veh-camry-01', status = 'available' WHERE id = 'drv-bkk-01'");
 
   await query(
     `INSERT INTO drivers (id, user_id, full_name, phone, license_number, vehicle_model, vehicle_plate, status)
@@ -163,17 +169,17 @@ async function runDriverCompanionTests() {
         id, idempotency_key, customer_name, customer_phone, customer_email, start_date, end_date,
         base_amount_thb, platform_fee_thb, customer_currency, customer_total_amount,
         payment_currency, payment_amount, payment_status, booking_status
-      ) VALUES (?, ?, 'Khun Pim', '+66 82 345 6789', 'pim@thailand.com', '2026-11-02', '2026-11-02',
+      ) VALUES (?, ?, 'Khun Pim', '+66 82 345 6789', 'pim@example.com', '2026-11-02', '2026-11-02',
         1250.00, 125.00, 'THB', 1250.00, 'THB', 1250.00, 'PENDING', 'Confirmed')`,
       [testBookingId, `idem_${Date.now()}`]
     );
 
     await query(
       `INSERT INTO taxi_dispatches (
-        id, booking_id, transfer_type, pickup_address, dropoff_address, pickup_datetime,
+        id, booking_id, vendor_id, transfer_type, pickup_address, dropoff_address, pickup_datetime,
         passenger_count, luggage_count, vehicle_category, distance_km, estimated_minutes,
         total_fare_thb, ride_status, ride_otp_hash, ride_otp_encrypted
-      ) VALUES (?, ?, 'AIRPORT_PICKUP', 'Suvarnabhumi Airport Terminal 1', 'Mandarin Oriental Bangkok',
+      ) VALUES (?, ?, 'vnd-bangkok-cabs', 'AIRPORT_PICKUP', 'Suvarnabhumi Airport Terminal 1', 'Mandarin Oriental Bangkok',
         '2026-11-02 15:00:00', 3, 3, 'SUV', 35.0, 40, 1250.00, 'ALLOCATED', ?, ?)`,
       [testDispatchId, testBookingId, testOtpHash, testOtpEnc]
     );
@@ -335,9 +341,11 @@ async function runDriverCompanionTests() {
     console.log(`DRIVER COMPANION TESTS FINISHED: ${passed} PASSED, ${failed} FAILED`);
     console.log(`============================================================\n`);
 
+    await restoreDriverVehicle();
     process.exit(0);
   } catch (err) {
     console.error('\n❌ Driver Companion Test Failed with error:', err.message);
+    await restoreDriverVehicle().catch(() => {});
     process.exit(1);
   }
 }

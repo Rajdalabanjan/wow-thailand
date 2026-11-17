@@ -703,7 +703,7 @@ export default function PackageCustomizationPage({
               <span className="border rounded-pill px-3 py-1 bg-light text-dark d-flex align-items-center gap-1">
                 <Plane size={14} className="text-primary" /> {withFlight ? 'With Flight' : 'Without Flight'}
               </span>
-              <span className="border rounded-pill px-3 py-1 bg-light text-dark fw-bold" style={{ color: '#FF6333' }}>
+              <span className="border rounded-pill px-3 py-1 bg-light text-dark fw-bold" style={{ color: '#B8860B' }}>
                 <Clock size={14} className="me-1 text-primary d-inline" /> {durationDisplay}
               </span>
               <span className="badge bg-light text-dark border px-3 py-1.5 rounded-pill d-flex align-items-center gap-1">
@@ -1339,10 +1339,10 @@ export default function PackageCustomizationPage({
               
               <button 
                 type="button"
-                className="btn btn-primary w-100 py-3 rounded-pill fw-bold text-white shadow-sm text-uppercase tracking-wider d-flex align-items-center justify-content-center gap-2"
+                className="btn btn-primary w-100 py-3 rounded-pill fw-bold text-dark shadow-sm text-uppercase tracking-wider d-flex align-items-center justify-content-center gap-2"
                 onClick={handleProceedToTravellers}
                 disabled={isSelfDrivePackage && cabType === 'self-drive' && !selectedSelfDriveVehicle}
-                style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', borderColor: '#FF6333' }}
+                style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', borderColor: '#F5C518' }}
               >
                 <span>Proceed to Traveller Details</span>
                 <ChevronRight size={18} />

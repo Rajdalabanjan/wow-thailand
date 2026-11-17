@@ -317,8 +317,8 @@ export default function AdminActivitiesManagement({ currentUser }) {
           </button>
           <button
             onClick={openAddModal}
-            className="btn btn-sm rounded-3 d-flex align-items-center gap-2 px-3.5 py-2 fw-bold text-white shadow-sm"
-            style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)', border: 'none' }}
+            className="btn btn-sm rounded-3 d-flex align-items-center gap-2 px-3.5 py-2 fw-bold text-dark shadow-sm"
+            style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', border: 'none' }}
           >
             <Plus size={16} /> Add Activity
           </button>
@@ -331,7 +331,7 @@ export default function AdminActivitiesManagement({ currentUser }) {
           <div className="rounded-3 p-3 shadow-xs border" style={{ background: '#fff' }}>
             <div className="d-flex align-items-center justify-content-between mb-1">
               <span className="text-muted fw-semibold" style={{ fontSize: '0.75rem', textTransform: 'uppercase' }}>Total Activities</span>
-              <span className="p-2 rounded-2" style={{ background: 'rgba(255,99,51,0.1)', color: '#FF6333' }}><MapIcon size={16} /></span>
+              <span className="p-2 rounded-2" style={{ background: 'rgba(245, 197, 24, 0.1)', color: '#B8860B' }}><MapIcon size={16} /></span>
             </div>
             <div className="fs-4 fw-extrabold" style={{ color: '#0D1B2E' }}>{activities.length}</div>
             <div className="text-muted" style={{ fontSize: '0.72rem' }}>In catalog</div>
@@ -418,7 +418,7 @@ export default function AdminActivitiesManagement({ currentUser }) {
           </div>
         ) : filteredActivities.length === 0 ? (
           <div className="text-center py-5 px-3">
-            <div className="rounded-circle d-inline-flex p-3 mb-3" style={{ background: 'rgba(255,99,51,0.08)', color: '#FF6333' }}>
+            <div className="rounded-circle d-inline-flex p-3 mb-3" style={{ background: 'rgba(245, 197, 24, 0.08)', color: '#B8860B' }}>
               <Compass size={32} />
             </div>
             <h6 className="fw-bold mb-1" style={{ color: '#0D1B2E' }}>No Activities Found</h6>
@@ -429,8 +429,8 @@ export default function AdminActivitiesManagement({ currentUser }) {
             </p>
             <button
               onClick={openAddModal}
-              className="btn btn-sm rounded-3 fw-bold text-white px-3 py-2"
-              style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)', border: 'none' }}
+              className="btn btn-sm rounded-3 fw-bold text-dark px-3 py-2"
+              style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', border: 'none' }}
             >
               <Plus size={15} className="me-1" /> Add New Activity
             </button>
@@ -458,7 +458,7 @@ export default function AdminActivitiesManagement({ currentUser }) {
                         style={{
                           width: '48px',
                           height: '48px',
-                          background: item.image_url ? `url(${item.image_url}) center/cover no-repeat` : 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)',
+                          background: item.image_url ? `url(${item.image_url}) center/cover no-repeat` : 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)',
                           color: '#fff',
                           fontSize: '0.7rem'
                         }}
@@ -562,7 +562,7 @@ export default function AdminActivitiesManagement({ currentUser }) {
             <div className="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
               <div className="modal-header py-3 px-4" style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                 <div className="d-flex align-items-center gap-2">
-                  <div className="p-2 rounded-2" style={{ background: 'rgba(255,99,51,0.1)', color: '#FF6333' }}>
+                  <div className="p-2 rounded-2" style={{ background: 'rgba(245, 197, 24, 0.1)', color: '#B8860B' }}>
                     <MapIcon size={18} />
                   </div>
                   <div>
@@ -892,8 +892,8 @@ export default function AdminActivitiesManagement({ currentUser }) {
                   </button>
                   <button
                     type="submit"
-                    className="btn btn-sm px-4 py-1.5 rounded-3 fw-bold text-white shadow-sm"
-                    style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)', border: 'none' }}
+                    className="btn btn-sm px-4 py-1.5 rounded-3 fw-bold text-dark shadow-sm"
+                    style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', border: 'none' }}
                     disabled={saving}
                   >
                     {saving ? 'Saving...' : editingItem ? 'Update Activity' : 'Publish Activity'}

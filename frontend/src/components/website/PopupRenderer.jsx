@@ -111,8 +111,8 @@ export default function PopupRenderer({ popups = [], onAction }) {
                   setActivePopupId(null);
                 }}
                 style={{
-                  padding: '14px 28px', background: 'linear-gradient(135deg, #FF6333, #FF8A00)',
-                  color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px',
+                  padding: '14px 28px', background: 'linear-gradient(135deg, #F5C518, #E5A826)',
+                  color: '#06101E', border: 'none', borderRadius: '8px', fontSize: '15px',
                   fontWeight: 700, cursor: 'pointer', width: '100%'
                 }}
               >

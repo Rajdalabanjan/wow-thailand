@@ -77,7 +77,7 @@ export default function PMSWallet({ currentUser }) {
           <h4 className="fw-bold mb-1" style={{ color: '#1a2b4a' }}>Platform Wallet</h4>
           <p className="text-muted mb-0" style={{ fontSize: '0.85rem' }}>Manage your commission balance and top-ups</p>
         </div>
-        <button onClick={() => setShowRecharge(true)} className="btn text-white fw-bold px-4 py-2 rounded-pill" style={{ background: 'linear-gradient(90deg, #FF6333, #FF8A00)' }}>
+        <button onClick={() => setShowRecharge(true)} className="btn text-dark fw-bold px-4 py-2 rounded-pill" style={{ background: 'linear-gradient(90deg, #F5C518, #E5A826)' }}>
           + Add Money
         </button>
       </div>
@@ -100,7 +100,7 @@ export default function PMSWallet({ currentUser }) {
           <div className="col-md-4">
             <div className="card border-0 rounded-4 p-4 h-100 shadow-sm bg-white">
               <div className="d-flex justify-content-between align-items-center mb-3">
-                <div className="p-2 rounded-circle" style={{ background: 'rgba(255,99,51,0.1)', color: '#FF6333' }}><AlertCircle size={24} /></div>
+                <div className="p-2 rounded-circle" style={{ background: 'rgba(245, 197, 24, 0.1)', color: '#B8860B' }}><AlertCircle size={24} /></div>
               </div>
               <h2 className="fw-bold mb-1 text-dark">฿{wallet?.reserved_commission?.toLocaleString() || 0}</h2>
               <div className="text-muted small fw-bold">Reserved Commission</div>
@@ -110,7 +110,7 @@ export default function PMSWallet({ currentUser }) {
           <div className="col-md-4">
             <div className="card border-0 rounded-4 p-4 h-100 shadow-sm bg-white">
               <div className="d-flex justify-content-between align-items-center mb-3">
-                <div className="p-2 rounded-circle" style={{ background: 'rgba(0,184,217,0.1)', color: '#00B8D9' }}><RefreshCw size={24} /></div>
+                <div className="p-2 rounded-circle" style={{ background: 'rgba(245, 197, 24, 0.1)', color: '#B8860B' }}><RefreshCw size={24} /></div>
               </div>
               <h2 className="fw-bold mb-1 text-dark">฿{wallet?.negative_limit?.toLocaleString() || -1000}</h2>
               <div className="text-muted small fw-bold">Credit Limit</div>

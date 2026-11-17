@@ -471,13 +471,13 @@ export default function PackageDetailsModal({ pkg, isOpen, onClose, onBook }) {
                 <div className="d-flex justify-content-between align-items-center">
                   <div>
                     <div className="text-muted small" style={{ fontSize: '0.75rem' }}>Package Price / person</div>
-                    <div className="fw-black text-primary fs-4" style={{ color: '#FF6333' }}>฿{price.toLocaleString('en-US')}</div>
+                    <div className="fw-black text-primary fs-4" style={{ color: '#B8860B' }}>฿{price.toLocaleString('en-US')}</div>
                   </div>
                   <button 
                     type="button" 
                     onClick={handleBookClick} 
                     className="btn btn-primary px-4 py-2 rounded-pill fw-bold shadow-sm d-flex align-items-center gap-1.5"
-                    style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', borderColor: '#FF6333', fontSize: '0.85rem' }}
+                    style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', borderColor: '#F5C518', fontSize: '0.85rem' }}
                   >
                     <span>Proceed to Book</span>
                     <ChevronRight size={16} />
@@ -572,7 +572,7 @@ export default function PackageDetailsModal({ pkg, isOpen, onClose, onBook }) {
           {/* TAB 2: ITINERARY */}
           {activeTab === 'itinerary' && (
             <div className="animate-fade-in d-flex flex-column gap-3">
-              {activeItinerary.map((day, idx) => {
+              {itinerary.map((day, idx) => {
                 const isExp = expandedDay === idx;
                 return (
                   <div key={idx} className="border rounded-3 overflow-hidden bg-white shadow-sm">
@@ -582,7 +582,7 @@ export default function PackageDetailsModal({ pkg, isOpen, onClose, onBook }) {
                       onClick={() => setExpandedDay(isExp ? -1 : idx)}
                     >
                       <div className="d-flex align-items-center gap-3">
-                        <span className="badge rounded-circle p-0 d-inline-flex align-items-center justify-content-center fw-bold" style={{ width: '28px', height: '28px', background: isExp ? '#FF6333' : '#0D1B2E', color: '#fff', fontSize: '0.75rem' }}>
+                        <span className="badge rounded-circle p-0 d-inline-flex align-items-center justify-content-center fw-bold" style={{ width: '28px', height: '28px', background: isExp ? '#F5C518' : '#0D1B2E', color: isExp ? '#06101E' : '#fff', fontSize: '0.75rem' }}>
                           {idx + 1}
                         </span>
                         <span className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>{day.title || `Day ${idx + 1}`}</span>
@@ -863,7 +863,7 @@ export default function PackageDetailsModal({ pkg, isOpen, onClose, onBook }) {
               </span>
             </div>
             <div className="d-flex align-items-baseline gap-1.5">
-              <h3 className="fw-bold text-dark mb-0" style={{ color: '#FF6333' }}>
+              <h3 className="fw-bold text-dark mb-0" style={{ color: '#B8860B' }}>
                 ฿{price.toLocaleString('en-US')}
               </h3>
               <span className="text-muted small">/ per person</span>
@@ -883,7 +883,7 @@ export default function PackageDetailsModal({ pkg, isOpen, onClose, onBook }) {
               type="button" 
               onClick={handleBookClick} 
               className="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow d-flex align-items-center gap-2"
-              style={{ background: 'linear-gradient(90deg, #FF6333, #FF8A00)', borderColor: '#FF6333', fontSize: '0.92rem' }}
+              style={{ background: 'linear-gradient(90deg, #F5C518, #E5A826)', borderColor: '#F5C518', fontSize: '0.92rem' }}
             >
               <span>Book This Package</span>
               <span className="badge bg-white text-dark rounded-pill py-1 px-2 fw-bold" style={{ fontSize: '0.75rem' }}>{nights}N / {days}D</span>

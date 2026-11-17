@@ -797,12 +797,12 @@ export default function TripPackageBuilderModal({
           {/* ─── MODAL HEADER (Requirement 10) ─── */}
           <div
             className="d-flex align-items-center justify-content-between px-4 py-3 text-white"
-            style={{ background: 'linear-gradient(135deg, #0D1B2E 0%, #172F4F 100%)', borderBottom: '2px solid rgba(255,99,51,0.25)' }}
+            style={{ background: 'linear-gradient(135deg, #0D1B2E 0%, #172F4F 100%)', borderBottom: '2px solid rgba(245, 197, 24, 0.25)' }}
           >
             <div className="d-flex align-items-center gap-3">
               <div
                 className="rounded-3 p-2.5 d-flex align-items-center justify-content-center shadow-sm"
-                style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)' }}
+                style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)' }}
               >
                 <Compass size={24} className="text-white" />
               </div>
@@ -1032,7 +1032,7 @@ export default function TripPackageBuilderModal({
                   <button
                     type="button"
                     className="btn btn-sm btn-primary d-flex align-items-center gap-1.5 rounded-pill px-3 fw-bold"
-                    style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)', border: 'none' }}
+                    style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', border: 'none' }}
                     onClick={handleAddDay}
                   >
                     <Plus size={15} /> + Add Another Day
@@ -2605,8 +2605,8 @@ export default function TripPackageBuilderModal({
 
               <button
                 type="button"
-                className="btn btn-primary px-4 py-2 rounded-pill fw-bold text-white shadow-sm d-flex align-items-center gap-1.5"
-                style={{ background: 'linear-gradient(135deg, #FF6333 0%, #FF8A00 100%)', border: 'none' }}
+                className="btn btn-primary px-4 py-2 rounded-pill fw-bold text-dark shadow-sm d-flex align-items-center gap-1.5"
+                style={{ background: 'linear-gradient(135deg, #F5C518 0%, #E5A826 100%)', border: 'none' }}
                 disabled={isSubmitting}
                 onClick={() => handleSubmit('published')}
               >

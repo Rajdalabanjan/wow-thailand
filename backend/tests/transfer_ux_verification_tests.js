@@ -199,7 +199,7 @@ async function runVerificationTests() {
       luggage: 2,
       flightNumber: 'TG 679',
       customerName: 'Elena Rostova',
-      customerEmail: 'elena@voyage.com',
+      customerEmail: 'elena@example.com',
       customerPhone: '+44 7911 123456',
       notes: 'Placard: "MS. ROSTOVA" | Non-smoking cabin',
       paymentMethod: 'CASH',

@@ -6,6 +6,7 @@ import {
   Users, ChevronDown
 } from 'lucide-react';
 import * as api from '../../services/api';
+import TempleMark from '../../components/common/TempleMark';
 import ForgotPasswordModal from '../../components/ForgotPasswordModal';
 
 export default function DriverLoginPage({ onLoginSuccess, onNavigateHome }) {
@@ -170,17 +171,12 @@ export default function DriverLoginPage({ onLoginSuccess, onNavigateHome }) {
             
             {/* Logo & Header with Official Wow Thailand Logo */}
             <div className="text-center mb-4">
-              <div className="d-flex align-items-center justify-content-center mb-2">
-                <img
-                  src="/wowthailand-logo.png"
-                  alt="wowthailand.in"
-                  style={{
-                    height: '56px',
-                    width: 'auto',
-                    maxWidth: '220px',
-                    objectFit: 'contain'
-                  }}
-                />
+              {/* Brand logo (the old /wowthailand-logo.png image did not exist) */}
+              <div className="d-flex align-items-center justify-content-center gap-2 mb-3">
+                <TempleMark size={34} style={{ color: '#E5A826' }} />
+                <span className="brand-wordmark brand-wordmark--on-light" style={{ fontSize: '20px', color: '#0B192C' }}>
+                  WOW <span className="brand-gold">THAILAND</span>
+                </span>
               </div>
 
               <h2 className="fw-extrabold text-dark mb-1" style={{ fontSize: '1.75rem', color: '#0F172A', letterSpacing: '-0.5px' }}>

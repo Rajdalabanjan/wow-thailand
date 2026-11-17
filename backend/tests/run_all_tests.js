@@ -73,6 +73,18 @@ async function main() {
     process.exit(1);
   }
 
+  const fleetCapacitySuccess = await runTest('fleet_and_capacity_tests.js');
+  if (!fleetCapacitySuccess) {
+    console.error('❌ Fleet Management & Capacity Verification tests failed!');
+    process.exit(1);
+  }
+
+  const rideNotifySuccess = await runTest('ride_notification_tests.js');
+  if (!rideNotifySuccess) {
+    console.error('❌ Customer Ride Notification (SMS / WhatsApp / Email) tests failed!');
+    process.exit(1);
+  }
+
   console.log(`\n============================================================`);
   console.log(`🎉 ALL WOW THAILAND TEST SUITES PASSED SUCCESSFULLY!`);
   console.log(`============================================================\n`);

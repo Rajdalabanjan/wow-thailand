@@ -117,7 +117,7 @@ export default function PackageCheckoutStep4({
             type="button" 
             onClick={handlePrint} 
             className="btn btn-primary rounded-pill px-4 py-1.5 fw-bold d-flex align-items-center gap-1.5 shadow-sm"
-            style={{ background: '#00B8D9', borderColor: '#00B8D9', fontSize: '0.85rem' }}
+            style={{ background: '#F5C518', borderColor: '#F5C518', fontSize: '0.85rem' }}
           >
             <Download size={15} /> Download / Print Voucher
           </button>
@@ -351,7 +351,7 @@ export default function PackageCheckoutStep4({
               type="button" 
               onClick={onDone} 
               className="btn btn-primary rounded-pill px-5 py-2.5 fw-bold shadow d-flex align-items-center gap-2"
-              style={{ background: '#FF6333', borderColor: '#FF6333' }}
+              style={{ background: '#F5C518', borderColor: '#F5C518' }}
             >
               Explore More Thailand Packages <ArrowRight size={18} />
             </button>

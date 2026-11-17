@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { 
-  X, Lock, User, Eye, EyeOff, Palmtree, 
+  X, Lock, User, Eye, EyeOff, Palmtree, CheckCircle2,
   TrendingUp, Award, Headphones, ChevronRight, ChevronDown, ShieldAlert 
 } from 'lucide-react';
 import { lockScroll, unlockScroll } from '../utils/scrollLock';
 import ForgotPasswordModal from './ForgotPasswordModal';
+import TempleMark from './common/TempleMark';
 
 export default function LoginModal({ isOpen, onClose, onLogin }) {
   const [username, setUsername] = useState('');
@@ -13,6 +14,7 @@ export default function LoginModal({ isOpen, onClose, onLogin }) {
   const [showPass, setShowPass] = useState(false);
   const [showQuickDemo, setShowQuickDemo] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   useEffect(() => {
@@ -28,6 +30,7 @@ export default function LoginModal({ isOpen, onClose, onLogin }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSuccessMsg('');
     if (!username || !password) {
       setErrorMsg("Please fill out all fields.");
       return;
@@ -100,11 +103,9 @@ export default function LoginModal({ isOpen, onClose, onLogin }) {
 
           {/* Top Logo */}
           <div className="d-flex align-items-center gap-2.5" style={{ position: 'relative', zIndex: 3 }}>
-            <div className="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style={{ width: '40px', height: '40px' }}>
-              <Palmtree className="text-warning" size={22} />
-            </div>
+            <TempleMark size={30} className="text-warning flex-shrink-0" style={{ filter: 'drop-shadow(0 2px 8px rgba(245, 197, 24, 0.45))' }} />
             <div>
-              <h5 className="fw-extrabold text-white mb-0 tracking-wider font-heading" style={{ fontSize: '16px', lineHeight: '1.2' }}>WOW THAILAND</h5>
+              <h5 className="brand-wordmark text-white mb-0" style={{ fontSize: '16px', lineHeight: '1.2' }}>WOW <span className="brand-gold">THAILAND</span></h5>
               <span className="text-warning text-xxs tracking-wider text-uppercase fw-bold" style={{ fontSize: '9px' }}>Partner Hub</span>
             </div>
           </div>
@@ -154,16 +155,16 @@ export default function LoginModal({ isOpen, onClose, onLogin }) {
 
           {/* Form Header */}
           <div className="text-center mb-4">
-            <div className="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-2.5" style={{ width: '52px', height: '52px', background: 'rgba(255, 159, 28, 0.08)' }}>
+            <div className="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-2.5" style={{ width: '52px', height: '52px', background: 'rgba(245, 197, 24, 0.12)' }}>
               <Lock className="text-warning" size={24} />
             </div>
-            <h4 className="fw-extrabold text-primary font-heading mb-0 text-uppercase tracking-wider" style={{ fontSize: '18px' }}>Partner Sign In</h4>
+            <h4 className="fw-extrabold font-heading mb-0 text-uppercase tracking-wider" style={{ fontSize: '18px', color: '#0B192C' }}>Partner Sign In</h4>
             
             {/* Palm divider decorative */}
             <div className="d-flex align-items-center justify-content-center gap-2 mt-2">
-              <span style={{ width: '30px', height: '1px', background: 'linear-gradient(90deg, transparent, #FF9F1C)' }}></span>
+              <span style={{ width: '30px', height: '1px', background: 'linear-gradient(90deg, transparent, #E5A826)' }}></span>
               <Palmtree size={14} className="text-warning" />
-              <span style={{ width: '30px', height: '1px', background: 'linear-gradient(90deg, #FF9F1C, transparent)' }}></span>
+              <span style={{ width: '30px', height: '1px', background: 'linear-gradient(90deg, #E5A826, transparent)' }}></span>
             </div>
           </div>
 
@@ -171,6 +172,13 @@ export default function LoginModal({ isOpen, onClose, onLogin }) {
             <div className="alert alert-danger py-2 px-3 small d-flex align-items-center gap-2 mb-3 rounded-3" role="alert" style={{ background: 'rgba(220, 53, 69, 0.05)', borderColor: 'rgba(220, 53, 69, 0.15)', color: '#dc3545' }}>
               <ShieldAlert size={15} />
               <span className="text-start">{errorMsg}</span>
+            </div>
+          )}
+
+          {successMsg && !errorMsg && (
+            <div className="alert alert-success py-2 px-3 small d-flex align-items-center gap-2 mb-3 rounded-3" role="status" style={{ background: 'rgba(16, 185, 129, 0.08)', borderColor: 'rgba(16, 185, 129, 0.25)', color: '#047857' }}>
+              <CheckCircle2 size={15} className="flex-shrink-0" />
+              <span className="text-start">{successMsg}</span>
             </div>
           )}
 
@@ -233,7 +241,7 @@ export default function LoginModal({ isOpen, onClose, onLogin }) {
               </a>
             </div>
 
-            <button type="submit" className="btn btn-amber-gradient w-100 py-2.5 rounded-pill fw-extrabold text-white shadow-sm mb-3 text-uppercase tracking-wider d-flex align-items-center justify-content-center gap-2">
+            <button type="submit" className="btn btn-amber-gradient w-100 py-2.5 rounded-pill fw-extrabold shadow-sm mb-3 text-uppercase tracking-wider d-flex align-items-center justify-content-center gap-2">
               <span>Sign In</span>
               <span>→</span>
             </button>
@@ -353,7 +361,8 @@ export default function LoginModal({ isOpen, onClose, onLogin }) {
           onSuccessReturnToLogin={(usedId) => {
             if (usedId) setUsername(usedId);
             setPassword('');
-            setErrorMsg('Password reset successfully! Please sign in with your new password.');
+            setErrorMsg('');
+            setSuccessMsg('Password reset. Please sign in with your new password.');
             setShowForgotPassword(false);
           }}
         />

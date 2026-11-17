@@ -17,6 +17,7 @@ import * as cabTrackingController from '../controllers/cabTrackingController.js'
 import * as driverTripController from '../controllers/driverTripController.js';
 import * as cabDispatchController from '../controllers/cabDispatchController.js';
 import * as cabPaymentController from '../controllers/cabPaymentController.js';
+import * as cabVehicleController from '../controllers/cabVehicleController.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const router = Router();
@@ -100,6 +101,22 @@ router.get('/vendor/drivers', requireAuth, requireRole(['admin', 'superadmin', '
 router.post('/vendor/drivers', requireAuth, requireRole(['admin', 'superadmin', 'transfer_vendor', 'vendor', 'cab_vendor', 'vehicle_vendor']), driverController.createVendorDriver);
 router.put('/vendor/drivers/:id', requireAuth, requireRole(['admin', 'superadmin', 'transfer_vendor', 'vendor', 'cab_vendor', 'vehicle_vendor']), driverController.updateVendorDriver);
 router.delete('/vendor/drivers/:id', requireAuth, requireRole(['admin', 'superadmin', 'transfer_vendor', 'vendor', 'cab_vendor', 'vehicle_vendor']), driverController.deleteVendorDriver);
+
+// Vendor Cab Fleet Vehicles & Assignment Endpoints
+router.get('/vendor/fleet-vehicles', requireAuth, requireRole(['admin', 'superadmin', 'transfer_vendor', 'vendor', 'cab_vendor', 'vehicle_vendor']), cabVehicleController.getVendorVehicles);
+router.post('/vendor/fleet-vehicles', requireAuth, requireRole(['admin', 'superadmin', 'transfer_vendor', 'vendor', 'cab_vendor', 'vehicle_vendor']), cabVehicleController.createVendorVehicle);
+router.put('/vendor/fleet-vehicles/:id', requireAuth, requireRole(['admin', 'superadmin', 'transfer_vendor', 'vendor', 'cab_vendor', 'vehicle_vendor']), cabVehicleController.updateVendorVehicle);
+router.delete('/vendor/fleet-vehicles/:id', requireAuth, requireRole(['admin', 'superadmin', 'transfer_vendor', 'vendor', 'cab_vendor', 'vehicle_vendor']), cabVehicleController.deleteVendorVehicle);
+router.post('/vendor/fleet-vehicles/assign', requireAuth, requireRole(['admin', 'superadmin', 'transfer_vendor', 'vendor', 'cab_vendor', 'vehicle_vendor']), cabVehicleController.assignVehicleToDriver);
+router.post('/vendor/fleet-vehicles/unassign', requireAuth, requireRole(['admin', 'superadmin', 'transfer_vendor', 'vendor', 'cab_vendor', 'vehicle_vendor']), cabVehicleController.unassignVehicleFromDriver);
+
+// Admin Global Fleet Verification Endpoints
+router.get('/admin/fleet-vehicles', requireAuth, requireRole(['admin', 'superadmin']), cabVehicleController.getAdminFleetVehicles);
+router.post('/admin/fleet-vehicles/:id/verify', requireAuth, requireRole(['admin', 'superadmin']), cabVehicleController.verifyAdminFleetVehicle);
+
+// Chauffeur Active Vehicle Selection Endpoints
+router.get('/driver/assigned-vehicles', requireAuth, requireRole(['driver', 'admin', 'superadmin']), cabVehicleController.getDriverVehicles);
+router.post('/driver/select-vehicle', requireAuth, requireRole(['driver', 'admin', 'superadmin']), cabVehicleController.selectActiveVehicle);
 
 // Transfer Payment Endpoints
 router.post('/cabs/payment/record-cash', requireAuth, requireRole(['driver', 'admin', 'superadmin']), cabPaymentController.recordCashPayment);

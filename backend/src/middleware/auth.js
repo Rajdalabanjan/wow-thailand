@@ -55,6 +55,36 @@ export function signJwtToken(payload, expiresIn = '7d') {
 }
 
 /**
+ * Verify a single JWT string. Returns the decoded user or null.
+ * Shared by HTTP requests and Socket.IO connections.
+ */
+export function verifyAuthToken(token) {
+  if (!token) return null;
+  try {
+    const decoded = jwt.verify(token, ACTIVE_JWT_SECRET, {
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE
+    });
+
+    // Strict role validation
+    if (decoded && decoded.role && VALID_ROLES.has(decoded.role)) {
+      return decoded;
+    }
+  } catch (err) {
+    // In non-production, allow verification without issuer/audience if test suite generated legacy tokens
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        const fallbackDecoded = jwt.verify(token, ACTIVE_JWT_SECRET);
+        if (fallbackDecoded && fallbackDecoded.role && VALID_ROLES.has(fallbackDecoded.role)) {
+          return fallbackDecoded;
+        }
+      } catch (fbErr) {}
+    }
+  }
+  return null;
+}
+
+/**
  * Verify JWT Bearer token or X-Auth-Token header with strict validation
  */
 export function authenticateToken(req, res, next) {
@@ -67,29 +97,10 @@ export function authenticateToken(req, res, next) {
 
   req.user = null;
   for (const token of candidates) {
-    if (!token) continue;
-    try {
-      const decoded = jwt.verify(token, ACTIVE_JWT_SECRET, {
-        issuer: JWT_ISSUER,
-        audience: JWT_AUDIENCE
-      });
-
-      // Strict role validation
-      if (decoded && decoded.role && VALID_ROLES.has(decoded.role)) {
-        req.user = decoded;
-        break;
-      }
-    } catch (err) {
-      // In non-production, allow verification without issuer/audience if test suite generated legacy tokens
-      if (process.env.NODE_ENV !== 'production') {
-        try {
-          const fallbackDecoded = jwt.verify(token, ACTIVE_JWT_SECRET);
-          if (fallbackDecoded && fallbackDecoded.role && VALID_ROLES.has(fallbackDecoded.role)) {
-            req.user = fallbackDecoded;
-            break;
-          }
-        } catch (fbErr) {}
-      }
+    const decoded = verifyAuthToken(token);
+    if (decoded) {
+      req.user = decoded;
+      break;
     }
   }
   next();

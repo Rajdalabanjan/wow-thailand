@@ -38,7 +38,7 @@ function StatCard({ label, value, icon, color, trend, sub, onClick }) {
         if (onClick) {
           e.currentTarget.style.transform = 'translateY(-3px)';
           e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.08)';
-          e.currentTarget.style.borderColor = color || '#FF6333';
+          e.currentTarget.style.borderColor = color || '#F5C518';
         }
       }}
       onMouseLeave={e => {
@@ -271,7 +271,7 @@ function DashboardTab({
     { label: 'Total Bookings', value: totalBookings, icon: <Calendar size={18} />, color: '#2563eb', trend: 12, sub: `${todayBookings} today · ${pendingBookings} pending`, onClick: () => onNavigate?.('vehicle_bookings') },
     { label: 'Vehicle Rentals', value: vehicleBookingsCount, icon: <Car size={18} />, color: '#d97706', sub: `${cars.length} cars · ${bikes.length} bikes in fleet`, onClick: () => onNavigate?.('vehicle_bookings') },
     { label: 'Hotel Reservations', value: hotelBookingsCount, icon: <Hotel size={18} />, color: '#0284c7', sub: `${hotels.length} partner properties listed`, onClick: () => onNavigate?.('hotel_bookings') },
-    { label: 'Craft My Trip / Packages', value: tripBookingsCount, icon: <Compass size={18} />, color: '#f97316', sub: 'Custom holidays & packages', onClick: () => onNavigate?.('trip_bookings') },
+    { label: 'Craft My Trip / Packages', value: tripBookingsCount, icon: <Compass size={18} />, color: '#B8860B', sub: 'Custom holidays & packages', onClick: () => onNavigate?.('trip_bookings') },
     { label: 'Sightseeing & Activities', value: activityBookingsCount, icon: <MapPin size={18} />, color: '#10b981', sub: 'Water sports, cruises, tours', onClick: () => onNavigate?.('activity_bookings') },
     { label: 'B2B Agent Bookings', value: b2bBookings.length, icon: <FileText size={18} />, color: '#6366f1', sub: 'B2B distribution bookings', onClick: () => onNavigate?.('b2b_commission_bookings') },
     { label: 'B2B Wallet Balances', value: `฿${(totalB2BWalletBalance / 1000).toFixed(1)}K`, icon: <Wallet size={18} />, color: '#0d9488', sub: 'Prepaid agent deposits', onClick: () => onNavigate?.('b2b_wallets') },
@@ -401,7 +401,7 @@ function AddAdminModal({ show, onClose, onAddUser }) {
           onChange={e => setForm(prev => ({ ...prev, billing_price: e.target.value }))}
           placeholder="e.g. 5000"
         />
-        <button type="submit" className="btn w-100 py-2.5 fw-bold text-white rounded-3 mt-2" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }}>Create Administrator</button>
+        <button type="submit" className="btn w-100 py-2.5 fw-bold text-dark rounded-3 mt-2" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}>Create Administrator</button>
       </form>
     </Modal>
   );
@@ -501,7 +501,7 @@ function EditAdminModal({ editing, onClose, onUpdateUser }) {
           </select>
         </div>
         
-        <button type="submit" className="btn w-100 py-2.5 fw-bold text-white rounded-3 mt-2" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }}>Save Changes</button>
+        <button type="submit" className="btn w-100 py-2.5 fw-bold text-dark rounded-3 mt-2" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}>Save Changes</button>
       </form>
     </Modal>
   );
@@ -532,8 +532,8 @@ function AdminManagementTab({ usersList = [], onAddUser, onUpdateUser, onDeleteU
       actions={
         <button
           type="button"
-          className="btn px-4 py-2 fw-bold text-white d-flex align-items-center gap-2 rounded-3 shadow-sm"
-          style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)', fontSize: '0.83rem' }}
+          className="btn px-4 py-2 fw-bold text-dark d-flex align-items-center gap-2 rounded-3 shadow-sm"
+          style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)', fontSize: '0.83rem' }}
           onClick={() => setShowAdd(true)}
         >
           <Plus size={14} /> Add Administrator
@@ -570,7 +570,7 @@ function AdminManagementTab({ usersList = [], onAddUser, onUpdateUser, onDeleteU
               <td className="px-3 py-2" style={{ color: '#475569' }}>{u.email}</td>
               <td className="px-3 py-2">
                 <div className="d-flex align-items-center gap-1.5">
-                  <span className="font-monospace fw-bold" style={{ fontSize: '0.78rem', color: visiblePassMap[u.id] ? '#FF6333' : '#0f172a' }}>
+                  <span className="font-monospace fw-bold" style={{ fontSize: '0.78rem', color: visiblePassMap[u.id] ? '#F5C518' : '#0f172a' }}>
                     {visiblePassMap[u.id] ? displayPass : '••••••••'}
                   </span>
                   <button
@@ -710,7 +710,7 @@ function UserManagementTab({ usersList = [] }) {
                   </span>
                 ) : (
                   <div className="d-flex align-items-center gap-1.5">
-                    <span className="font-monospace fw-bold" style={{ fontSize: '0.78rem', color: visibleUserPassMap[u.id] ? '#FF6333' : '#0f172a' }}>
+                    <span className="font-monospace fw-bold" style={{ fontSize: '0.78rem', color: visibleUserPassMap[u.id] ? '#F5C518' : '#0f172a' }}>
                       {visibleUserPassMap[u.id] ? displayPass : '••••••••'}
                     </span>
                     <button
@@ -1115,7 +1115,7 @@ function LeadManagementTab({ aiLeads = [], customEnquiries = [], onRefresh, user
                       className={`p-2.5 rounded-3 small ${msg.role === 'user' ? 'bg-white ms-auto border' : 'bg-light me-auto border-0 text-primary'}`}
                       style={{ maxWidth: '85%' }}
                     >
-                      <div className="fw-bold mb-0.5" style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: msg.role === 'user' ? '#64748b' : '#FF6333' }}>
+                      <div className="fw-bold mb-0.5" style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: msg.role === 'user' ? '#64748b' : '#F5C518' }}>
                         {msg.role === 'user' ? 'Customer' : 'Sophia AI Assistant'}
                       </div>
                       <div>{msg.content}</div>
@@ -3046,7 +3046,7 @@ function CommissionTab({ vendors = [] }) {
                 <input type="text" className="form-control form-control-sm" value={overrideForm.notes}
                   onChange={e => setOverrideForm(f => ({ ...f, notes: e.target.value }))} placeholder="Reason for override" />
               </div>
-              <button type="submit" className="btn btn-sm w-100 fw-bold text-white" disabled={saving} style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }}>
+              <button type="submit" className="btn btn-sm w-100 fw-bold text-dark" disabled={saving} style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }}>
                 <Plus size={13} className="me-1" /> {saving ? 'Saving...' : 'Save Override'}
               </button>
             </form>
@@ -3330,7 +3330,7 @@ function GlobalSettingsTab({ currentUser }) {
           <HotelBookingDriverSetting currentUser={currentUser} />
         </div>
         <div className="col-12">
-          <button type="button" className="btn px-5 py-2 fw-bold text-white rounded-3 shadow-sm" style={{ background: 'linear-gradient(90deg,#FF6333,#FF8A00)' }} onClick={handleSave}>Save Global Settings</button>
+          <button type="button" className="btn px-5 py-2 fw-bold text-dark rounded-3 shadow-sm" style={{ background: 'linear-gradient(90deg,#F5C518,#E5A826)' }} onClick={handleSave}>Save Global Settings</button>
         </div>
       </div>
     </Section>
@@ -3346,12 +3346,12 @@ function NotificationsTab({ bookings = [], vendors = [], usersList = [], aiLeads
       return { tab: 'hotel_bookings', type: 'Hotel Stay Booking', color: '#0284c7' };
     }
     if (itemId.startsWith('car-') || itemId.startsWith('bike-') || itemId.startsWith('veh-') || itemName.includes('thar') || itemName.includes('scooter') || itemName.includes('activa')) {
-      return { tab: 'vehicle_bookings', type: 'Vehicle Rental Booking', color: '#ea580c' };
+      return { tab: 'vehicle_bookings', type: 'Vehicle Rental Booking', color: '#B8860B' };
     }
     if (isActivityBookingItem(b)) {
       return { tab: 'activity_bookings', type: 'Sightseeing & Activity Booking', color: '#10b981' };
     }
-    return { tab: 'trip_bookings', type: 'Package / Holiday Booking', color: '#f97316' };
+    return { tab: 'trip_bookings', type: 'Package / Holiday Booking', color: '#B8860B' };
   };
 
   const notifs = [
